@@ -1,11 +1,9 @@
-# demo
-The first demo of TCT
+# TCT demo
+The first demo of TCT using [metadata](https://docs.soliditylang.org/en/v0.8.19/metadata.html) and [Natspec](https://docs.soliditylang.org/en/latest/natspec-format.html).
 
 - Install solc compiler locally: https://docs.soliditylang.org/en/develop/installing-solidity.html
 
 - A tool to quickly switch between Solidity compiler versions: https://github.com/crytic/solc-select
-
-- Natspec: https://docs.soliditylang.org/en/latest/natspec-format.html
 
 - use the command to get the spec
     ```shell
@@ -13,7 +11,7 @@ The first demo of TCT
     ```
 
     natspec content for `re_victim.sol`
-    ```
+    ```txt
     ======= re_victim.sol:Attack =======
     Developer Documentation
     {"kind":"dev","methods":{},"version":1}
