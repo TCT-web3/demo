@@ -1,0 +1,112 @@
+{
+    "compiler": {
+        "version": "0.8.20+commit.a1b79de6"
+    },
+    "language": "Solidity",
+    "output": {
+        "abi": [
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "balances",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "deposit",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "leaves",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "pure",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "withdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ],
+        "devdoc": {
+            "kind": "dev",
+            "methods": {
+                "leaves()": {
+                    "custom:experimental": "invariant: (forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply)"
+                },
+                "withdraw()": {
+                    "custom:tct": "invariant: (forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply) "
+                }
+            },
+            "version": 1
+        },
+        "userdoc": {
+            "kind": "user",
+            "methods": {},
+            "version": 1
+        }
+    },
+    "settings": {
+        "compilationTarget": {
+            "re_victim.sol": "EtherStore"
+        },
+        "evmVersion": "shanghai",
+        "libraries": {},
+        "metadata": {
+            "bytecodeHash": "ipfs"
+        },
+        "optimizer": {
+            "enabled": false,
+            "runs": 200
+        },
+        "remappings": []
+    },
+    "sources": {
+        "re_victim.sol": {
+            "keccak256": "0x8ec334c33c9f46edd2f2a0265a5b2022dd724b1f6b1c899bfb8d4b9082ccd685",
+            "license": "MIT",
+            "urls": [
+                "bzz-raw://8396ff8920fd14d6fb9c47150c62715e1be7fc6c16e61cd98d8b26d8a4895ffc",
+                "dweb:/ipfs/Qmaq6SiMTbHeHnc7FSGMB6yxZFn3q6xjyh3w8X9QReH8eM"
+            ]
+        }
+    },
+    "version": 1
+}
