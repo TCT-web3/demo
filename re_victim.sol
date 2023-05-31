@@ -37,7 +37,7 @@ contract EtherStore {
         balances[msg.sender] += msg.value;
     }
 
-    /// @custom:experimental invariant: (forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply) 
+    /// @custom:tct invariant: (forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply) 
     function withdraw() public {
         uint bal = balances[msg.sender];
         require(bal > 0);
