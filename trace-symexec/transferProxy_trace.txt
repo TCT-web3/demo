@@ -1,7 +1,6 @@
 This trace contains the first part of the transferProxy call to the contract https://github.com/TCT-web3/demo/blob/main/trace-symexec/MultiVulnToken.sol. 
 I don't know which lines it covers, because it always shows "LINE 34", which is not helpful. I suspect that the trace covers Line 37 and most of Line 38.
 
-
 solidity state:
 {
 	"owner": {
@@ -48,7 +47,9 @@ stack
 
 call data
 [
-	"0x2516912253128000000000000000000000000000000112800000000000000000000000000000000000000000000000000000000000"
+	Note: the call data shown by the remix debugger is wrong!
+	Correct value should be:
+	   [4 bytes][32 bytes for _from][32 bytes for _to][32 bytes for _value][32 bytes for _fee]
 ]
 
 Trace of transferProxy
