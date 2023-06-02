@@ -37,3 +37,34 @@ The first demo of TCT using [metadata](https://docs.soliditylang.org/en/v0.8.19/
     - put the tag in front of interface, contract, function, event.
     - @inheritdoc: when we want to make the thereom inherited.
     - @custom:tct/experimental we could put the thereom here where it won't be inherited.
+
+## Get the evm execution trace?
+Get the evm execution trace using alchemy API `trace-replaytransaction`: https://docs.alchemy.com/reference/trace-replaytransaction. But the `vmtrace` is null. The vmTrace mode is one of the most enigmatic and rarely used, mainly because it was never really documented. 
+
+Here is what we get in a `vmTrace` response:
+
+- `VMTrace` represents a call and contains all subcalls
+    - `code` EVM bytecode to be executed
+    - `ops` list of VMOperation to be executed
+- `VMOperation` represents a step of the execution
+    - `pc` program counter
+    - `cost` gas cost of the operation
+    - `ex` the result of the execution, could be null if the operation has reverted
+    - `sub` list of VMTrace subcalls
+    - `op` opcode name
+    - `idx` index in the call tree
+- `VMExecutedOperation` represents side effects of executing the operation
+    - `used` incorrectly named, shows the remaining gas
+    - `push` the items to be placed on the stack
+    - `mem` the memory delta
+    - `store` the storage delta
+- `MemoryDiff` represents a memory update
+    - `off` memory offset where to write the data
+    - `data` the bytes to write starting at the offset
+- `StorageDiff` represents a storage write
+    - `key` storage key to write to
+    - `val` value to write
+
+I build a `evm_trace.py` to get execution trace.
+- eth-ape: https://docs.apeworx.io/ape/stable/userguides/quickstart.html
+- ape-alchemy: https://github.com/ApeWorX/ape-alchemy
