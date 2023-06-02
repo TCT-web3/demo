@@ -1,236 +1,5 @@
-This trace contains the first part of the transferProxy call to the contract https://github.com/TCT-web3/demo/blob/main/trace-symexec/MultiVulnToken.sol. 
-
-solidity state:
-{
-	"owner": {
-		"value": "0x0000000000000000000000000000000000000000",
-		"type": "address",
-		"constant": false,
-		"immutable": false
-	},
-	"totalSupply": {
-		"value": "1000",
-		"type": "uint256",
-		"constant": false,
-		"immutable": false
-	},
-	"balances": {
-		"value": {
-			"0000000000000000000000000fc5025c764ce34df352757e82f7b5c4df39a836": {
-				"value": "995",
-				"type": "uint256"
-			},
-			"000000000000000000000000ef747a20d02c51d13a1b13ff2b78f6226cd33691": {
-				"value": "5",
-				"type": "uint256"
-			}
-		},
-		"type": "mapping(address => uint256)",
-		"constant": false,
-		"immutable": false
-	},
-	"name": {
-		"length": "0x97",
-		"raw": "0x44656d6f20746f6b656e2077697468207265656e7472616e63792069737375652c20696e7465676572206f766572666c6f7720616e642061636365737320636f6e74726f6c206973737565",
-		"type": "string",
-		"value": "Demo token with reentrancy issue, integer overflow and access control issue",
-		"constant": false,
-		"immutable": false
-	}
-}
-
-stack
-[
-	"0x00000000000000000000000000000000000000000000000000000000cf053d9d"
-]
-
-call data
-[
-	Note: the call data shown by the remix debugger is wrong!
-	Correct value should be:
-	   [4 bytes][32 bytes for _from][32 bytes for _to][32 bytes for _value][32 bytes for _fee]
-]
-
-Trace of transferProxy
-
-0269 JUMPDEST - LINE 34
-0270 PUSH2 0127 - LINE 34
-0273 PUSH1 04 - LINE 34
-0275 DUP1 - LINE 34
-0276 CALLDATASIZE - LINE 34
-0277 SUB - LINE 34
-0278 DUP2 - LINE 34
-0279 ADD - LINE 34
-0280 SWAP1 - LINE 34
-0281 PUSH2 0122 - LINE 34
-0284 SWAP2 - LINE 34
-0285 SWAP1 - LINE 34
-0286 PUSH2 08c1 - LINE 34
-0289 JUMP - LINE 34
-
-2241 JUMPDEST - LINE 34
-2242 PUSH1 00 - LINE 34
-2244 DUP1 - LINE 34
-2245 PUSH1 00 - LINE 34
-2247 DUP1 - LINE 34
-2248 PUSH1 80 - LINE 34
-2250 DUP6 - LINE 34
-2251 DUP8 - LINE 34
-2252 SUB - LINE 34
-2253 SLT - LINE 34
-2254 ISZERO - LINE 34
-2255 PUSH2 08db - LINE 34
-2258 JUMPI - LINE 34
-
-2267 JUMPDEST - LINE 34
-2268 PUSH1 00 - LINE 34
-2270 PUSH2 08e9 - LINE 34
-2273 DUP8 - LINE 34
-2274 DUP3 - LINE 34
-2275 DUP9 - LINE 34
-2276 ADD - LINE 34
-2277 PUSH2 0829 - LINE 34
-2280 JUMP - LINE 34
-
-2089 JUMPDEST - LINE 34
-2090 PUSH1 00 - LINE 34
-2092 DUP2 - LINE 34
-2093 CALLDATALOAD - LINE 34
-2094 SWAP1 - LINE 34
-2095 POP - LINE 34
-2096 PUSH2 0838 - LINE 34
-2099 DUP2 - LINE 34
-2100 PUSH2 0812 - LINE 34
-2103 JUMP - LINE 34
-
-2066 JUMPDEST - LINE 34
-2067 PUSH2 081b - LINE 34
-2070 DUP2 - LINE 34
-2071 PUSH2 0800 - LINE 34
-2074 JUMP - LINE 34
-
-2048 JUMPDEST - LINE 34
-2049 PUSH1 00 - LINE 34
-2051 PUSH2 080b - LINE 34
-2054 DUP3 - LINE 34
-2055 PUSH2 07e0 - LINE 34
-2058 JUMP - LINE 34
-
-2016 JUMPDEST - LINE 34
-2017 PUSH1 00 - LINE 34
-2019 PUSH20 ffffffffffffffffffffffffffffffffffffffff - LINE 34
-2040 DUP3 - LINE 34
-2041 AND - LINE 34
-2042 SWAP1 - LINE 34
-2043 POP - LINE 34
-2044 SWAP2 - LINE 34
-2045 SWAP1 - LINE 34
-2046 POP - LINE 34
-2047 JUMP - LINE 34
-
-2059 JUMPDEST - LINE 34
-2060 SWAP1 - LINE 34
-2061 POP - LINE 34
-2062 SWAP2 - LINE 34
-2063 SWAP1 - LINE 34
-2064 POP - LINE 34
-2065 JUMP - LINE 34
-
-2075 JUMPDEST - LINE 34
-2076 DUP2 - LINE 34
-2077 EQ - LINE 34
-2078 PUSH2 0826 - LINE 34
-2081 JUMPI - LINE 34
-
-2086 JUMPDEST - LINE 34
-2087 POP - LINE 34
-2088 JUMP - LINE 34
-
-2104 JUMPDEST - LINE 34
-2105 SWAP3 - LINE 34
-2106 SWAP2 - LINE 34
-2107 POP - LINE 34
-2108 POP - LINE 34
-2109 JUMP - LINE 34
-
-2281 JUMPDEST - LINE 34
-2282 SWAP5 - LINE 34
-2283 POP - LINE 34
-2284 POP - LINE 34
-2285 PUSH1 20 - LINE 34
-2287 PUSH2 08fa - LINE 34
-2290 DUP8 - LINE 34
-2291 DUP3 - LINE 34
-2292 DUP9 - LINE 34
-2293 ADD - LINE 34
-2294 PUSH2 0829 - LINE 34
-2297 JUMP - LINE 34
-
-2089 JUMPDEST - LINE 34
-2090 PUSH1 00 - LINE 34
-2092 DUP2 - LINE 34
-2093 CALLDATALOAD - LINE 34
-2094 SWAP1 - LINE 34
-2095 POP - LINE 34
-2096 PUSH2 0838 - LINE 34
-2099 DUP2 - LINE 34
-2100 PUSH2 0812 - LINE 34
-2103 JUMP - LINE 34
-
-2066 JUMPDEST - LINE 34
-2067 PUSH2 081b - LINE 34
-2070 DUP2 - LINE 34
-2071 PUSH2 0800 - LINE 34
-2074 JUMP - LINE 34
-
-2048 JUMPDEST - LINE 34
-2049 PUSH1 00 - LINE 34
-2051 PUSH2 080b - LINE 34
-2054 DUP3 - LINE 34
-2055 PUSH2 07e0 - LINE 34
-2058 JUMP - LINE 34
-
-2016 JUMPDEST - LINE 34
-2017 PUSH1 00 - LINE 34
-2019 PUSH20 ffffffffffffffffffffffffffffffffffffffff - LINE 34
-2040 DUP3 - LINE 34
-2041 AND - LINE 34
-2042 SWAP1 - LINE 34
-2043 POP - LINE 34
-2044 SWAP2 - LINE 34
-2045 SWAP1 - LINE 34
-2046 POP - LINE 34
-2047 JUMP - LINE 34
-
-2059 JUMPDEST - LINE 34
-2060 SWAP1 - LINE 34
-2061 POP - LINE 34
-2062 SWAP2 - LINE 34
-2063 SWAP1 - LINE 34
-2064 POP - LINE 34
-2065 JUMP - LINE 34
-
-2075 JUMPDEST - LINE 34
-2076 DUP2 - LINE 34
-2077 EQ - LINE 34
-2078 PUSH2 0826 - LINE 34
-2081 JUMPI - LINE 34
-
-2086 JUMPDEST - LINE 34
-2087 POP - LINE 34
-2088 JUMP - LINE 34
-
-2104 JUMPDEST - LINE 34
-2105 SWAP3 - LINE 34
-2106 SWAP2 - LINE 34
-2107 POP - LINE 34
-2108 POP - LINE 34
-2109 JUMP - LINE 34
-
-...
-omittting many instructions
-...
-At this point, all arguments are on the top of the stack
+This trace contains the essential part of the transferProxy call to the contract https://github.com/TCT-web3/demo/blob/main/trace-symexec/MultiVulnToken.sol. 
+At the starting point of the trace, all arguments are on the top of the stack
 
 stack
 [
@@ -241,10 +10,8 @@ stack
 	"0x0000000000000000000000000000000000000000000000000000000000000127",
 	"0x00000000000000000000000000000000000000000000000000000000cf053d9d"
 ]
+======================================Begin==========================================
 
-0290 JUMPDEST - LINE 34
-0291 PUSH2 0496 - LINE 34
-0294 JUMP - LINE 34
 
 1174 JUMPDEST -
 1175 PUSH1 00 - LINE 35
@@ -539,3 +306,51 @@ stack
 0314 SUB - LINE 34
 0315 SWAP1 - LINE 34
 0316 RETURN - LINE 34
+
+======================================End==========================================
+
+The ultimate goal is the generate the following boogie code:
+
+tmp1 := add(_fee , _value);   
+assume (balances[_from] >= tmp1);
+tmp2 := add(balances[_to] , _value);  
+assume(tmp2 >= balances[_to]);
+tmp3 := add(balances[msg.sender] , _fee);
+assume(tmp3 >= balances[msg.sender]);
+balances[_to] := add(balances[_to] , _value);
+balances[msg.sender] := add(balances[msg.sender] , _fee);
+balances[_from] := sub(balances[_from] , tmp1);
+
+Here are the aliases we know at the starting point of the trace (represented as "old"):
+_fee is a.k.a. old(stack[0])
+_value is a.k.a. old(stack[1])
+_to is a.k.a. (old(stack[2]) 0xffffffffffffffffffffffffffffffffffffffff)
+_from is a.k.a. (old(stack[3]) & 0xffffffffffffffffffffffffffffffffffffffff)
+msg.sender is a.k.a. (CALLER & 0xffffffffffffffffffffffffffffffffffffffff)
+balances[_from] is a.k.a.  SHA3(_from ConcatWith 0x0000000000000000000000000000000000000000000000000000000000000002)  //SHA3 computed over the 64-byte memory
+balances[_to] is a.k.a.  SHA3(_to ConcatWith 0x0000000000000000000000000000000000000000000000000000000000000002)
+//0x0000000000000000000000000000000000000000000000000000000000000002 is because the token contract has "offset 0: owner", "offset 1: totalSupply", "offset 2: balances" and "offet 3:name"
+
+
+Let's do a small exercise:
+Before instruction 1179, the symbolic stack is:
+[
+	old(stack[0]),
+	old(stack[1]),
+	"0x0000000000000000000000000000000000000000000000000000000000000000",
+	old(stack[1]),
+	old(stack[2]),
+	old(stack[3]),
+	old(stack[4]),
+	old(stack[5]),
+]
+After instruction 1179, the symbolic stack should be:
+[
+	add(old(stack[0]),old(stack[1]))
+	"0x0000000000000000000000000000000000000000000000000000000000000000",
+	old(stack[1]),
+	old(stack[2]),
+	old(stack[3]),
+	old(stack[4]),
+	old(stack[5]),
+]
