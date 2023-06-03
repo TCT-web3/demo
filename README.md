@@ -1,4 +1,5 @@
 # TCT demo
+## 1. solc metadata
 The first demo of TCT using [metadata](https://docs.soliditylang.org/en/v0.8.19/metadata.html) and [Natspec](https://docs.soliditylang.org/en/latest/natspec-format.html).
 
 - Install solc compiler locally: https://docs.soliditylang.org/en/develop/installing-solidity.html
@@ -35,10 +36,10 @@ The first demo of TCT using [metadata](https://docs.soliditylang.org/en/v0.8.19/
 
 - **Rule to use tags**:
     - put the tag in front of interface, contract, function, event.
-    - @inheritdoc: when we want to make the thereom inherited.
-    - @custom:tct/experimental we could put the thereom here where it won't be inherited.
+    - `@inheritdoc`: when we want to make the thereom inherited.
+    - `@custom:tct/experimental`: we could put the thereom here where it won't be inherited.
 
-## Get the evm execution trace?
+## 2. Get the evm execution trace?
 Get the evm execution trace using alchemy API `trace-replaytransaction`: https://docs.alchemy.com/reference/trace-replaytransaction. But the `vmtrace` is null. The vmTrace mode is one of the most enigmatic and rarely used, mainly because it was never really documented. 
 
 Here is what we get in a `vmTrace` response:
@@ -65,6 +66,20 @@ Here is what we get in a `vmTrace` response:
     - `key` storage key to write to
     - `val` value to write
 
-I build a `evm_trace.py` to get execution trace.
+I build a `vm_trace.py` to get execution trace.
+### How to use `vm_trace.py`?
+```shell
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r evm_trace_requirement.txt
+ape --version # test if eth-ape is installed
+python3 vm_trace.py --help # see how to use
+python3 vm_trace.py trace <tx hash> # get tx hash
+```
+
+**Dependency:**
+- ape: https://github.com/ApeWorX/ape
 - eth-ape: https://docs.apeworx.io/ape/stable/userguides/quickstart.html
 - ape-alchemy: https://github.com/ApeWorX/ape-alchemy
+
+More details about `vmtrace` in official doc: https://ethereum-tests.readthedocs.io/_/downloads/en/latest/pdf/.

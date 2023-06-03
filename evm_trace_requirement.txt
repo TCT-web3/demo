@@ -1,0 +1,11 @@
+distributed==2023.5.1
+requests==2.31.0
+eth-ape==0.6.10
+py-evm==0.7.0a2
+evm-trace==0.1.0a20
+humanize==4.6.0
+rich==12.6.0
+typer==0.9.0
+tqdm==4.65.0
+msgspec==0.15.1
+hexbytes==0.3.0
