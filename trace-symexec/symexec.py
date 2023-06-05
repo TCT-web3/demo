@@ -40,7 +40,7 @@ class EVM:
         elif opcode.startswith("DUP"):
             position=int(opcode[len("DUP")])
             self._stack.append(self._stack[len(self._stack)-position])
-        elif opcode=="ADD" or opcode=="AND":
+        elif opcode=="ADD" or opcode=="AND" or opcode=="LT" or opcode=="GT":
             node = SVT(opcode)
             node.children.append(self._stack[len(self._stack)-1])
             self._stack.pop()
@@ -68,10 +68,12 @@ def set_code_trace():
     ("DUP3",None),
     ("DUP3",None),
     ("ADD",None),
+    ("PUSH1", 0x0a),
+    ("LT",None),
     ("PUSH1", 0x02),
     ("PUSH1", 0x00),
     ("DUP8",None),
-    ("PUSH1", 0xffffffffffffffffffffffffffffffffffffffff),
+    ("PUSH20", 0xffffffffffffffffffffffffffffffffffffffff),
     ("AND",None),
     ]
 
