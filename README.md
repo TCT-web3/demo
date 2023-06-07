@@ -68,6 +68,15 @@ Here is what we get in a `vmTrace` response:
 
 I build a `vm_trace.py` to get execution trace.
 ### How to use `vm_trace.py`?
+Before you run, you have to make sure you run a Geth node on local machine.
+- [1] Install Ethereum Client (Geth): https://geth.ethereum.org/docs/getting-started/installing-geth
+- [2] Run a Local Ethereum Node: Once you have installed an Ethereum client, you need to run it to create a local blockchain. The specific command may vary depending on the client you are using. For example, if you are using Geth, you can run the following command to start a local node:
+    ```shell
+    geth --syncmode "full" --http --http.api eth,web3,personal --http.addr "localhost" --http.port "8545"
+    ```
+- [3] Connect to Localhost Provider by running `python3 web3_check.py`. It should return True. If False, return to check if you install Geth correctly.
+
+Then, we could run `vm_trace.py`
 ```shell
 python3 -m venv venv
 source venv/bin/activate

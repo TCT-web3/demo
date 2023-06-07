@@ -31,6 +31,7 @@ def mainnet(f):
     @wraps(f)
     def decorator(*args, **kwds):
         with networks.ethereum.mainnet.use_default_provider():
+        #with networks.ethereum.mainnet.use_provider("infura"):
             return f(*args, **kwds)
 
     return decorator
@@ -64,6 +65,7 @@ def request_raw(method, params) -> bytes:
     with timed("fetch"):
         resp = requests.post(
             chain.provider.uri,  # type: ignore
+            #"https://mainnet.infura.io/v3/5686fde2cc35452880ee28546e391d3d",
             json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
         )
     print(f"[yellow]size={naturalsize(len(resp.content))}")
@@ -72,6 +74,10 @@ def request_raw(method, params) -> bytes:
 
 def trace_transaction(tx: str) -> vmtrace.VMTrace:
     buffer = request_raw("trace_replayTransaction", [tx, ["vmTrace"]])
+    if json.loads(buffer)['error']:
+        print(f"ERROR: {json.loads(buffer)['error']}")
+        exit(1)
+
     with timed("decode"):
         trace: vmtrace.VMTrace = vmtrace.from_rpc_response(buffer)
     return trace
@@ -224,6 +230,7 @@ def block_fuzz():
 class WorkerConnection(distributed.WorkerPlugin):
     def setup(self, worker):
         networks.ethereum.mainnet.use_default_provider().__enter__()
+        #networks.ethereum.mainnet.use_provider("infura")
 
 
 
@@ -265,6 +272,7 @@ def peak_memory(blocks: int = 10):
 
     with open("peak-memory.jsonl", "wt") as f:
         with networks.ethereum.mainnet.use_default_provider():
+        #with networks.ethereum.mainnet.use_provider("infura"):
             block_range = range(chain.blocks.height - blocks, chain.blocks.height)
         for future in tqdm(client.map(measure_block_memory, block_range), total=blocks):
             for result in future.result():
