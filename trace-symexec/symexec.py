@@ -5,6 +5,7 @@ class SVT:
     def __init__(self, _value):
         self.value = _value
         self.children = []
+        
     def __str__(self):        
         ret = str(self.value)
         if len(self.children)==0:
@@ -20,7 +21,7 @@ class SVT:
 
 
 class EVM:
-    def __init__(self, stack, storage=None, memory=None):  
+    def __init__(self, stack, storage, memory):  
         self._stack = stack  
         self._storage = storage
         self._memory = memory  
@@ -47,11 +48,9 @@ class EVM:
                 c=c+1
         elif what == "storage":
             print("-----Storage-----")
-            c=0
-            for elem in self._memory[::-1]:
-                print('storage['+str(c)+'] ', elem)
-                c=c+1        
-
+            for key in self._storage:
+                print('(', key, ',', self._storage[key], ')')
+                
 
     def run_instruction(self, instr):
         print(instr)
@@ -68,14 +67,18 @@ class EVM:
             self._stack.append(node)
         elif opcode=="MSTORE":
             self._memory.append(self._stack[len(self._stack)-1])
-            self.inspect("stack")
+            # self.inspect("stack")
             self.inspect("memory")
         elif opcode=="MLOAD":
             self._stack.append(self._memory[len(self._stack)-1]) 
-            self.inspect("stack")
+            # self.inspect("stack")
             self.inspect("memory")
-        # elif opcode=="SSTORE":
-        # elif opcode=="SLOAD":
+        elif opcode=="SSTORE":
+            print("SSTORE")
+        elif opcode=="SLOAD":
+            self.inspect("storage")
+            key = self._stack.pop()
+            self._stack.append(SVT(self._storage.get(key)))            
         elif opcode=="PC":
             self._stack.append(SVT(PC))
         elif opcode.startswith("PUSH"):
@@ -102,9 +105,6 @@ class EVM:
         else:
             print('[!]',str(instr), 'not supported yet')  
 
-        self.inspect("stack")  
-            
-
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
 def set_stack():
@@ -116,6 +116,12 @@ def set_stack():
     SVT("_value"), 
     SVT("_fee")
     ]    
+
+def set_storage():
+    return {
+        0: '0x5c9eb5d6a6c2c1b3efc52255c0b356f116f6f66d'
+    } 
+
 
 def set_code_trace():
     return [
@@ -157,16 +163,17 @@ def read_path(filename):
 
       
 def main():
-    evm = EVM(set_stack(), [], [])
+    evm = EVM(set_stack(), set_storage(), [])
     evm.inspect("stack")
     print('-----Instructions-----')
-    code_trace = set_code_trace()
-    # code_trace = read_path("trace.txt")
+    # code_trace = set_code_trace()
+    code_trace = read_path("test.txt")
     evm.sym_exec(code_trace)
     evm.inspect("stack")
+    evm.inspect("memory")
+    evm.inspect("storage")
 
-    
-    
+ 
 if __name__ == '__main__':
     main()
     
