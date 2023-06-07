@@ -162,6 +162,17 @@ modifies balances;
                 node.children.append(self._stack.pop())
             self._stack.append(node)
             self.inspect("stack")
+        elif opcode=="SHA3":
+            if self._stack[-2].value == 64:
+                start_offset = self._stack.pop().value
+                if not isinstance(start_offset, int):
+                    raise Exception("start offset not constant")
+                node = SVT("MapElement")
+                node.children.append(self._memory[start_offset//32+1]) # map name: balances
+                node.children.append(self._memory[start_offset//32]) # key in balances
+                self._stack.pop()
+                self._stack.append(node)
+            self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
 
