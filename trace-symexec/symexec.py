@@ -1,3 +1,5 @@
+import re
+import binascii
 #SVT -- Symbolic value tree
 class SVT:
     def __init__(self, _value):
@@ -15,38 +17,92 @@ class SVT:
                 ret+=str(self.children[i])
         ret+=")"
         return ret
-        
+
+
 class EVM:
-    def __init__(self, stack, storage=None):  
+    def __init__(self, stack, storage=None, memory=None):  
         self._stack = stack  
-        self._storage = storage  
+        self._storage = storage
+        self._memory = memory  
         
     def sym_exec(self, code_trace):
-        for instr in code_trace:
-            self.run_instruction(instr)
-
-    def inspect(self,what):
+        for i in range(len(code_trace)):
+            if(code_trace[i]=="JUMPI"):
+                if(code_trace[i][0]+1 == code_trace[i+1][0]):
+                    continue
+            self.run_instruction(code_trace[i])
+        
+    def inspect(self, what):
         if what == "stack":
             print("-----Stack-----")
+            c=0
             for elem in self._stack[::-1]:
-                print(elem)
+                print('stack['+str(c)+'] ', elem)
+                c=c+1
+        elif what == "memory":
+            print("-----Memory-----")
+            c=0
+            for elem in self._memory[::-1]:
+                print('mem['+str(c)+'] ', elem)
+                c=c+1
+        elif what == "storage":
+            print("-----Storage-----")
+            c=0
+            for elem in self._memory[::-1]:
+                print('storage['+str(c)+'] ', elem)
+                c=c+1        
+
 
     def run_instruction(self, instr):
-        opcode=instr[0]
-        if opcode == "JUMPDEST":
+        print(instr)
+        PC=instr[0]
+        opcode=instr[1]
+        operand=instr[2]
+        
+        if opcode=="JUMPDEST":
             pass
-        elif opcode.startswith("PUSH"):
-            self._stack.append(SVT(instr[1]))
-        elif opcode.startswith("DUP"):
-            position=int(opcode[len("DUP")])
-            self._stack.append(self._stack[len(self._stack)-position])
-        elif opcode=="ADD" or opcode=="AND" or opcode=="LT" or opcode=="GT":
-            node = SVT(opcode)
-            node.children.append(self._stack[len(self._stack)-1])
-            self._stack.pop()
-            node.children.append(self._stack[len(self._stack)-1])
+        elif opcode=="JUMPI":
+            node = SVT("ISNOTZERO")
+            node.children.append(self._stack[len(self._stack)-2])
             self._stack.pop()
             self._stack.append(node)
+        elif opcode=="MSTORE":
+            self._memory.append(self._stack[len(self._stack)-1])
+            self.inspect("stack")
+            self.inspect("memory")
+        elif opcode=="MLOAD":
+            self._stack.append(self._memory[len(self._stack)-1]) 
+            self.inspect("stack")
+            self.inspect("memory")
+        # elif opcode=="SSTORE":
+        # elif opcode=="SLOAD":
+        elif opcode=="PC":
+            self._stack.append(SVT(PC))
+        elif opcode.startswith("PUSH"):
+            self._stack.append(SVT(operand))
+        elif opcode.startswith("DUP"):
+            # position=int(opcode[len("DUP")]) ## include cases such as `DUP16`
+            position=int(re.search('[0-9]+', opcode)[0])
+            self._stack.append(self._stack[len(self._stack)-position]) 
+        elif opcode.startswith("SWAP"):
+            position=int(re.search('[0-9]+', opcode)[0])
+            dest = self._stack[len(self._stack)-position-1] 
+            self._stack[len(self._stack)-position] = self._stack.pop()
+            self._stack.append(dest)
+            # self._stack.append(self._stack[len(self._stack)-position]) 
+        elif opcode=="ISZERO":
+            node = SVT(opcode)
+            node.children.append(self._stack.pop())
+            self._stack.append(node)
+        elif opcode=="ADD" or opcode=="AND" or opcode=="LT" or opcode=="GT":
+            node = SVT(opcode)
+            node.children.append(self._stack.pop())
+            node.children.append(self._stack.pop())
+            self._stack.append(node)
+        else:
+            print('[!]',str(instr), 'not supported yet')  
+
+        self.inspect("stack")  
             
 
         
@@ -59,31 +115,56 @@ def set_stack():
     SVT("_to"), 
     SVT("_value"), 
     SVT("_fee")
-    ]
-    
+    ]    
+
 def set_code_trace():
     return [
-    ("JUMPDEST",None),
-    ("PUSH1", 0x00),
-    ("DUP3",None),
-    ("DUP3",None),
-    ("ADD",None),
-    ("PUSH1", 0x0a),
-    ("LT",None),
-    ("PUSH1", 0x02),
-    ("PUSH1", 0x00),
-    ("DUP8",None),
-    ("PUSH20", 0xffffffffffffffffffffffffffffffffffffffff),
-    ("AND",None),
+    (1174, "JUMPDEST",None),
+    (1175, "PUSH1", 0x00),
+    (1177, "DUP3",None),
+    (1178, "DUP3",None),
+    (1179, "ADD",None),
+    (1180, "PUSH1", 0x02),
+    (1182, "PUSH1", 0x00),
+    (1184, "DUP8",None),
+    (1185, "PUSH20", 0xffffffffffffffffffffffffffffffffffffffff),
+    (1206, "AND",None),
     ]
+
+
+def read_path(filename):
+    trace=[]
+    inputfile = open(filename, 'r')
+    while True:
+        line = inputfile.readline()
+        if not line:
+            break
+        if(line[0].isdigit()):    
+            necessary = re.search("([0-9]+)\s(.*)-", line)
+            necessary = necessary[0][:-2]
+            instr = necessary.split(" ")
+            PC=int(instr[0])
+            operator=instr[1]
+            if(len(instr)>2):
+                operand=int('0x'+ instr[2], 16)
+            else:  
+                operand = None
+            trace_node = (PC, operator, operand) 
+            trace.append(trace_node)
+            # print(trace_node)  
+    inputfile.close()
+    return trace
 
       
 def main():
-    evm = EVM(set_stack())
+    evm = EVM(set_stack(), [], [])
     evm.inspect("stack")
+    print('-----Instructions-----')
     code_trace = set_code_trace()
+    # code_trace = read_path("trace.txt")
     evm.sym_exec(code_trace)
     evm.inspect("stack")
+
     
     
 if __name__ == '__main__':
