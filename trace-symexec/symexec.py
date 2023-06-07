@@ -21,17 +21,66 @@ class SVT:
 
 
 class EVM:
-    def __init__(self, stack, storage, memory):  
+    def __init__(self, stack, storage, memory, output_file):  
         self._stack = stack  
         self._storage = storage
         self._memory = memory  
-        
+        self._output_file = output_file
+    
+    def write_preamble(self):
+        self._output_file.write("""type address;
+type uint256 = int;
+var totalSupply: uint256;
+const TwoE16 : uint256;
+axiom TwoE16 == 65536; 
+const TwoE64 : uint256; 
+axiom TwoE64 == TwoE16 * TwoE16 * TwoE16 * TwoE16;
+const TwoE255 : uint256;
+axiom TwoE255 == TwoE64 * TwoE64 * TwoE64 * TwoE16 * TwoE16 * TwoE16 *32768;
+const TwoE256 : int; 
+axiom TwoE256 == TwoE64 * TwoE64 * TwoE64 * TwoE64;
+
+
+function sum(m: [address] uint256) returns (uint256);
+axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(m) - m[a] + v);
+axiom (forall m: [address] uint256 :: ((forall a:address :: 0<=m[a]) ==> (forall a:address :: m[a]<=sum(m))));    
+
+var balances: [address] uint256;
+
+procedure straightline_code ()
+modifies balances;
+{  
+    var msg.sender: address ;
+    var _from: address ;
+    var _to: address;
+    var _value: uint256;
+    var _fee: uint256;
+    var tmp1: uint256;
+    var tmp2: uint256;
+    var tmp3: uint256;
+
+    assume (0<=_value && _value<TwoE255+1 && 0<=_fee && _fee<TwoE255);           
+    assume (totalSupply<TwoE255);    
+    
+    assume (sum(balances) == totalSupply);
+    assume (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);            
+""")
+    
+    def write_epilogue(self):
+        self._output_file.write("""	
+    assert (sum(balances) == totalSupply);         
+    assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
+}   
+""")
     def sym_exec(self, code_trace):
+        self.write_preamble()
         for i in range(len(code_trace)):
             if(code_trace[i]=="JUMPI"):
                 if(code_trace[i][0]+1 == code_trace[i+1][0]):
                     continue
             self.run_instruction(code_trace[i])
+        self.write_epilogue()
+        self._output_file.close()
         
     def inspect(self, what):
         if what == "stack":
@@ -163,7 +212,7 @@ def read_path(filename):
 
       
 def main():
-    evm = EVM(set_stack(), set_storage(), [])
+    evm = EVM(set_stack(), set_storage(), [], open("output.bpl", "w"))
     evm.inspect("stack")
     print('-----Instructions-----')
     # code_trace = set_code_trace()
