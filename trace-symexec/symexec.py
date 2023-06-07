@@ -24,7 +24,7 @@ class EVM:
     def __init__(self, stack, storage, memory, output_file):  
         self._stack = stack  
         self._storage = storage
-        self._memory = memory  
+        self._memory = memory
         self._output_file = output_file
     
     def write_preamble(self):
@@ -92,8 +92,8 @@ modifies balances;
         elif what == "memory":
             print("-----Memory-----")
             c=0
-            for elem in self._memory[::-1]:
-                print('mem['+str(c)+'] ', elem)
+            for i in range(4):
+                print('mem['+str(i)+'] ', self._memory[i])
                 c=c+1
         elif what == "storage":
             print("-----Storage-----")
@@ -115,8 +115,14 @@ modifies balances;
             self._stack.pop()
             self._stack.append(node)
         elif opcode=="MSTORE":
-            self._memory.append(self._stack[len(self._stack)-1])
-            # self.inspect("stack")
+            mem_offset = self._stack.pop().value
+            if not isinstance(mem_offset, int):
+                raise Exception("We assume mem offset to be constant.")
+            elif mem_offset % 32 != 0:
+                raise Exception("We assume mem offset to be a multiple of 32.")
+            mem_offset //= 32
+            value = self._stack.pop()
+            self._memory[mem_offset] = value
             self.inspect("memory")
         elif opcode=="MLOAD":
             self._stack.append(self._memory[len(self._stack)-1]) 
@@ -147,10 +153,15 @@ modifies balances;
             node.children.append(self._stack.pop())
             self._stack.append(node)
         elif opcode=="ADD" or opcode=="AND" or opcode=="LT" or opcode=="GT":
-            node = SVT(opcode)
-            node.children.append(self._stack.pop())
-            node.children.append(self._stack.pop())
+            if isinstance(self._stack[-1].value, int) and isinstance(self._stack[-2].value, int):
+                if opcode == "ADD":
+                    node = SVT(self._stack.pop().value + self._stack.pop().value)
+            else:
+                node = SVT(opcode)
+                node.children.append(self._stack.pop())
+                node.children.append(self._stack.pop())
             self._stack.append(node)
+            self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
 
@@ -212,7 +223,7 @@ def read_path(filename):
 
       
 def main():
-    evm = EVM(set_stack(), set_storage(), [], open("output.bpl", "w"))
+    evm = EVM(set_stack(), set_storage(), [0] * 1000, open("output.bpl", "w"))
     evm.inspect("stack")
     print('-----Instructions-----')
     # code_trace = set_code_trace()
