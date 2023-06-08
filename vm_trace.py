@@ -1,304 +1,195 @@
-import json
-from collections import Counter, defaultdict
-from contextlib import contextmanager
-from functools import wraps
-from itertools import count, zip_longest
-from time import perf_counter
-from typing import Dict, List
+from __future__ import annotations
 
-import distributed
-import requests
-from ape import chain, networks
-from evm_trace import vmtrace
-from hexbytes import HexBytes
-from humanize import naturalsize
-from msgspec import DecodeError
-from rich import print
-from tqdm import tqdm
-from typer import Typer
+from typing import Any, Dict, Iterator, List, Optional, Type, Union
 
-app = Typer(pretty_exceptions_show_locals=False)
+from eth.vm.memory import Memory
+from eth.vm.stack import Stack
+from eth_utils import to_checksum_address
+from ethpm_types import HexBytes
+from msgspec import Struct
+from msgspec.json import Decoder
 
-
-@contextmanager
-def timed(label):
-    start = perf_counter()
-    yield
-    print(f"[yellow]{label} took [bold]{perf_counter() - start:.3f}s")
-
-
-def mainnet(f):
-    @wraps(f)
-    def decorator(*args, **kwds):
-        with networks.ethereum.mainnet.use_default_provider():
-        #with networks.ethereum.mainnet.use_provider("infura"):
-            return f(*args, **kwds)
-
-    return decorator
+# opcodes grouped by the number of items they pop from the stack
+# fmt: off
+POP_OPCODES = {
+    1: ["EXTCODEHASH", "ISZERO", "NOT", "BALANCE", "CALLDATALOAD", "EXTCODESIZE", "BLOCKHASH", "POP", "MLOAD", "SLOAD", "JUMP", "SELFDESTRUCT"],  # noqa: E501
+    2: ["SHL", "SHR", "SAR", "REVERT", "ADD", "MUL", "SUB", "DIV", "SDIV", "MOD", "SMOD", "EXP", "SIGNEXTEND", "LT", "GT", "SLT", "SGT", "EQ", "AND", "XOR", "OR", "BYTE", "SHA3", "MSTORE", "MSTORE8", "SSTORE", "JUMPI", "RETURN"],  # noqa: E501
+    3: ["RETURNDATACOPY", "ADDMOD", "MULMOD", "CALLDATACOPY", "CODECOPY", "CREATE"],
+    4: ["CREATE2", "EXTCODECOPY"],
+    6: ["STATICCALL", "DELEGATECALL"],
+    7: ["CALL", "CALLCODE"]
+}
+# fmt: on
+POPCODES = {op: n for n, opcodes in POP_OPCODES.items() for op in opcodes}
+POPCODES.update({f"LOG{n}": n + 2 for n in range(0, 5)})
+POPCODES.update({f"SWAP{i}": i + 1 for i in range(1, 17)})
+POPCODES.update({f"DUP{i}": i for i in range(1, 17)})
 
 
-class Measure:
-    def __init__(self, label, total=1):
-        self.label = label
-        self.total = total
+class uint256(int):
+    pass
 
-    def __enter__(self):
-        self.start = perf_counter()
-        return self
 
-    @property
-    def elapsed(self):
-        return perf_counter() - self.start
+class VMTrace(Struct):
+    code: HexBytes
+    """The code to be executed."""
+    ops: List[VMOperation]
+    """The operations executed."""
 
-    @property
-    def rate(self):
-        return self.total / self.elapsed
 
-    def __exit__(self, *args):
-        elapsed = perf_counter() - self.start
-        print(
-            f"[yellow]{self.label} {self.total:,d} took [bold]{elapsed:.3f}s ({self.rate:,.2f}/s)"
+class VMOperation(Struct):
+    pc: int
+    """The program counter."""
+    cost: int
+    """The gas cost for this instruction."""
+    ex: Optional[VMExecutedOperation]
+    """Information concerning the execution of the operation."""
+    sub: Optional[VMTrace]
+    """Subordinate trace of the CALL/CREATE if applicable."""
+    op: str
+    """Opcode that is being called."""
+    idx: str
+    """Index in the tree."""
+
+
+class VMExecutedOperation(Struct):
+    used: int
+    """The amount of remaining gas."""
+    push: List[HexBytes]
+    """The stack item placed, if any."""
+    mem: Optional[MemoryDiff]
+    """If altered, the memory delta."""
+    store: Optional[StorageDiff]
+    """The altered storage value, if any."""
+
+
+class MemoryDiff(Struct):
+    off: int
+    """Offset into memory the change begins."""
+    data: HexBytes
+    """The changed data."""
+
+
+class StorageDiff(Struct):
+    key: uint256
+    """Which key in storage is changed."""
+    val: uint256
+    """What the value has been changed to."""
+
+
+class VMTraceFrame(Struct):
+    """
+    A synthetic trace frame representing the state at a step of execution.
+    """
+
+    address: str
+    pc: int
+    op: str
+    depth: int
+    stack: List[int]
+    memory: Union[bytes, memoryview]
+    storage: Dict[int, int]
+
+
+def to_address(value):
+    # clear the padding and expand to 32 bytes
+    return to_checksum_address(value[-20:].rjust(20, b"\x00"))
+
+
+def to_trace_frames(
+    trace: VMTrace,
+    depth: int = 1,
+    address: str = "",
+    copy_memory: bool = True,
+) -> Iterator[VMTraceFrame]:
+    """
+    Replays a VMTrace and yields trace frames at each step of the execution.
+    Can be used as a much faster drop-in replacement for Geth-style traces.
+
+    Args:
+        trace (VMTrace): A decoded trace from a `trace_` rpc.
+        depth (int): A depth of the call being processed. automatically populated.
+        address (str): The address of the contract being executed. auto populated
+            except the root call.
+        copy_memory (bool): Whether to copy memory when returning trace frames.
+            Disable for a speedup when dealing with traces using a large amount of memory.
+            when disabled, `VMTraceFrame.memory` becomes `memoryview` instead of `bytes`, which
+            works like a pointer at the memory `bytearray`. this means you must process the
+            frames immediately, otherwise you risk memory value mutating further into execution.
+
+    Returns:
+        Iterator[VMTraceFrame]: An iterator of synthetic traces which can be used as a drop-in
+        replacement for Geth-style traces. also contains the address of the current contract
+        context.
+    """
+    memory = Memory()
+    stack = Stack()
+    storage: Dict[int, int] = {}
+    call_address = ""
+    read_memory = memory.read_bytes if copy_memory else memory.read
+
+    for op in trace.ops:
+        if op.ex and op.ex.mem:
+            memory.extend(op.ex.mem.off, len(op.ex.mem.data))
+
+        # geth convention is to return after memory expansion, but before the operation is applied
+        yield VMTraceFrame(
+            address=address,
+            pc=op.pc,
+            op=op.op,
+            depth=depth,
+            stack=[val for _, val in stack.values],
+            memory=read_memory(0, len(memory)),
+            storage=storage.copy(),
         )
 
+        if op.op in ["CALL", "DELEGATECALL", "STATICCALL"]:
+            call_address = to_address(stack.values[-2][1])
 
-def request_raw(method, params) -> bytes:
-    with timed("fetch"):
-        resp = requests.post(
-            chain.provider.uri,  # type: ignore
-            #"https://mainnet.infura.io/v3/5686fde2cc35452880ee28546e391d3d",
-            json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
-        )
-    print(f"[yellow]size={naturalsize(len(resp.content))}")
-    return resp.content
+        if op.ex:
+            if op.ex.mem:
+                memory.write(op.ex.mem.off, len(op.ex.mem.data), op.ex.mem.data)
 
+            num_pop = POPCODES.get(op.op)
+            if num_pop:
+                stack.pop_any(num_pop)
 
-def trace_transaction(tx: str) -> vmtrace.VMTrace:
-    buffer = request_raw("trace_replayTransaction", [tx, ["vmTrace"]])
-    if json.loads(buffer)['error']:
-        print(f"ERROR: {json.loads(buffer)['error']}")
-        exit(1)
+            for item in op.ex.push:
+                stack.push_bytes(item)
 
-    with timed("decode"):
-        trace: vmtrace.VMTrace = vmtrace.from_rpc_response(buffer)
-    return trace
+            if op.ex.store:
+                storage[op.ex.store.key] = op.ex.store.val
 
-
-def trace_block(height: int) -> List[vmtrace.VMTrace]:
-    buffer = request_raw("trace_replayBlockTransactions", [hex(height), ["vmTrace"]])
-    with timed("decode"):
-        traces: List[vmtrace.VMTrace] = vmtrace.from_rpc_response(buffer)
-    print(f"[green]found traces={len(traces)}")
-    return traces
+        if op.sub:
+            yield from to_trace_frames(
+                op.sub, depth=depth + 1, address=call_address, copy_memory=copy_memory
+            )
 
 
-@app.command()
-@mainnet
-def trace(tx: str, verbose: bool = False, address: str = None):
-    with timed("total"):
-        trace = trace_transaction(tx)
-
-        with timed("replay"):
-            peak_mem: Dict[str, int] = defaultdict(int)
-            i = 0
-            t0 = perf_counter()
-            for i, frame in enumerate(
-                vmtrace.to_trace_frames(trace, address=address, copy_memory=False), 1
-            ):
-                peak_mem[frame.address] = max(
-                    peak_mem[frame.address], len(frame.memory)
-                )
-                if verbose:
-                    print(frame)
-            t1 = perf_counter()
-
-        print(f"[yellow]{i / (t1 - t0):,.2f} frames/s ({i:,d} frames)")
-
-    print("peak memory allocated")
-    print(dict(Counter(peak_mem).most_common()))
+class RPCResponse(Struct):
+    result: Union[RPCTraceResult, List[RPCTraceResult]]
 
 
-@app.command("compare")
-@mainnet
-def compare_methods(tx: str, verbose: bool = True, address: str = None):
-    # fetch a geth trace and compare with what we calculate from vmtrace
-    # exit at the first non-matching frame
-    # use `cast run --debug <tx>` for a similarly styled interactive debugger
-    vmtrace_frames = vmtrace.to_trace_frames(trace_transaction(tx), address=address)
-    reference_frames = chain.provider.get_transaction_trace(tx)
-    i = 0
-
-    for i, (a, b) in tqdm(enumerate(zip(vmtrace_frames, reference_frames))):
-        if (a.op, a.pc, a.depth) != (b.op, b.pc, b.depth):
-            print(f"[bold red]a: pc={a.pc} op={a.op} depth={a.depth}")
-            print(f"[bold red]b: pc={b.pc} op={b.op} depth={b.depth}")
-            raise ValueError("traced unaligned")
-
-        stack_a = a.stack
-        stack_b = b.stack
-
-        a_memory = a.memory
-        b_memory = b"".join(b.memory)
-        # geth sometimes add memory expansion out of nowhere
-        while len(b_memory) > len(a_memory):
-            if sum(b_memory[-32:]) == 0:
-                b_memory = b_memory[:-32]
-
-        failed = a.memory != b_memory or stack_a != stack_b
-
-        if failed or verbose:
-            if failed:
-                print("[red]failed after op")
-                # print(op)
-                print("[yellow]memory")
-                a_memory = [
-                    HexBytes(a.memory[s : s + 32]) for s in range(0, len(a.memory), 32)
-                ]
-                for word, (mem_a, mem_b) in enumerate(zip_longest(a_memory, b.memory)):
-                    color = "red" if mem_a != mem_b else "green"
-                    mem_a = mem_a.hex() if mem_a is not None else f'[dim]{"-"*66}[/]'
-                    mem_b = mem_b.hex() if mem_b is not None else f'[dim]{"-"*66}[/]'
-                    print(f"{hex(word * 32)[2:]:>4}| [{color}]{mem_a} {mem_b}")
-
-                print("[yellow]stack")
-                for n, (s_a, s_b) in enumerate(
-                    zip_longest(reversed(stack_a), reversed(stack_b))
-                ):
-                    color = "red" if s_a != s_b else "green"
-                    s_a = (
-                        s_a.rjust(32, b"\x00").hex()
-                        if s_a is not None
-                        else f"[dim]---[/]"
-                    )
-                    s_b = (
-                        s_b.rjust(32, b"\x00").hex()
-                        if s_b is not None
-                        else f"[dim]---[/]"
-                    )
-                    print(f"{hex(n)[2:]:>4}| [{color}]{s_a} {s_b}")
-
-            if failed:
-                print(f"[bold red]failed after {i} steps")
-                raise ValueError()
-
-    print(f"[bold green]all good, compared {i} frames")
+class RPCTraceResult(Struct):
+    trace: Optional[List]
+    vmTrace: VMTrace
+    stateDiff: Optional[Dict]
 
 
-@app.command()
-@mainnet
-def fuzz(compare: bool = True, blocks: int = 100, min_gas_limit: int = 1_000_000):
-    c = count(1)
-    f = open("compare-failed.txt", "at")
-    height = chain.blocks.height
-    for number in range(height - blocks, height):
-        block = chain.blocks[number]
-        print(f"[bold yellow]{block.number}")
-        for tx in block.transactions:
-            if (tx.gas_limit or 0) < min_gas_limit:
-                continue
-            tx_hash = tx.txn_hash.hex()
-            print(f"{next(c)}. {tx_hash}")
-            if compare:
-                with timed("compare"):
-                    try:
-                        compare_methods(tx_hash, verbose=True, address=tx.receiver)
-                    except (ValueError, DecodeError) as e:
-                        print(e)
-                        f.write(json.dumps({"tx": tx_hash, "error": str(e)}) + "\n")
-                        f.flush()
-            else:
-                trace(tx_hash, address=tx.receiver)
-
-    f.close()
+def dec_hook(type: Type, obj: Any) -> Any:
+    if type is uint256:
+        return uint256(obj, 16)
+    elif type is HexBytes:
+        return HexBytes(obj)
 
 
-@app.command()
-@mainnet
-def block_fuzz():
-    for height in range(chain.blocks.height, 0, -1):
-        print(height)
-        with timed("[red]total"):
-            traces = trace_block(height)
-
-            with Measure("replay") as measure:
-                t0 = perf_counter()
-                measure.total = 0
-                for trace in traces:
-                    for frame in vmtrace.to_trace_frames(trace, copy_memory=False):
-                        measure.total += 1
-
-
-class WorkerConnection(distributed.WorkerPlugin):
-    def setup(self, worker):
-        networks.ethereum.mainnet.use_default_provider().__enter__()
-        #networks.ethereum.mainnet.use_provider("infura")
-
-
-
-
-@app.command()
-@mainnet
-def bench(blocks: int = 10):
-    t0 = perf_counter()
-    f = open('bench.jsonl', 'wt')
-    for height in range(chain.blocks.height - blocks, chain.blocks.height):
-        print(height)
-        frames = 0
-        t1 = perf_counter()
-        traces = trace_block(height)
-        t2 = perf_counter()
-        for trace in traces:
-            for frame in vmtrace.to_trace_frames(trace, copy_memory=False):
-                frames += 1
-        t3 = perf_counter()
-
-        res = {'block': height, 'frames': frames, 'traces': len(traces), 'fetch': t2 - t1, 'replay': t3 - t2}
-        print(res)
-        f.write(json.dumps(res) + '\n')
-        f.flush()
-    
-    f.close()
-
-
-
-@app.command()
-def peak_memory(blocks: int = 10):
+def from_rpc_response(buffer: bytes) -> Union[VMTrace, List[VMTrace]]:
     """
-    Measure peak memory usage fetching multiple blocks in parallel with dask.
+    Decode structured data from a raw `trace_replayTransaction` or `trace_replayBlockTransactions`.
     """
-    cluster = distributed.LocalCluster(n_workers=16)
-    client = distributed.Client(cluster)
-    client.register_worker_plugin(WorkerConnection())
-    print(client.dashboard_link)
+    resp = Decoder(RPCResponse, dec_hook=dec_hook).decode(buffer)
 
-    with open("peak-memory.jsonl", "wt") as f:
-        with networks.ethereum.mainnet.use_default_provider():
-        #with networks.ethereum.mainnet.use_provider("infura"):
-            block_range = range(chain.blocks.height - blocks, chain.blocks.height)
-        for future in tqdm(client.map(measure_block_memory, block_range), total=blocks):
-            for result in future.result():
-                f.write(json.dumps(result) + "\n")
+    if isinstance(resp.result, list):
+        return [i.vmTrace for i in resp.result]
 
-
-def measure_block_memory(height):
-    print(f"[green]processing block {height}")
-    txs = [tx for tx in chain.blocks[height].transactions]
-    traces = trace_block(height)
-    results = []
-    for tx, trace in zip(txs, traces):
-        peak_mem: Dict[str, int] = defaultdict(int)
-        for frame in vmtrace.to_trace_frames(
-            trace, address=tx.receiver, copy_memory=False
-        ):
-            peak_mem[frame.address] = max(peak_mem[frame.address], len(frame.memory))
-        if peak_mem:
-            res = {
-                "block_number": height,
-                "tx": tx.txn_hash.hex(),
-                "peak_mem": dict(Counter(peak_mem).most_common()),
-            }
-            results.append(res)
-    return results
-
-
-if __name__ == "__main__":
-    app()
+    return resp.result.vmTrace
