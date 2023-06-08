@@ -72,13 +72,49 @@ modifies balances;
     assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
 }   
 """)
+                                
+    def boogie_gen(self, node):
+        boogie_code = self.postorder_traversal(node, 0) + ";\n"
+        boogie_code += "assume(tmp1);\n"
+        print(boogie_code)
+    
+    def postorder_traversal(self, node, tmp_var_count):
+        # children then parent
+        return_string = ""
+        if not node.children:
+            return str(node.value)
+        # return_string += "("
+        # for child in node.children:
+        #     return_string += self.postorder_traversal(child)
+        #     return_string += ","
+        # return_string += ")"
+        # return_string += str(node.value)
+        if node.value == "ISZERO":
+            tmp_var_count+=1
+            return_string += "tmp"+str(tmp_var_count)+":="
+            return_string += self.postorder_traversal(node.children[0], tmp_var_count) + "==0;\n"
+            print(return_string)
+        elif node.value == "SLOAD":
+            map_id = node.children[0].children[0]
+            map_key = node.children[0].children[1].children[1].children[1]
+            return_string += "tmp"+str(tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
+            print(return_string)
+        elif node.value == "LT":
+            return_string += "tmp?1:="+str(self.postorder_traversal(node.children[0], tmp_var_count))+";\n"
+            return_string += "tmp?2:="+str(self.postorder_traversal(node.children[1], tmp_var_count))+";\n"
+            return_string += "tmp?3:=tmp?1<tmp?2;\n"
+            print(return_string)
+
+        else:
+            return str(node)
+        return return_string
     def sym_exec(self, code_trace):
         self.write_preamble()
         for i in range(len(code_trace)):
-            if(code_trace[i]=="JUMPI"):
-                if(code_trace[i][0]+1 == code_trace[i+1][0]):
-                    continue
-            self.run_instruction(code_trace[i])
+            if(code_trace[i][1]=="JUMPI"):
+                self.run_instruction(code_trace[i], code_trace[i][0]+1 != code_trace[i+1][0])
+            else:
+                self.run_instruction(code_trace[i], None)
         self.write_epilogue()
         self._output_file.close()
         
@@ -101,7 +137,7 @@ modifies balances;
                 print('(', key, ',', self._storage[key], ')')
                 
 
-    def run_instruction(self, instr):
+    def run_instruction(self, instr, branch_taken):
         print(instr)
         PC=instr[0]
         opcode=instr[1]
@@ -110,10 +146,11 @@ modifies balances;
         if opcode=="JUMPDEST":
             pass
         elif opcode=="JUMPI":
-            node = SVT("ISNOTZERO")
-            node.children.append(self._stack[len(self._stack)-2])
-            self._stack.pop()
-            self._stack.append(node)
+            self.boogie_gen(self._stack[-2])
+            # node = SVT("ISNOTZERO")
+            # node.children.append(self._stack[len(self._stack)-2])
+            # self._stack.pop()
+            # self._stack.append(node)
         elif opcode=="MSTORE":
             mem_offset = self._stack.pop().value
             if not isinstance(mem_offset, int):
