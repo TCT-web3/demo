@@ -103,6 +103,8 @@ modifies balances;
             map_key = node.children[0].children[1].children[1].children[1]
             return_string += "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
         elif node.value == "LT":
+            return_string += self.postorder_traversal(node.children[0]) # need to save tmp var count
+            return_string += self.postorder_traversal(node.children[1]) # need to save tmp var count
             self._tmp_var_count+=1
             val1=self._tmp_var_count
             self._tmp_var_count+=1
@@ -111,6 +113,8 @@ modifies balances;
             return_string += "tmp"+str(val2)+":="+str(self.postorder_traversal(node.children[1]))+";\n"
             # return_string += "tmp"+str(val1)+":="+str(self.postorder_traversal(node.children[0]))+";\n"
             # return_string += "tmp"+str(val2)+":="+str(self.postorder_traversal(node.children[1]))+";\n"
+            self._tmp_var_count+=1
+            return_string += "tmp"+str(self._tmp_var_count)+":=tmp"+str(val1)+"<tmp"+str(val2)+";\n"
         elif node.value == "ADD":
             self._tmp_var_count+=1
             return_string+="tmp"+str(self._tmp_var_count)+":="+str(self.postorder_traversal(node.children[0]))+"+"+str(self.postorder_traversal(node.children[1]))+";\n"
