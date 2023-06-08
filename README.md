@@ -72,7 +72,11 @@ Before you run, you have to make sure you run a Geth node on local machine.
 - [1] Install Ethereum Client (Geth): https://geth.ethereum.org/docs/getting-started/installing-geth
 - [2] Run a Local Ethereum Node: Once you have installed an Ethereum client, you need to run it to create a local blockchain. The specific command may vary depending on the client you are using. For example, if you are using Geth, you can run the following command to start a local node:
     ```shell
-    geth --syncmode "full" --http --http.api eth,web3,personal --http.addr "localhost" --http.port "8545"
+    geth --syncmode "full" --http --http.api eth,web3,debug --http.addr "localhost" --http.port "8545" console
+    debug.traceTransaction("0x241bf4e3ea3edf32eff7257486a774430e600d5aae6340e70ebf44a9e51ca2e0")
+
+    erigon --http --http.api eth,web3,debug --http.addr "localhost" --http.port "8545"
+    debug.trace_replayTransaction("0x241bf4e3ea3edf32eff7257486a774430e600d5aae6340e70ebf44a9e51ca2e0")
     ```
 - [3] Connect to Localhost Provider by running `python3 web3_check.py`. It should return True. If False, return to check if you install Geth correctly.
 
