@@ -109,8 +109,8 @@ modifies balances;
             val2=self._tmp_var_count
             return_string += "tmp"+str(val1)+":="+str(self.postorder_traversal(node.children[0]))+";\n"
             return_string += "tmp"+str(val2)+":="+str(self.postorder_traversal(node.children[1]))+";\n"
-            self._tmp_var_count+=1
-            return_string += "tmp"+str(self._tmp_var_count)+":=tmp"+str(val1)+"<tmp"+str(val2)+";\n"
+            # return_string += "tmp"+str(val1)+":="+str(self.postorder_traversal(node.children[0]))+";\n"
+            # return_string += "tmp"+str(val2)+":="+str(self.postorder_traversal(node.children[1]))+";\n"
         elif node.value == "ADD":
             self._tmp_var_count+=1
             return_string+="tmp"+str(self._tmp_var_count)+":="+str(self.postorder_traversal(node.children[0]))+"+"+str(self.postorder_traversal(node.children[1]))+";\n"
