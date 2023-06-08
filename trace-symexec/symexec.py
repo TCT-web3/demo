@@ -109,8 +109,6 @@ modifies balances;
             val1=self._tmp_var_count
             self._tmp_var_count+=1
             val2=self._tmp_var_count
-            return_string += "tmp"+str(val1)+":="+str(self.postorder_traversal(node.children[0]))+";\n"
-            return_string += "tmp"+str(val2)+":="+str(self.postorder_traversal(node.children[1]))+";\n"
             # return_string += "tmp"+str(val1)+":="+str(self.postorder_traversal(node.children[0]))+";\n"
             # return_string += "tmp"+str(val2)+":="+str(self.postorder_traversal(node.children[1]))+";\n"
             self._tmp_var_count+=1
