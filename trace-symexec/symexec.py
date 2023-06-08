@@ -132,8 +132,9 @@ modifies balances;
             print("SSTORE")
         elif opcode=="SLOAD":
             self.inspect("storage")
-            key = self._stack.pop()
-            self._stack.append(SVT(self._storage.get(key)))            
+            node = SVT("SLOAD")
+            node.children.append(self._stack.pop())
+            self._stack.append(node)
         elif opcode=="PC":
             self._stack.append(SVT(PC))
         elif opcode.startswith("PUSH"):
