@@ -26,6 +26,7 @@ class EVM:
         self._storage = storage
         self._memory = memory
         self._output_file = output_file
+        self._tmp_var_count = 0
     
     def write_preamble(self):
         self._output_file.write("""type address;
@@ -74,11 +75,12 @@ modifies balances;
 """)
                                 
     def boogie_gen(self, node):
-        boogie_code = self.postorder_traversal(node, 0) + ";\n"
-        boogie_code += "assume(tmp1);\n"
+        self.inspect("stack")
+        boogie_code = self.postorder_traversal(node)
+        boogie_code += "assume(tmp"+str(self._tmp_var_count)+");\n"
         print(boogie_code)
     
-    def postorder_traversal(self, node, tmp_var_count):
+    def postorder_traversal(self, node):
         # children then parent
         return_string = ""
         if not node.children:
@@ -90,20 +92,28 @@ modifies balances;
         # return_string += ")"
         # return_string += str(node.value)
         if node.value == "ISZERO":
-            tmp_var_count+=1
-            return_string += "tmp"+str(tmp_var_count)+":="
-            return_string += self.postorder_traversal(node.children[0], tmp_var_count) + "==0;\n"
-            print(return_string)
+            # return_string += "tmp"+str(self._tmp_var_count)+":="
+            return_string += self.postorder_traversal(node.children[0]) # + "==0;\n"
+            val1=self._tmp_var_count
+            self._tmp_var_count+=1
+            return_string += "tmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==0;\n"
         elif node.value == "SLOAD":
+            self._tmp_var_count+=1
             map_id = node.children[0].children[0]
             map_key = node.children[0].children[1].children[1].children[1]
-            return_string += "tmp"+str(tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
-            print(return_string)
+            return_string += "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
         elif node.value == "LT":
-            return_string += "tmp?1:="+str(self.postorder_traversal(node.children[0], tmp_var_count))+";\n"
-            return_string += "tmp?2:="+str(self.postorder_traversal(node.children[1], tmp_var_count))+";\n"
-            return_string += "tmp?3:=tmp?1<tmp?2;\n"
-            print(return_string)
+            self._tmp_var_count+=1
+            val1=self._tmp_var_count
+            self._tmp_var_count+=1
+            val2=self._tmp_var_count
+            return_string += "tmp"+str(val1)+":="+str(self.postorder_traversal(node.children[0]))+";\n"
+            return_string += "tmp"+str(val2)+":="+str(self.postorder_traversal(node.children[1]))+";\n"
+            self._tmp_var_count+=1
+            return_string += "tmp"+str(self._tmp_var_count)+":=tmp"+str(val1)+"<tmp"+str(val2)+";\n"
+        elif node.value == "ADD":
+            self._tmp_var_count+=1
+            return_string+="tmp"+str(self._tmp_var_count)+":="+str(self.postorder_traversal(node.children[0]))+"+"+str(self.postorder_traversal(node.children[1]))+";\n"
 
         else:
             return str(node)
