@@ -143,7 +143,7 @@ modifies balances;
         opcode=instr[1]
         operand=instr[2]
         
-        if opcode=="JUMPDEST":
+        if opcode=="JUMPDEST" or opcode=="JUMP":
             pass
         elif opcode=="JUMPI":
             self.boogie_gen(self._stack[-2])
@@ -176,6 +176,12 @@ modifies balances;
             self._stack.append(SVT(PC))
         elif opcode.startswith("PUSH"):
             self._stack.append(SVT(operand))
+        elif opcode.startswith("POP"):
+            self._stack.pop()
+        elif opcode.startswith("CALLER"):
+            self._stack.append(SVT("caller address")) 
+        elif opcode.startswith("ORIGIN"):
+            self._stack.append(SVT("origination address"))
         elif opcode.startswith("DUP"):
             # position=int(opcode[len("DUP")]) ## include cases such as `DUP16`
             position=int(re.search('[0-9]+', opcode)[0])
@@ -190,7 +196,7 @@ modifies balances;
             node = SVT(opcode)
             node.children.append(self._stack.pop())
             self._stack.append(node)
-        elif opcode=="ADD" or opcode=="AND" or opcode=="LT" or opcode=="GT":
+        elif opcode=="ADD" or opcode=="AND" or opcode=="LT" or opcode=="GT" or opcode=="SUB":
             if isinstance(self._stack[-1].value, int) and isinstance(self._stack[-2].value, int):
                 if opcode == "ADD":
                     node = SVT(self._stack.pop().value + self._stack.pop().value)
