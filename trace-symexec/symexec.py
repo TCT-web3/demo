@@ -20,17 +20,21 @@ class SVT:
         return ret
 
 
+
 class EVM:
-    def __init__(self, stack, storage, memory, output_file):  
+
+    def __init__(self, stack, storage, memory, output_file, final_path, final_vars):  
         self._stack = stack  
         self._storage = storage
         self._memory = memory
         self._output_file = output_file
         self._tmp_var_count = 0
+        self._final_path = final_path
+        self._final_vars = final_vars
     
     def write_preamble(self):
         self._output_file.write("""type address;
-type uint256 = int;>
+type uint256 = int;
 var totalSupply: uint256;
 const TwoE16 : uint256;
 axiom TwoE16 == 65536; 
@@ -81,6 +85,15 @@ modifies balances;
     assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
 }   
 """)
+
+    def write_vars(self):
+        for var in self._final_vars:
+            self._output_file.write(var+"\n")
+
+    def write_paths(self):
+        for path in self._final_path:
+            self._output_file.write(path)
+
     def find_mapID(self, node):
         if node.value == "MapElement":
             # print("map_id: ", node.children[0])
@@ -101,6 +114,7 @@ modifies balances;
     def boogie_gen(self, node):
         self.inspect("stack")
         self._output_file.write("\tassume("+str(self.postorder_traversal(node))+");\n")
+
     
 
     def find_key(self, node):
@@ -133,7 +147,9 @@ modifies balances;
             return_string =  "tmp" + str(self._tmp_var_count)
             # print_string = "tmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==0;\n"
             print_string = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
-            self._output_file.write(print_string)
+            self._final_vars.append("\tvar " + return_string + ": bool;")
+            self._final_path.append(print_string)
+            # self._output_file.write(print_string)
         elif node.value == "SLOAD":
             self._tmp_var_count+=1
             # map_id = node.children[0].children[0]
@@ -144,36 +160,44 @@ modifies balances;
 
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
-            self._output_file.write(print_string)   
+            self._final_vars.append("\tvar " + return_string + ": uint256;")
+            self._final_path.append(print_string)
+            # self._output_file.write(print_string)   
         elif node.value == "LT":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "\ttmp"+str(self._tmp_var_count)+":="+str(val1)+"<"+str(val2)+";\n"
-            self._output_file.write(print_string)
+            self._final_vars.append("\tvar " + return_string + ": bool;")
+            self._final_path.append(print_string)
+            # self._output_file.write(print_string)
         elif node.value == "ADD":
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
-            self._output_file.write(print_string)
+            self._final_vars.append("\tvar " + return_string + ": uint256;")
+            self._final_path.append(print_string)
+            # self._output_file.write(print_string)
         elif node.value == "AND":    
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string ="\ttmp"+str(self._tmp_var_count)+":=("+str(self.postorder_traversal(node.children[0]))+"&"+str(self.postorder_traversal(node.children[1]))+");\n"
-            self._output_file.write(print_string)
+            self._final_vars.append("\tvar " + return_string + ": uint256;")
+            self._final_path.append(print_string)
+            # self._output_file.write(print_string)
         else:
             return str(node)
         return return_string
     def sym_exec(self, code_trace):
-        self.write_preamble()
+        # self.write_preamble()
         for i in range(len(code_trace)):
             if(code_trace[i][1]=="JUMPI"):
                 self.run_instruction(code_trace[i], code_trace[i][0]+1 != code_trace[i+1][0])
             else:
                 self.run_instruction(code_trace[i], None)
         self.write_epilogue()
-        self._output_file.close()
+        # self._output_file.close()
         
     def inspect(self, what):
         if what == "stack":
@@ -346,7 +370,10 @@ def read_path(filename):
 
       
 def main():
-    evm = EVM(set_stack(), set_storage(), [0] * 1000, open("output.bpl", "w"))
+    PATHS=[]
+    VARS=[]
+    evm = EVM(set_stack(), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS )
+    
     evm.inspect("stack")
     print('-----Instructions-----')
     # code_trace = set_code_trace()
@@ -356,6 +383,11 @@ def main():
     evm.inspect("stack")
     evm.inspect("memory")
     evm.inspect("storage")
+
+    evm.write_preamble()
+    evm.write_vars()
+    evm.write_paths()
+    evm.write_epilogue()
 
  
 if __name__ == '__main__':
