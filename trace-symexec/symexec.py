@@ -33,7 +33,7 @@ class EVM:
         self._final_vars = final_vars
     
     def write_preamble(self):
-        self._output_file.write("""type address;
+        self._output_file.write("""type address = int;
 type uint256 = int;
 var totalSupply: uint256;
 const TwoE16 : uint256;
@@ -53,6 +53,10 @@ axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b-Tw
 function evmsub(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b>=0 ==> sub(a,b) == a-b);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b<0 ==> sub(a,b) == a-b+TwoE256);
+
+function evmand(a, b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b);
+axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b-TwoE256);
 
 function sum(m: [address] uint256) returns (uint256);
 axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(m) - m[a] + v);
@@ -182,7 +186,7 @@ modifies balances;
         elif node.value == "AND":    
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string ="\ttmp"+str(self._tmp_var_count)+":=("+str(self.postorder_traversal(node.children[0]))+"&"+str(self.postorder_traversal(node.children[1]))+");\n"
+            print_string ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)
             # self._output_file.write(print_string)
