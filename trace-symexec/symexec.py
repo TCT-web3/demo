@@ -81,7 +81,7 @@ modifies balances;
             self.find_mapID(c)
 
     def boogie_gen_sstore(self, node0, node1):
-        self.inspect("stack")
+        # self.inspect("stack")
         print("gen sstore")
         rt="mapID"+str(self.find_mapID(node0))+"["+node1.value+"]:=" + str(self.postorder_traversal(node0))
         print(rt)
@@ -182,6 +182,8 @@ modifies balances;
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
+
+        self.inspect("stack")
         
         if opcode=="JUMPDEST" or opcode=="JUMP":
             pass
@@ -189,7 +191,7 @@ modifies balances;
             self.boogie_gen(self._stack[-2])
             # node = SVT("ISNOTZERO")
             # node.children.append(self._stack[len(self._stack)-2])
-            # self._stack.pop()
+            self._stack.pop()
             # self._stack.append(node)
         elif opcode=="MSTORE":
             mem_offset = self._stack.pop().value
@@ -202,6 +204,7 @@ modifies balances;
             self._memory[mem_offset] = value
             self.inspect("memory")
         elif opcode=="MLOAD":
+            self._stack.pop()
             self._stack.append(self._memory[len(self._stack)-1]) 
             # self.inspect("stack")
             self.inspect("memory")
@@ -252,7 +255,7 @@ modifies balances;
                 node.children.append(self._stack.pop())
                 node.children.append(self._stack.pop())
             self._stack.append(node)
-            self.inspect("stack")
+            # self.inspect("stack")
         elif opcode=="SHA3":
             if self._stack[-2].value == 64:
                 start_offset = self._stack.pop().value
@@ -263,7 +266,7 @@ modifies balances;
                 node.children.append(self._memory[start_offset//32]) # key in balances
                 self._stack.pop()
                 self._stack.append(node)
-            self.inspect("stack")
+            # self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
 
