@@ -75,17 +75,18 @@ modifies balances;
 """)
     def find_mapID(self, node):
         if node.value == "MapElement":
-            print("map_id: ", node.children[0])
+            # print("map_id: ", node.children[0])
             return node.children[0]
         for c in node.children:
             self.find_mapID(c)
 
     def boogie_gen_sstore(self, node0, node1):
-        # self.inspect("stack")
+        self.inspect("stack")
         print("gen sstore")
-        rt="mapID"+str(self.find_mapID(node0))+"["+node1.value+"]:=" + str(self.postorder_traversal(node0))
+        rt="mapID"+str(self.find_mapID(node0))+"["+str(node0.children[1])+"]:=" + str(self.postorder_traversal(node1))
+        self._output_file.write(rt)
         print(rt)
-        # self,_output_file.write("mapID"+self.find_mapID(node0)+"["+node1._value"]:=" + self.postorder_traversal(node0))
+        
         print("gen sstore")
 
                                 
@@ -95,6 +96,7 @@ modifies balances;
     
 
     def find_key(self, node):
+        # print(node.value)
         if not node.children:
             if isinstance(node.value, str):
                 return node.value # or self.postorder_traversal(node)
@@ -128,7 +130,9 @@ modifies balances;
             # map_id = node.children[0].children[0]
             map_id = self.find_mapID(node.children[0])
             # map_key = node.children[0].children[1].children[1].children[1]
-            map_key = self.find_key(node.children[0].children[1])
+            # map_key = self.find_key(node.children[0].children[1])
+            map_key = self.postorder_traversal(node.children[0].children[1])
+
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
             self._output_file.write(print_string)   
@@ -183,10 +187,9 @@ modifies balances;
         opcode=instr[1]
         operand=instr[2]
 
-        self.inspect("stack")
         
         if opcode=="JUMPDEST" or opcode=="JUMP":
-            pass
+            pass # pop() for JUMP?
         elif opcode=="JUMPI":
             self.boogie_gen(self._stack[-2])
             # node = SVT("ISNOTZERO")
@@ -269,6 +272,7 @@ modifies balances;
             # self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
+        self.inspect("stack")
 
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
@@ -322,6 +326,7 @@ def read_path(filename):
                 operand = None
             trace_node = (PC, operator, operand) 
             trace.append(trace_node)
+            # print(line)
             # print(trace_node)  
     inputfile.close()
     return trace
