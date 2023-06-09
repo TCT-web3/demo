@@ -30,7 +30,7 @@ class EVM:
     
     def write_preamble(self):
         self._output_file.write("""type address;
-type uint256 = int;
+type uint256 = int;>
 var totalSupply: uint256;
 const TwoE16 : uint256;
 axiom TwoE16 == 65536; 
@@ -114,7 +114,7 @@ modifies balances;
         elif node.value == "ADD":
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string ="tmp"+str(self._tmp_var_count)+":="+str(self.postorder_traversal(node.children[0]))+"+"+str(self.postorder_traversal(node.children[1]))+";\n"
+            print_string ="tmp"+str(self._tmp_var_count)+":=evmadd("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
             self._output_file.write(print_string)
 
         else:
@@ -191,9 +191,9 @@ modifies balances;
         elif opcode.startswith("POP"):
             self._stack.pop()
         elif opcode.startswith("CALLER"):
-            self._stack.append(SVT("caller address")) 
+            self._stack.append(SVT("msg.sender")) 
         elif opcode.startswith("ORIGIN"):
-            self._stack.append(SVT("origination address"))
+            self._stack.append(SVT("tx.origin"))
         elif opcode.startswith("DUP"):
             # position=int(opcode[len("DUP")]) ## include cases such as `DUP16`
             position=int(re.search('[0-9]+', opcode)[0])
@@ -211,9 +211,7 @@ modifies balances;
         elif opcode=="ADD" or opcode=="AND" or opcode=="LT" or opcode=="GT" or opcode=="SUB":
             if isinstance(self._stack[-1].value, int) and isinstance(self._stack[-2].value, int):
                 if opcode == "ADD":
-                    node = SVT(self._stack.pop().value + self._stack.pop().value)
-                elif opcode == "AND":
-                    node = SVT(self._stack.pop().value & self._stack.pop().value)
+                    node = SVT((self._stack.pop().value + self._stack.pop().value)%2**256)
             else:
                 node = SVT(opcode)
                 node.children.append(self._stack.pop())
