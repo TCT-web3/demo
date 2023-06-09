@@ -1,5 +1,5 @@
 type address;
-type uint256 = int;
+type uint256 = int;>
 var totalSupply: uint256;
 const TwoE16 : uint256;
 axiom TwoE16 == 65536; 
@@ -35,16 +35,10 @@ modifies balances;
     assume (sum(balances) == totalSupply);
     assume (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);            
 tmp1:=mapID2[_from];
-tmp2:=_fee+_value;
+tmp2:=evmadd(_fee,_value);
 tmp3:=tmp1<tmp2;
 tmp4:=tmp3==0;
 assume(tmp4);
-tmp6:=mapID2[_fee];
-tmp5:=tmp6+0;
-tmp7:=mapID2[_fee];
-tmp8:=tmp5<tmp7;
-tmp9:=tmp8==0;
-assume(tmp9);
 	
     assert (sum(balances) == totalSupply);         
     assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);

@@ -78,6 +78,9 @@ modifies balances;
         self.inspect("stack")
         self._output_file.write("assume("+str(self.postorder_traversal(node))+");\n")
     
+    def find_key(self, node):
+        
+
     def postorder_traversal(self, node):
         # children then parent
         return_string = ""
@@ -100,7 +103,8 @@ modifies balances;
         elif node.value == "SLOAD":
             self._tmp_var_count+=1
             map_id = node.children[0].children[0]
-            map_key = node.children[0].children[1].children[1].children[1]
+            # map_key = node.children[0].children[1].children[1].children[1]
+            map_key = self.find_key(node.children[0].children[1])
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
             self._output_file.write(print_string)
@@ -212,6 +216,10 @@ modifies balances;
             if isinstance(self._stack[-1].value, int) and isinstance(self._stack[-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stack.pop().value + self._stack.pop().value)%2**256)
+                elif opcode == "AND":
+                    node = SVT((self._stack.pop().value & self._stack.pop().value)%2**256) 
+                elif opecode == "SUB":
+                    node = SVT((self._stack.pop().value - self._stack.pop().value)%2**256)       
             else:
                 node = SVT(opcode)
                 node.children.append(self._stack.pop())
