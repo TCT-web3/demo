@@ -39,7 +39,20 @@ tmp2:=evmadd(_fee,_value);
 tmp3:=tmp1<tmp2;
 tmp4:=tmp3==0;
 assume(tmp4);
-	
-    assert (sum(balances) == totalSupply);         
-    assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
-}   
+tmp6:=mapID2[_fee];
+tmp5:=evmadd(tmp6,0);
+tmp7:=mapID2[_fee];
+tmp8:=tmp5<tmp7;
+tmp9:=tmp8==0;
+assume(tmp9);
+tmp11:=mapID2[msg.sender];
+tmp13:=mapID2[_fee];
+tmp12:=evmadd(tmp13,0);
+tmp14:=mapID2[_fee];
+tmp15:=tmp12<tmp14;
+tmp16:=tmp15==0;
+tmp10:=evmadd(tmp11,tmp16);
+tmp17:=mapID2[msg.sender];
+tmp18:=tmp10<tmp17;
+tmp19:=tmp18==0;
+assume(tmp19);

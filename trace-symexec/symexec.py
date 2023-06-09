@@ -73,13 +73,16 @@ modifies balances;
     assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
 }   
 """)
+
+    def boogie_gen_sstore(self, node0, node1):
+        print("gen sstore")
                                 
     def boogie_gen(self, node):
         self.inspect("stack")
         self._output_file.write("assume("+str(self.postorder_traversal(node))+");\n")
     
-    def find_key(self, node):
-        
+    # def find_key(self, node):
+
 
     def postorder_traversal(self, node):
         # children then parent
@@ -103,11 +106,18 @@ modifies balances;
         elif node.value == "SLOAD":
             self._tmp_var_count+=1
             map_id = node.children[0].children[0]
-            # map_key = node.children[0].children[1].children[1].children[1]
-            map_key = self.find_key(node.children[0].children[1])
+            map_key = node.children[0].children[1].children[1].children[1]
+            # map_key = self.find_key(node.children[0].children[1])
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
             self._output_file.write(print_string)
+        elif node.value == "SSTORE":
+            self._tmp_var_count+=1
+            map_id = node.children[0].children[0]
+            map_key = self.find_key(node.children[0].children[1])
+            return_string =  "tmp" + str(self._tmp_var_count)
+            print_string = "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
+            self._output_file.write(print_string)    
         elif node.value == "LT":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
@@ -182,7 +192,10 @@ modifies balances;
             # self.inspect("stack")
             self.inspect("memory")
         elif opcode=="SSTORE":
-            print("SSTORE")
+            node = SVT("SSTORE")
+            node.children.append(self._stack[-1])
+            node.children.append(self._stack[-2])
+            boogie_gen_sstore(self._stack.pop(), self._stack.pop())
         elif opcode=="SLOAD":
             self.inspect("storage")
             node = SVT("SLOAD")
