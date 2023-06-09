@@ -73,9 +73,13 @@ modifies balances;
     assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
 }   
 """)
+    def find_mapID(self, node):
+        return 0
 
     def boogie_gen_sstore(self, node0, node1):
+        self
         print("gen sstore")
+
                                 
     def boogie_gen(self, node):
         self.inspect("stack")
@@ -240,7 +244,7 @@ modifies balances;
                     node = SVT((self._stack.pop().value + self._stack.pop().value)%2**256)
                 elif opcode == "AND":
                     node = SVT((self._stack.pop().value & self._stack.pop().value)%2**256) 
-                elif opecode == "SUB":
+                elif opcode == "SUB":
                     node = SVT((self._stack.pop().value - self._stack.pop().value)%2**256)       
             else:
                 node = SVT(opcode)
