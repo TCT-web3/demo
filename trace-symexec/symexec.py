@@ -224,6 +224,8 @@ modifies balances;
             if isinstance(self._stack[-1].value, int) and isinstance(self._stack[-2].value, int):
                 if opcode == "ADD":
                     node = SVT(self._stack.pop().value + self._stack.pop().value)
+                elif opcode == "AND":
+                    node = SVT(self._stack.pop().value & self._stack.pop().value)
             else:
                 node = SVT(opcode)
                 node.children.append(self._stack.pop())
