@@ -76,10 +76,7 @@ modifies balances;
                                 
     def boogie_gen(self, node):
         self.inspect("stack")
-        # boogie_code = self.postorder_traversal(node)
-        # boogie_code += "assume(tmp"+str(self._tmp_var_count)+");\n"
         self._output_file.write("assume("+str(self.postorder_traversal(node))+");\n")
-        # print(boogie_code)
     
     def postorder_traversal(self, node):
         # children then parent
@@ -98,7 +95,6 @@ modifies balances;
             val1=self._tmp_var_count
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            
             print_string = "tmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==0;\n"
             self._output_file.write(print_string)
         elif node.value == "SLOAD":
@@ -109,16 +105,8 @@ modifies balances;
             print_string = "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
             self._output_file.write(print_string)
         elif node.value == "LT":
-            # return_string += self.postorder_traversal(node.children[0]) # need to save tmp var count
-            # return_string += self.postorder_traversal(node.children[1]) # need to save tmp var count
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
-            # self._tmp_var_count+=1
-            # val1=self._tmp_var_count
-            # self._tmp_var_count+=1
-            # val2=self._tmp_var_count
-            # return_string += "tmp"+str(val1)+":="+str(self.postorder_traversal(node.children[0]))+";\n"
-            # return_string += "tmp"+str(val2)+":="+str(self.postorder_traversal(node.children[1]))+";\n"
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "tmp"+str(self._tmp_var_count)+":="+str(val1)+"<"+str(val2)+";\n"
@@ -306,7 +294,8 @@ def main():
     evm.inspect("stack")
     print('-----Instructions-----')
     # code_trace = set_code_trace()
-    code_trace = read_path("trace.txt")
+    # code_trace = read_path("trace.txt")
+    code_trace = read_path("test.txt")
     evm.sym_exec(code_trace)
     evm.inspect("stack")
     evm.inspect("memory")
