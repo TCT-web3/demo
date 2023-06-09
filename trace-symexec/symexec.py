@@ -109,7 +109,8 @@ modifies balances;
         self.inspect("stack")
         print("gen sstore")
         rt="\tmapID"+str(self.find_mapID(node0))+"["+str(node0.children[1])+"]:=" + str(self.postorder_traversal(node1))
-        self._output_file.write(rt)
+        # self._output_file.write(rt)
+        self._final_path.append(rt)
         print(rt)
         
         print("gen sstore")
@@ -117,7 +118,8 @@ modifies balances;
                                 
     def boogie_gen(self, node):
         self.inspect("stack")
-        self._output_file.write("\tassume("+str(self.postorder_traversal(node))+");\n")
+        # self._output_file.write("\tassume("+str(self.postorder_traversal(node))+");\n")
+        self._final_path.append("\tassume("+str(self.postorder_traversal(node))+");\n")
 
     
 
@@ -200,7 +202,7 @@ modifies balances;
                 self.run_instruction(code_trace[i], code_trace[i][0]+1 != code_trace[i+1][0])
             else:
                 self.run_instruction(code_trace[i], None)
-        self.write_epilogue()
+        # self.write_epilogue()
         # self._output_file.close()
         
     def inspect(self, what):
