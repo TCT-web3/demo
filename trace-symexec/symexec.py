@@ -77,7 +77,11 @@ modifies balances;
         return 0
 
     def boogie_gen_sstore(self, node0, node1):
-        self
+        self.inspect("stack")
+        print("gen sstore")
+        rt="mapID"+str(self.find_mapID(node0))+"["+node1.value+"]:=" + str(self.postorder_traversal(node0))
+        print(rt)
+        # self,_output_file.write("mapID"+self.find_mapID(node0)+"["+node1._value"]:=" + self.postorder_traversal(node0))
         print("gen sstore")
 
                                 
@@ -123,14 +127,7 @@ modifies balances;
             map_key = self.find_key(node.children[0].children[1])
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
-            self._output_file.write(print_string)
-        elif node.value == "SSTORE":
-            self._tmp_var_count+=1
-            map_id = node.children[0].children[0]
-            map_key = self.find_key(node.children[0].children[1])
-            return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
-            self._output_file.write(print_string)    
+            self._output_file.write(print_string)   
         elif node.value == "LT":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
@@ -205,9 +202,9 @@ modifies balances;
             # self.inspect("stack")
             self.inspect("memory")
         elif opcode=="SSTORE":
-            node = SVT("SSTORE")
-            node.children.append(self._stack[-1])
-            node.children.append(self._stack[-2])
+            # node = SVT("SSTORE")
+            # node.children.append(self._stack[-1])
+            # node.children.append(self._stack[-2])
             self.boogie_gen_sstore(self._stack.pop(), self._stack.pop())
         elif opcode=="SLOAD":
             self.inspect("storage")
