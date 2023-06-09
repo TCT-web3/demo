@@ -72,17 +72,18 @@ modifies balances;
     var _to: address;
     var _value: uint256;
     var _fee: uint256;
-    var tmp1: uint256;
-    var tmp2: uint256;
-    var tmp3: uint256;
-
-    assume (0<=_value && _value<TwoE255+1 && 0<=_fee && _fee<TwoE255);           
-    assume (totalSupply<TwoE255);    
-    
-    assume (sum(balances) == totalSupply);
-    assume (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);            
+       
 """)
     
+    def write_invariants(self): 
+        self._output_file.write("""
+    assume (0<=_value && _value<TwoE255+1 && 0<=_fee && _fee<TwoE255);           
+    assume (totalSupply<TwoE255);    
+
+    assume (sum(balances) == totalSupply);
+    assume (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);  
+    """)
+
     def write_epilogue(self):
         self._output_file.write("""	
     assert (sum(balances) == totalSupply);         
@@ -157,13 +158,13 @@ modifies balances;
             self._final_path.append(print_string)
             # self._output_file.write(print_string)
         elif node.value == "SLOAD":
-            self._tmp_var_count+=1
+            
             # map_id = node.children[0].children[0]
             map_id = self.find_mapID(node.children[0])
             # map_key = node.children[0].children[1].children[1].children[1]
             # map_key = self.find_key(node.children[0].children[1])
             map_key = self.postorder_traversal(node.children[0].children[1])
-
+            self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
             self._final_vars.append("\tvar " + return_string + ": uint256;")

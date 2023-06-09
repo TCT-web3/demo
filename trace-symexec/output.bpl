@@ -37,24 +37,16 @@ modifies balances;
     var _to: address;
     var _value: uint256;
     var _fee: uint256;
-    var tmp1: uint256;
-    var tmp2: uint256;
-    var tmp3: uint256;
-
-    assume (0<=_value && _value<TwoE255+1 && 0<=_fee && _fee<TwoE255);           
-    assume (totalSupply<TwoE255);    
-    
-    assume (sum(balances) == totalSupply);
-    assume (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);            
-	var tmp3: uint256;
+       
 	var tmp2: uint256;
+	var tmp1: uint256;
 	var tmp3: uint256;
 	var tmp4: uint256;
 	var tmp5: bool;
 	var tmp6: bool;
-	tmp3:=evmand(1461501637330902918203684832716283019655932542975,_from);
-	tmp2:=evmand(1461501637330902918203684832716283019655932542975,tmp3);
-	tmp3:=mapID2[tmp2];
+	tmp2:=evmand(1461501637330902918203684832716283019655932542975,_from);
+	tmp1:=evmand(1461501637330902918203684832716283019655932542975,tmp2);
+	tmp3:=mapID2[tmp1];
 	tmp4:=evmadd(_fee,_value);
 	tmp5:=tmp3<tmp4;
 	tmp6:=!tmp5;
