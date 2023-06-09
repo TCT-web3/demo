@@ -74,7 +74,11 @@ modifies balances;
 }   
 """)
     def find_mapID(self, node):
-        return 0
+        if node.value == "MapElement":
+            print("map_id: ", node.children[0])
+            return node.children[0]
+        for c in node.children:
+            self.find_mapID(c)
 
     def boogie_gen_sstore(self, node0, node1):
         self
@@ -87,7 +91,6 @@ modifies balances;
     
 
     def find_key(self, node):
-        # what is the condition that should go here? 
         if not node.children:
             if isinstance(node.value, str):
                 return node.value # or self.postorder_traversal(node)
@@ -118,7 +121,8 @@ modifies balances;
             self._output_file.write(print_string)
         elif node.value == "SLOAD":
             self._tmp_var_count+=1
-            map_id = node.children[0].children[0]
+            # map_id = node.children[0].children[0]
+            map_id = self.find_mapID(node.children[0])
             # map_key = node.children[0].children[1].children[1].children[1]
             map_key = self.find_key(node.children[0].children[1])
             return_string =  "tmp" + str(self._tmp_var_count)
