@@ -30,7 +30,7 @@ class EVM:
     
     def write_preamble(self):
         self._output_file.write("""type address;
-type uint256 = int;>
+type uint256 = int;
 var totalSupply: uint256;
 const TwoE16 : uint256;
 axiom TwoE16 == 65536; 
