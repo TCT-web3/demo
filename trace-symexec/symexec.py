@@ -81,7 +81,16 @@ modifies balances;
         self.inspect("stack")
         self._output_file.write("assume("+str(self.postorder_traversal(node))+");\n")
     
-    # def find_key(self, node):
+
+    def find_key(self, node):
+        # what is the condition that should go here? 
+        if not node.children:
+            if isinstance(node.value, str):
+                return node.value
+        for c in node.children:
+            return_val = self.find_key(c)
+            if return_val:
+                return return_val
 
 
     def postorder_traversal(self, node):
