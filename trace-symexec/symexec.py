@@ -41,6 +41,14 @@ axiom TwoE255 == TwoE64 * TwoE64 * TwoE64 * TwoE16 * TwoE16 * TwoE16 *32768;
 const TwoE256 : int; 
 axiom TwoE256 == TwoE64 * TwoE64 * TwoE64 * TwoE64;
 
+function evmadd(a,b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b);
+axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b-TwoE256);
+
+
+function evmsub(a,b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b>=0 ==> sub(a,b) == a-b);
+axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b<0 ==> sub(a,b) == a-b+TwoE256);
 
 function sum(m: [address] uint256) returns (uint256);
 axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(m) - m[a] + v);
@@ -83,7 +91,7 @@ modifies balances;
     def boogie_gen_sstore(self, node0, node1):
         self.inspect("stack")
         print("gen sstore")
-        rt="mapID"+str(self.find_mapID(node0))+"["+str(node0.children[1])+"]:=" + str(self.postorder_traversal(node1))
+        rt="\tmapID"+str(self.find_mapID(node0))+"["+str(node0.children[1])+"]:=" + str(self.postorder_traversal(node1))
         self._output_file.write(rt)
         print(rt)
         
@@ -92,7 +100,7 @@ modifies balances;
                                 
     def boogie_gen(self, node):
         self.inspect("stack")
-        self._output_file.write("assume("+str(self.postorder_traversal(node))+");\n")
+        self._output_file.write("\tassume("+str(self.postorder_traversal(node))+");\n")
     
 
     def find_key(self, node):
@@ -123,7 +131,8 @@ modifies balances;
             val1=self._tmp_var_count
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "tmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==0;\n"
+            # print_string = "tmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==0;\n"
+            print_string = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
             self._output_file.write(print_string)
         elif node.value == "SLOAD":
             self._tmp_var_count+=1
@@ -134,21 +143,25 @@ modifies balances;
             map_key = self.postorder_traversal(node.children[0].children[1])
 
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
+            print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
             self._output_file.write(print_string)   
         elif node.value == "LT":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "tmp"+str(self._tmp_var_count)+":="+str(val1)+"<"+str(val2)+";\n"
+            print_string = "\ttmp"+str(self._tmp_var_count)+":="+str(val1)+"<"+str(val2)+";\n"
             self._output_file.write(print_string)
         elif node.value == "ADD":
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string ="tmp"+str(self._tmp_var_count)+":=evmadd("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
+            print_string ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
             self._output_file.write(print_string)
-
+        elif node.value == "AND":    
+            self._tmp_var_count+=1
+            return_string =  "tmp" + str(self._tmp_var_count)
+            print_string ="\ttmp"+str(self._tmp_var_count)+":=("+str(self.postorder_traversal(node.children[0]))+"&"+str(self.postorder_traversal(node.children[1]))+");\n"
+            self._output_file.write(print_string)
         else:
             return str(node)
         return return_string

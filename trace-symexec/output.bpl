@@ -10,6 +10,14 @@ axiom TwoE255 == TwoE64 * TwoE64 * TwoE64 * TwoE16 * TwoE16 * TwoE16 *32768;
 const TwoE256 : int; 
 axiom TwoE256 == TwoE64 * TwoE64 * TwoE64 * TwoE64;
 
+function evmadd(a,b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b);
+axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b-TwoE256);
+
+
+function evmsub(a,b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b>=0 ==> sub(a,b) == a-b);
+axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b<0 ==> sub(a,b) == a-b+TwoE256);
 
 function sum(m: [address] uint256) returns (uint256);
 axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(m) - m[a] + v);
@@ -34,35 +42,14 @@ modifies balances;
     
     assume (sum(balances) == totalSupply);
     assume (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);            
-tmp1:=mapID2[AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,_from))];
-tmp2:=evmadd(_fee,_value);
-tmp3:=tmp1<tmp2;
-tmp4:=tmp3==0;
-assume(tmp4);
-tmp6:=mapID2[AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,_value))];
-tmp5:=evmadd(tmp6,_fee);
-tmp7:=mapID2[AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,_value))];
-tmp8:=tmp5<tmp7;
-tmp9:=tmp8==0;
-assume(tmp9);
-tmp11:=mapID2[AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,msg.sender))];
-tmp12:=mapID2[AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,_from))];
-tmp13:=evmadd(_fee,_value);
-tmp14:=tmp12<tmp13;
-tmp15:=tmp14==0;
-tmp10:=evmadd(tmp11,tmp15);
-tmp16:=mapID2[AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,msg.sender))];
-tmp17:=tmp10<tmp16;
-tmp18:=tmp17==0;
-assume(tmp18);
-tmp20:=mapID2[AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,ISZERO(LT(SLOAD(MapElement(2,AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,_from)))),ADD(_fee,_value)))))];
-tmp22:=mapID2[AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,_value))];
-tmp21:=evmadd(tmp22,_fee);
-tmp23:=mapID2[AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,_value))];
-tmp24:=tmp21<tmp23;
-tmp25:=tmp24==0;
-tmp19:=evmadd(tmp20,tmp25);
-mapID2[AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,ISZERO(LT(SLOAD(MapElement(2,AND(1461501637330902918203684832716283019655932542975,AND(1461501637330902918203684832716283019655932542975,_from)))),ADD(_fee,_value)))))]:=tmp19	
+	tmp3:=(1461501637330902918203684832716283019655932542975&_from);
+	tmp2:=(1461501637330902918203684832716283019655932542975&tmp3);
+	tmp3:=mapID2[tmp2];
+	tmp4:=evmadd(_fee,_value);
+	tmp5:=tmp3<tmp4;
+	tmp6:=!tmp5;
+	assume(tmp6);
+	
     assert (sum(balances) == totalSupply);         
     assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
 }   
