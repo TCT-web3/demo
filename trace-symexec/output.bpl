@@ -56,3 +56,7 @@ tmp17:=mapID2[msg.sender];
 tmp18:=tmp10<tmp17;
 tmp19:=tmp18==0;
 assume(tmp19);
+	
+    assert (sum(balances) == totalSupply);         
+    assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
+}   

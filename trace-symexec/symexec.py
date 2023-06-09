@@ -86,7 +86,7 @@ modifies balances;
         # what is the condition that should go here? 
         if not node.children:
             if isinstance(node.value, str):
-                return node.value
+                return node.value # or self.postorder_traversal(node)
         for c in node.children:
             return_val = self.find_key(c)
             if return_val:
@@ -115,8 +115,8 @@ modifies balances;
         elif node.value == "SLOAD":
             self._tmp_var_count+=1
             map_id = node.children[0].children[0]
-            map_key = node.children[0].children[1].children[1].children[1]
-            # map_key = self.find_key(node.children[0].children[1])
+            # map_key = node.children[0].children[1].children[1].children[1]
+            map_key = self.find_key(node.children[0].children[1])
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "tmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
             self._output_file.write(print_string)
@@ -204,7 +204,7 @@ modifies balances;
             node = SVT("SSTORE")
             node.children.append(self._stack[-1])
             node.children.append(self._stack[-2])
-            boogie_gen_sstore(self._stack.pop(), self._stack.pop())
+            self.boogie_gen_sstore(self._stack.pop(), self._stack.pop())
         elif opcode=="SLOAD":
             self.inspect("storage")
             node = SVT("SLOAD")
