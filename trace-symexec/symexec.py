@@ -1,5 +1,6 @@
 import re
 import binascii
+import subprocess
 #SVT -- Symbolic value tree
 class SVT:
     def __init__(self, _value):
@@ -18,7 +19,6 @@ class SVT:
                 ret+=str(self.children[i])
         ret+=")"
         return ret
-
 
 
 class EVM:
@@ -113,7 +113,7 @@ modifies balances;
     def boogie_gen_sstore(self, node0, node1):
         # self.inspect("stack")
         # print("gen sstore")
-        map_id = self.find_mapID(node1.children[1])
+        map_id = self.find_key(node0.children[1])
         rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
         # rt="\tmapID"+str(self.find_mapID(node0))+"["+str(node0.children[1])+"]:=" + str(self.postorder_traversal(node1))
         # self._output_file.write(rt)
@@ -199,6 +199,13 @@ modifies balances;
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)
             # self._output_file.write(print_string)
+        elif node.value == "SUB":
+            self._tmp_var_count+=1
+            return_string =  "tmp" + str(self._tmp_var_count)
+            print_string ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
+            self._final_vars.append("\tvar " + return_string + ": uint256;")
+            self._final_path.append(print_string)
+            # self._output_file.write(print_string)    
         elif node.value == "AND":    
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
@@ -243,14 +250,16 @@ modifies balances;
         operand=instr[2]
 
         
-        if opcode=="JUMPDEST" or opcode=="JUMP":
-            pass # pop() for JUMP?
+        if opcode=="JUMPDEST":
+            pass
+        elif opcode=="JUMP":
+            self._stack.pop()
         elif opcode=="JUMPI":
             self.boogie_gen(self._stack[-2])
             # node = SVT("ISNOTZERO")
             # node.children.append(self._stack[len(self._stack)-2])
             self._stack.pop()
-            self._stack.pop() #???
+            self._stack.pop()
             # self._stack.append(node)
         elif opcode=="MSTORE":
             mem_offset = self._stack.pop().value
@@ -400,11 +409,12 @@ def main():
     print('-----Instructions-----')
     # code_trace = set_code_trace()
     # code_trace = read_path("trace.txt")
-    code_trace = read_path("test.txt")
+    # code_trace = read_path("test.txt")
+    code_trace = read_path("transferProxy_essential.txt")
     evm.sym_exec(code_trace)
-    # evm.inspect("stack")
-    # evm.inspect("memory")
-    # evm.inspect("storage")
+    evm.inspect("stack")
+    evm.inspect("memory")
+    evm.inspect("storage")
 
     evm.write_preamble()
     evm.write_vars()

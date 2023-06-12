@@ -56,6 +56,9 @@ modifies balances;
 	var tmp15: uint256;
 	var tmp18: uint256;
 	var tmp17: uint256;
+	var tmp20: uint256;
+	var tmp21: uint256;
+	var tmp19: uint256;
 
 
     assume (0<=_value && _value<TwoE255+1 && 0<=_fee && _fee<TwoE255);           
@@ -86,13 +89,16 @@ modifies balances;
 
 	tmp16:=mapID2[_to];
 	tmp15:=evmadd(tmp16,_value);
-	mapID2[None]:=tmp15
+	mapID2[_to]:=tmp15
 
 	tmp18:=mapID2[msg.sender];
 	tmp17:=evmadd(tmp18,_fee);
-	mapID2[None]:=tmp17
+	mapID2[msg.sender]:=tmp17
 
-	mapID2[None]:=SUB(SLOAD(MapElement(2,AND(fff,AND(fff,_from)))),ADD(_value,_fee))
+	tmp20:=mapID2[_from];
+	tmp21:=evmadd(_value,_fee);
+	tmp19:=evmsub(tmp20,tmp21);
+	mapID2[_from]:=tmp19
 
 	
 

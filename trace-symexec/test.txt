@@ -239,3 +239,6 @@ stack
 1777 POP - LINE 44
 1778 POP - LINE 44
 1779 POP - LINE 44
+1780 JUMP - LINE 44   the essentail computation basically ends here. The rest is the return.
+
+0295 JUMPDEST - LINE 34
