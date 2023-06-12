@@ -77,6 +77,7 @@ modifies balances;
     
     def write_invariants(self): 
         self._output_file.write("""
+
     assume (0<=_value && _value<TwoE255+1 && 0<=_fee && _fee<TwoE255);           
     assume (totalSupply<TwoE255);    
 
@@ -87,6 +88,7 @@ modifies balances;
 
     def write_epilogue(self):
         self._output_file.write("""	
+
     assert (sum(balances) == totalSupply);         
     assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
 
@@ -112,7 +114,7 @@ modifies balances;
         # self.inspect("stack")
         # print("gen sstore")
         map_id = self.find_mapID(node0.children[1])
-        rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))
+        rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
         # rt="\tmapID"+str(self.find_mapID(node0))+"["+str(node0.children[1])+"]:=" + str(self.postorder_traversal(node1))
         # self._output_file.write(rt)
         self._final_path.append(rt)
@@ -130,7 +132,7 @@ modifies balances;
     def find_key(self, node):
         # print(node.value)
         if not node.children:
-            if isinstance(node.value, str):
+            if isinstance(node.value, str) and not (node.value == 'fff'):
                 return node.value # or self.postorder_traversal(node)
         for c in node.children:
             return_val = self.find_key(c)
@@ -181,6 +183,15 @@ modifies balances;
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)
             # self._output_file.write(print_string)
+        elif node.value == "GT":
+            val1 = self.postorder_traversal(node.children[0])
+            val2 = self.postorder_traversal(node.children[1])
+            self._tmp_var_count+=1
+            return_string =  "tmp" + str(self._tmp_var_count)
+            print_string = "\ttmp"+str(self._tmp_var_count)+":="+str(val1)+">"+str(val2)+";\n"
+            self._final_vars.append("\tvar " + return_string + ": bool;")
+            self._final_path.append(print_string)
+            # self._output_file.write(print_string)    
         elif node.value == "ADD":
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
@@ -215,8 +226,9 @@ modifies balances;
         elif what == "memory":
             print("-----Memory-----")
             c=0
-            for i in range(4):
-                print('mem['+str(i)+'] ', self._memory[i])
+            offset = len(self._memory)%32
+            for i in range(1000%32):
+                print('mem['+str(c*32)+'] ', self._memory[i])
                 c=c+1
         elif what == "storage":
             print("-----Storage-----")
@@ -238,6 +250,7 @@ modifies balances;
             # node = SVT("ISNOTZERO")
             # node.children.append(self._stack[len(self._stack)-2])
             self._stack.pop()
+            self._stack.pop() #???
             # self._stack.append(node)
         elif opcode=="MSTORE":
             mem_offset = self._stack.pop().value
@@ -364,7 +377,10 @@ def read_path(filename):
             PC=int(instr[0])
             operator=instr[1]
             if(len(instr)>2):
-                operand=int('0x'+ instr[2], 16)
+                if 'fff' in str(instr[2]):
+                    operand = 'fff'
+                else:    
+                    operand=int('0x'+ instr[2], 16)
             else:  
                 operand = None
             trace_node = (PC, operator, operand) 
