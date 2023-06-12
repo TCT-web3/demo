@@ -82,12 +82,14 @@ modifies balances;
 
     assume (sum(balances) == totalSupply);
     assume (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);  
+
 """)
 
     def write_epilogue(self):
         self._output_file.write("""	
     assert (sum(balances) == totalSupply);         
     assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
+
 }   
 """)
 
@@ -107,20 +109,21 @@ modifies balances;
             self.find_mapID(c)
 
     def boogie_gen_sstore(self, node0, node1):
-        self.inspect("stack")
-        print("gen sstore")
-        rt="\tmapID"+str(self.find_mapID(node0))+"["+str(node0.children[1])+"]:=" + str(self.postorder_traversal(node1))
+        # self.inspect("stack")
+        # print("gen sstore")
+        map_id = self.find_mapID(node0.children[1])
+        rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))
+        # rt="\tmapID"+str(self.find_mapID(node0))+"["+str(node0.children[1])+"]:=" + str(self.postorder_traversal(node1))
         # self._output_file.write(rt)
         self._final_path.append(rt)
         print(rt)
-        
-        print("gen sstore")
+        # print("gen sstore")
 
                                 
     def boogie_gen(self, node):
-        self.inspect("stack")
+        # self.inspect("stack")
         # self._output_file.write("\tassume("+str(self.postorder_traversal(node))+");\n")
-        self._final_path.append("\tassume("+str(self.postorder_traversal(node))+");\n")
+        self._final_path.append("\tassume("+str(self.postorder_traversal(node))+");\n\n")
 
     
 
@@ -158,12 +161,11 @@ modifies balances;
             self._final_path.append(print_string)
             # self._output_file.write(print_string)
         elif node.value == "SLOAD":
-            
             # map_id = node.children[0].children[0]
             map_id = self.find_mapID(node.children[0])
             # map_key = node.children[0].children[1].children[1].children[1]
-            # map_key = self.find_key(node.children[0].children[1])
-            map_key = self.postorder_traversal(node.children[0].children[1])
+            map_key = self.find_key(node.children[0].children[1])
+            # map_key = self.postorder_traversal(node.children[0].children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
@@ -197,14 +199,11 @@ modifies balances;
             return str(node)
         return return_string
     def sym_exec(self, code_trace):
-        # self.write_preamble()
         for i in range(len(code_trace)):
             if(code_trace[i][1]=="JUMPI"):
                 self.run_instruction(code_trace[i], code_trace[i][0]+1 != code_trace[i+1][0])
             else:
                 self.run_instruction(code_trace[i], None)
-        # self.write_epilogue()
-        # self._output_file.close()
         
     def inspect(self, what):
         if what == "stack":
@@ -387,9 +386,9 @@ def main():
     # code_trace = read_path("trace.txt")
     code_trace = read_path("test.txt")
     evm.sym_exec(code_trace)
-    evm.inspect("stack")
-    evm.inspect("memory")
-    evm.inspect("storage")
+    # evm.inspect("stack")
+    # evm.inspect("memory")
+    # evm.inspect("storage")
 
     evm.write_preamble()
     evm.write_vars()
