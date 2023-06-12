@@ -105,19 +105,14 @@ modifies balances;
 
     def find_mapID(self, node):
         if node.value == "MapElement":
-            # print("map_id: ", node.children[0])
             return node.children[0]
         for c in node.children:
             self.find_mapID(c)
 
     def boogie_gen_sstore(self, node0, node1):
-        # self.inspect("stack")
-        # print("gen sstore")
         map_id = self.find_key(node0.children[1])
         rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
         self._final_path.append(rt)
-        print(rt)
-        # print("gen sstore")
 
                                 
     def boogie_gen(self, node):
