@@ -115,22 +115,17 @@ modifies balances;
         # print("gen sstore")
         map_id = self.find_key(node0.children[1])
         rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
-        # rt="\tmapID"+str(self.find_mapID(node0))+"["+str(node0.children[1])+"]:=" + str(self.postorder_traversal(node1))
-        # self._output_file.write(rt)
         self._final_path.append(rt)
         print(rt)
         # print("gen sstore")
 
                                 
     def boogie_gen(self, node):
-        # self.inspect("stack")
-        # self._output_file.write("\tassume("+str(self.postorder_traversal(node))+");\n")
         self._final_path.append("\tassume("+str(self.postorder_traversal(node))+");\n\n")
 
     
 
     def find_key(self, node):
-        # print(node.value)
         if not node.children:
             if isinstance(node.value, str) and not (node.value == 'fff'):
                 return node.value # or self.postorder_traversal(node)
@@ -163,11 +158,8 @@ modifies balances;
             self._final_path.append(print_string)
             # self._output_file.write(print_string)
         elif node.value == "SLOAD":
-            # map_id = node.children[0].children[0]
             map_id = self.find_mapID(node.children[0])
-            # map_key = node.children[0].children[1].children[1].children[1]
             map_key = self.find_key(node.children[0].children[1])
-            # map_key = self.postorder_traversal(node.children[0].children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
@@ -256,11 +248,8 @@ modifies balances;
             self._stack.pop()
         elif opcode=="JUMPI":
             self.boogie_gen(self._stack[-2])
-            # node = SVT("ISNOTZERO")
-            # node.children.append(self._stack[len(self._stack)-2])
             self._stack.pop()
             self._stack.pop()
-            # self._stack.append(node)
         elif opcode=="MSTORE":
             mem_offset = self._stack.pop().value
             if not isinstance(mem_offset, int):
@@ -277,9 +266,6 @@ modifies balances;
             # self.inspect("stack")
             self.inspect("memory")
         elif opcode=="SSTORE":
-            # node = SVT("SSTORE")
-            # node.children.append(self._stack[-1])
-            # node.children.append(self._stack[-2])
             self.boogie_gen_sstore(self._stack.pop(), self._stack.pop())
         elif opcode=="SLOAD":
             self.inspect("storage")
@@ -297,7 +283,6 @@ modifies balances;
         elif opcode.startswith("ORIGIN"):
             self._stack.append(SVT("tx.origin"))
         elif opcode.startswith("DUP"):
-            # position=int(opcode[len("DUP")]) ## include cases such as `DUP16`
             position=int(re.search('[0-9]+', opcode)[0])
             self._stack.append(self._stack[len(self._stack)-position]) 
         elif opcode.startswith("SWAP"):
@@ -305,7 +290,6 @@ modifies balances;
             dest = self._stack[len(self._stack)-position-1] 
             self._stack[len(self._stack)-position] = self._stack.pop()
             self._stack.append(dest)
-            # self._stack.append(self._stack[len(self._stack)-position]) 
         elif opcode=="ISZERO":
             node = SVT(opcode)
             node.children.append(self._stack.pop())
@@ -393,9 +377,7 @@ def read_path(filename):
             else:  
                 operand = None
             trace_node = (PC, operator, operand) 
-            trace.append(trace_node)
-            # print(line)
-            # print(trace_node)  
+            trace.append(trace_node) 
     inputfile.close()
     return trace
 
