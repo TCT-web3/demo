@@ -113,7 +113,7 @@ modifies balances;
     def boogie_gen_sstore(self, node0, node1):
         # self.inspect("stack")
         # print("gen sstore")
-        map_id = self.find_mapID(node0.children[1])
+        map_id = self.find_mapID(node1.children[1])
         rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
         # rt="\tmapID"+str(self.find_mapID(node0))+"["+str(node0.children[1])+"]:=" + str(self.postorder_traversal(node1))
         # self._output_file.write(rt)
