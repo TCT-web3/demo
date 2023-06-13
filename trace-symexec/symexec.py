@@ -1,4 +1,6 @@
 import re
+import os
+import json
 import binascii
 import subprocess
 #SVT -- Symbolic value tree
@@ -231,7 +233,7 @@ modifies balances;
                 
 
     def run_instruction(self, instr, branch_taken):
-        print(instr)
+        # print(instr)
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
@@ -377,6 +379,8 @@ def read_path(filename):
     inputfile.close()
     return trace
 
+  
+
       
 def main():
     PATHS=[]
@@ -384,22 +388,57 @@ def main():
     evm = EVM(set_stack(), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS )
     
 
+
     evm.inspect("stack")
-    print('-----Instructions-----')
+    print('(executing instructions...)')
+    # print('-----Instructions-----')
     # code_trace = set_code_trace()
     # code_trace = read_path("trace.txt")
     # code_trace = read_path("test.txt")
     code_trace = read_path("transferProxy_essential.txt")
     evm.sym_exec(code_trace)
     evm.inspect("stack")
-    evm.inspect("memory")
-    evm.inspect("storage")
+    # evm.inspect("memory")
+    # evm.inspect("storage")
 
+    # write to final Boogie output
     evm.write_preamble()
     evm.write_vars()
     evm.write_invariants()
     evm.write_paths()
     evm.write_epilogue()
+
+
+    # hard code this part in main for now
+    THEOREM_file = open("theorem.json", )
+    THEOREM = json.load(THEOREM_file)
+
+    SOLIDITY_NAME = ("MultiVulnToken.sol")
+    CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
+    FUNCTION_NAME = (re.search("::(.*)", THEOREM['entry-for-test']))[0][2:]
+
+    RUNTIME_BYTE_file = open('runtime_functions.json', )
+    RUNTIME_BYTE = json.load(RUNTIME_BYTE_file)
+    function_list = (RUNTIME_BYTE["contracts"][SOLIDITY_NAME+":"+CONTRACT_NAME]["function-debug-runtime"])
+    for func in function_list:
+        if (FUNCTION_NAME in func):
+            essential_start = (function_list[func]["entryPoint"])
+            break
+
+
+
+
+
+    print('-----Compilation Information-----')        
+    print('contract name:       ', CONTRACT_NAME)
+    print('function name:       ', FUNCTION_NAME)        
+    print('essential starts:    ', essential_start)        
+
+
+    # os.system('solc --combined-json function-debug-runtime --pretty-json MultiVulnToken.sol > runtime_functions.json')
+    # os.system('solc --storage-layout --pretty-json MultiVulnToken.sol > storage_layout.json')
+    # os.system('solc --hashes MultiVulnToken.sol > function_hash.txt')
+    # os.system('solc --abi --pretty-json MultiVulnToken.sol > abi.txt')
 
 
 
