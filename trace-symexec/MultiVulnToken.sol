@@ -27,7 +27,8 @@ abstract contract StandardToken is Token {
     mapping (address => uint256) balances;
 }
 
-/// @inheritdoc StandardToken
+/// @custom:tct invariant: forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply
+/// @custom:tct invariant: sum(balances) == totalSupply 
 contract MultiVulnToken is StandardToken {
     string public name = "Demo token with reentrancy issue, integer overflow and access control issue";
     constructor (uint256 initialSupply) {
