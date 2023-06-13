@@ -254,16 +254,16 @@ modifies balances;
             mem_offset //= 32
             value = self._stack.pop()
             self._memory[mem_offset] = value
-            self.inspect("memory")
+            # self.inspect("memory")
         elif opcode=="MLOAD":
             self._stack.pop()
             self._stack.append(self._memory[len(self._stack)-1]) 
             # self.inspect("stack")
-            self.inspect("memory")
+            # self.inspect("memory")
         elif opcode=="SSTORE":
             self.boogie_gen_sstore(self._stack.pop(), self._stack.pop())
         elif opcode=="SLOAD":
-            self.inspect("storage")
+            # self.inspect("storage")
             node = SVT("SLOAD")
             node.children.append(self._stack.pop())
             self._stack.append(node)
@@ -316,7 +316,8 @@ modifies balances;
             # self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
-        self.inspect("stack")
+
+        # self.inspect("stack")
 
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
@@ -332,7 +333,7 @@ def set_stack():
 
 def set_storage():
     return {
-        0: '0x5c9eb5d6a6c2c1b3efc52255c0b356f116f6f66d'
+        0: '0x00'
     } 
 
 
@@ -382,6 +383,7 @@ def main():
     VARS=[]
     evm = EVM(set_stack(), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS )
     
+
     evm.inspect("stack")
     print('-----Instructions-----')
     # code_trace = set_code_trace()
@@ -398,6 +400,8 @@ def main():
     evm.write_invariants()
     evm.write_paths()
     evm.write_epilogue()
+
+
 
  
 if __name__ == '__main__':
