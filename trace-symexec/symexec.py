@@ -386,9 +386,6 @@ def main():
     PATHS=[]
     VARS=[]
     evm = EVM(set_stack(), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS )
-    
-
-
     evm.inspect("stack")
     print('(executing instructions...)')
     # print('-----Instructions-----')
@@ -435,10 +432,10 @@ def main():
     print('essential starts:    ', essential_start)        
 
 
+
     # os.system('solc --combined-json function-debug-runtime --pretty-json MultiVulnToken.sol > runtime_functions.json')
     # os.system('solc --storage-layout --pretty-json MultiVulnToken.sol > storage_layout.json')
-    # os.system('solc --hashes MultiVulnToken.sol > function_hash.txt')
-    # os.system('solc --abi --pretty-json MultiVulnToken.sol > abi.txt')
+    os.system('solc --abi --pretty-json MultiVulnToken.sol > abi.txt')
 
 
 
