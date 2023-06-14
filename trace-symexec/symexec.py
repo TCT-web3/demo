@@ -499,12 +499,13 @@ def main():
     PRE=9999
     for i in range(0, len(lines)-1):
         if (lines[i+1][0:4] == (PRE+1)):
-            break
+            break            
         if (lines[i+1][0:4] == str(essential_start)):
             print(lines[i][0:4])
             # PRE=(int(lines[i][0:4]))
-            print(lines[i+1])
-    
+            TRACE_essential.write(lines[i+1]+"\n")
+        if (int(lines[i][0:4]) > int(essential_start)):
+            TRACE_essential.write(lines[i]+'\n')
     get_MAP("storage_layout.json")
       
 
