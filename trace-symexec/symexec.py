@@ -329,15 +329,48 @@ modifies balances;
 
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
-def set_stack():
-    return [
-    SVT("FourByteSelector"), 
-    SVT("SomethingIDontKnow"), 
-    SVT("_from"), 
-    SVT("_to"), 
-    SVT("_value"), 
-    SVT("_fee")
-    ]    
+def set_stack(file_name):
+    stack = [
+        SVT("FourByteSelector"), 
+        SVT("SomethingIDontKnow"), 
+    ]
+
+    file = open(file_name, 'r')
+    file.readline()
+    file_names = []
+    new_file = None
+    for line in file:
+        if line.startswith("======"):
+            # get name of contract
+            if new_file:
+                new_file.close()
+            line = line.rstrip("\n")
+            line = line.strip("======")
+            line = line.replace("MultiVulnToken.sol:", '')
+            line = line.strip()
+            new_name = line+".json"
+            new_file = open(new_name, 'w')
+            file_names.append(new_name)
+        elif line.startswith("Contract"):
+            continue
+        elif line != " ":
+            new_file.write(line)
+    new_file.close()
+    file.close()
+
+    # get the map
+    file = open("MultiVulnToken.json", 'r')
+    json_object = json.load(file)
+    
+    for o in json_object:
+        if "name" in o and o["name"] == "transferProxy":
+            for i in o["inputs"]:
+                stack.append(SVT(i["name"]))
+
+    for n in file_names:
+        os.remove(n)
+    
+    return stack
 
 def set_storage():
     return {
@@ -422,7 +455,7 @@ def main():
     PATHS=[]
     VARS=[]
     temp_MAP = {"2": "balance"}
-    evm = EVM(set_stack(), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS, temp_MAP)
+    evm = EVM(set_stack("abi.json"), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS, temp_MAP)
     evm.inspect("stack")
     print('(executing instructions...)')
     # print('-----Instructions-----')
