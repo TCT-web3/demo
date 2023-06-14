@@ -25,7 +25,7 @@ class SVT:
 
 class EVM:
 
-    def __init__(self, stack, storage, memory, output_file, final_path, final_vars):  
+    def __init__(self, stack, storage, memory, output_file, final_path, final_vars, storage_map):  
         self._stack = stack  
         self._storage = storage
         self._memory = memory
@@ -33,6 +33,8 @@ class EVM:
         self._tmp_var_count = 0
         self._final_path = final_path
         self._final_vars = final_vars
+
+        self._storage_map = storage_map
     
     def write_preamble(self):
         self._output_file.write("""type address = int;
@@ -113,7 +115,9 @@ modifies balances;
 
     def boogie_gen_sstore(self, node0, node1):
         map_id = self.find_key(node0.children[1])
-        rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
+
+        rt="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
+        # rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
         self._final_path.append(rt)
 
                                 
@@ -159,7 +163,9 @@ modifies balances;
             map_key = self.find_key(node.children[0].children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
+            # print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
+            print_string = "\ttemp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
+
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)
             # self._output_file.write(print_string)   
@@ -417,7 +423,8 @@ def get_MAP(file_name):
 def main():
     PATHS=[]
     VARS=[]
-    evm = EVM(set_stack(), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS )
+    temp_MAP = {"2": "balance"}
+    evm = EVM(set_stack(), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS, temp_MAP)
     evm.inspect("stack")
     print('(executing instructions...)')
     # print('-----Instructions-----')
