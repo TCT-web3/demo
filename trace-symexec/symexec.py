@@ -379,8 +379,40 @@ def read_path(filename):
     inputfile.close()
     return trace
 
-  
+# a function to get a list of JSON from a text file
+def get_jsons(file_name):
+    JSON_lst = []
+    inputfile = open(file_name, 'r')
+    Lines = inputfile.readlines()
+    JSON = ""
 
+    for line in Lines:
+
+        if line.strip().startswith('==') and (JSON != ""):
+            if (JSON.strip()==""):
+                continue
+            print(">>>>>>")
+            JSON = JSON + "}"
+            print(JSON)
+            # JSON_lst.append(json.loads(JSON.strip()))
+            # JSON_lst.append(JSON)
+            JSON_lst.append(json.loads(JSON))
+            JSON = ""
+            JSON = JSON + "{\"" + line.replace("=", "") + "\":"
+            continue
+
+
+            
+        if line.strip().startswith('Contract'):
+            continue
+        else: 
+            JSON = JSON + line
+
+    # print(JSON_lst)    
+  
+def get_MAP(file_name):
+
+    return {}
       
 def main():
     PATHS=[]
@@ -422,7 +454,11 @@ def main():
             essential_start = (function_list[func]["entryPoint"])
             break
 
+    get_MAP("storage_layout.json")
+    # get_jsons('abi.txt')        
 
+            
+            
 
 
 
@@ -434,7 +470,7 @@ def main():
 
 
     # os.system('solc --combined-json function-debug-runtime --pretty-json MultiVulnToken.sol > runtime_functions.json')
-    # os.system('solc --storage-layout --pretty-json MultiVulnToken.sol > storage_layout.json')
+    os.system('solc --storage-layout --pretty-json MultiVulnToken.sol > storage_layout.json')
     os.system('solc --abi --pretty-json MultiVulnToken.sol > abi.txt')
 
 
