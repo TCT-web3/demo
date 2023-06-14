@@ -492,6 +492,17 @@ def main():
             essential_start = (function_list[func]["entryPoint"])
             break
 
+    TRACE_file = open("trace.txt", "r")
+    TRACE_essential = open("essential.txt", "w")
+    lines = [line.rstrip() for line in TRACE_file]
+    PRE=9999
+    for i in range(0, len(lines)-1):
+        if (lines[i+1][0:4] == (PRE+1)):
+            break
+        if (lines[i+1][0:4] == str(essential_start)):
+            print(lines[i][0:4])
+            # PRE=(int(lines[i][0:4]))
+            print(lines[i+1])
     
     get_MAP("storage_layout.json")
       
