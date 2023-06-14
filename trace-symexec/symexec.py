@@ -387,8 +387,36 @@ def read_path(filename):
 
 # a function to get a list of JSON from a text file  
 def get_MAP(file_name):
+    file = open(file_name, 'r')
+    new_file = None
+    for line in file:
+        if line.startswith("======"):
+            # get name of contract
+            if new_file:
+                new_file.close()
+            line = line.rstrip("\n")
+            line = line.strip("======")
+            line = line.replace("MultiVulnToken.sol:", '')
+            line = line.strip()
+            new_file = open(line + ".json", 'w')
+        elif line.startswith("Contract Storage Layout:"):
+            continue
+        elif line != " ":
+            new_file.write(line)
+    new_file.close()
+    file.close()
 
-    return {}
+    # get the map
+    file = open("MultiVulnToken.json", 'r')
+    json_object = json.load(file)["storage"]
+    mapIDs = {}
+    
+    for o in json_object:
+        mapIDs[o["slot"]] = o["label"]
+    print(mapIDs)
+    os.remove("MultiVulnToken.json")
+
+    return mapIDs
       
 def main():
     PATHS=[]
