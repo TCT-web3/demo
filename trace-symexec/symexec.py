@@ -422,6 +422,7 @@ def read_path(filename):
 def get_MAP(file_name):
     file = open(file_name, 'r')
     new_file = None
+    file.readline()
     for line in file:
         if line.startswith("======"):
             # get name of contract
