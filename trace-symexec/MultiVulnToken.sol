@@ -58,7 +58,7 @@ contract MultiVulnToken is StandardToken {
         (success, ) = msg.sender.call(
             abi.encodeWithSignature("receiveNotification(uint256)", bal)
         );
-        require(success, "Failed to notify msg.sender");
+        require(success);
         balances[msg.sender] = 0;
     }
 }
@@ -84,25 +84,48 @@ contract reentrancy_attack {
     }
 }
 
+contract no_reentrancy_attack {
+    MultiVulnToken public multiVulnToken; 
+    address _to;
+    constructor (MultiVulnToken _multiVulnToken, address __to) 
+    {
+        multiVulnToken=_multiVulnToken;
+        _to = __to;
+    }
+    function receiveNotification(uint256) public { 
+        //nothing special
+    } 
+    function call_clear() public {
+        multiVulnToken.clear(_to);
+    }
+}
+
+
 contract Demo {
     MultiVulnToken MultiVulnTokenContractAddress;
 
     address attacker1Address = address(0x92349Ef835BA7Ea6590C3947Db6A11EeE1a90cFd); //just an arbitrary address
     reentrancy_attack attacker2Address1;
     address attacker2Address2 = address(0x0Ce8dAf9acbA5111C12B38420f848396eD71Cb3E); //just an arbitrary address
-    
+	no_reentrancy_attack benignUserAddress1;
+	address benignUserAddress2 = address(0x71C7656EC7ab88b098defB751B7401B5f6d8976F); //just an arbitrary address
+	
     constructor () {
         MultiVulnTokenContractAddress = new MultiVulnToken(1000);
         attacker2Address1 = new reentrancy_attack(MultiVulnTokenContractAddress,attacker2Address2);
-
-        //suppose attacker3Address1 has 5 tokens initially
-        MultiVulnTokenContractAddress.transferProxy(address(this), address(attacker2Address1),5,0
-                                      );
+	    benignUserAddress1 = new no_reentrancy_attack(MultiVulnTokenContractAddress,benignUserAddress2); 
+		
+        //suppose attacker2Address1 has 5 tokens initially
+        MultiVulnTokenContractAddress.transferProxy(address(this), address(attacker2Address1),5,0);
+  		
+		//suppose benignUserAddress has 5 tokens too
+        MultiVulnTokenContractAddress.transferProxy(address(this), address(benignUserAddress1),5,0);
     }
 
     function getBalanceOfAttacker1() view public returns (uint256){
         return MultiVulnTokenContractAddress.balanceOf(attacker1Address);
     }
+
     function attack1_int_overflow() public {
         MultiVulnTokenContractAddress.transferProxy(address(this), 
                                       attacker1Address,
@@ -117,5 +140,14 @@ contract Demo {
     }
     function attack2_reentrancy() public {
         attacker2Address1.attack();
+    }
+	
+	function getBenignUserBal() view public returns (uint256){
+        return MultiVulnTokenContractAddress.balanceOf(address(benignUserAddress1))
+            +  MultiVulnTokenContractAddress.balanceOf(address(benignUserAddress2));
+    }
+	
+	function no_reentrancy() public {
+        benignUserAddress1.call_clear();
     }
 }
