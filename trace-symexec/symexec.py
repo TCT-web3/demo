@@ -451,7 +451,37 @@ def get_MAP(storage, solidity_name, contract_name):
     for n in file_names:
         os.remove(n)
     return mapIDs
-      
+
+def find_essential_start(runtime, solidity_fname, contract_name, function_name):
+    RUNTIME_BYTE = json.load(runtime)
+    essential_start=0
+    function_list = (RUNTIME_BYTE["contracts"][solidity_fname+":"+contract_name]["function-debug-runtime"])
+    for func in function_list:
+        if (function_name in func):
+            essential_start = (function_list[func]["entryPoint"])
+            break
+    if (essential_start==0):
+        raise Exception("error, cannot find function entrypoint")
+    return essential_start
+
+def write_trace_essential(complete_trace, essential_trace, essential_start):
+    TRACE_file = open(complete_trace, "r")
+    TRACE_essential = open(essential_trace, "w")
+    lines = [line.rstrip() for line in TRACE_file]
+    essential_end = 9999
+    start = False
+    for i in range(0, len(lines)-1):
+        if lines[i+1][0:4].isnumeric() and int(lines[i+1][0:4]) == essential_end:
+            break
+        if (lines[i+1][0:4] == str(essential_start)):
+            if(not lines[i-1][0:4].isnumeric()):
+                raise Exception("input trace should include at least one pre instruction of the essential part")
+            essential_end = int(lines[i-1][0:4])+1
+            TRACE_essential.write(lines[i+1]+"\n")
+            start = True
+        if start and (lines[i][0:4]).isnumeric() and (int(lines[i][0:4]) > int(essential_start)):
+            TRACE_essential.write(lines[i]+'\n')
+
 def main():
     ARGS = sys.argv # output: ['symexec.py', solidity, theorem, trace]
 
@@ -469,37 +499,16 @@ def main():
     os.system('solc --abi --pretty-json ' + SOLIDITY_FNAME + ' > ' + ABI)
     os.system('solc --combined-json function-debug-runtime --pretty-json ' + SOLIDITY_FNAME + ' > ' + RUNTIME)
 
-    # theorem
+    # get contract and function name
     THEOREM_file = open(THEOREM_FNAME, )
     THEOREM = json.load(THEOREM_file)
     CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
     FUNCTION_NAME = (re.search("::(.*)", THEOREM['entry-for-test']))[0][2:]
 
-    # trace
+    # get essential part of the trace
     RUNTIME_BYTE_file = open(RUNTIME, )
-    RUNTIME_BYTE = json.load(RUNTIME_BYTE_file)
-    function_list = (RUNTIME_BYTE["contracts"][SOLIDITY_FNAME+":"+CONTRACT_NAME]["function-debug-runtime"])
-    for func in function_list:
-        if (FUNCTION_NAME in func):
-            essential_start = (function_list[func]["entryPoint"])
-            break
-    TRACE_file = open(TRACE_FNAME, "r")
-    TRACE_essential = open(ESSENTIAL, "w")
-    lines = [line.rstrip() for line in TRACE_file]
-    essential_end = 9999
-    start = False
-    for i in range(0, len(lines)-1):
-        if lines[i+1][0:4].isnumeric() and int(lines[i+1][0:4]) == essential_end:
-            break
-        if (lines[i+1][0:4] == str(essential_start)):
-            if(not lines[i-1][0:4].isnumeric()):
-                raise Exception("input trace should include at least one pre instruction of the essential part")
-            essential_end = int(lines[i-1][0:4])+1
-            TRACE_essential.write(lines[i+1]+"\n")
-            start = True
-        if start and (lines[i][0:4]).isnumeric() and (int(lines[i][0:4]) > int(essential_start)):
-            TRACE_essential.write(lines[i]+'\n')
-    
+    essential_start = find_essential_start(RUNTIME_BYTE_file, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+    write_trace_essential(TRACE_FNAME, ESSENTIAL, essential_start)
 
     # EVM construction
     STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
@@ -521,17 +530,6 @@ def main():
     evm.write_invariants()
     evm.write_paths()
     evm.write_epilogue()
-
-    print('-----Compilation Information-----')        
-    print('contract name:       ', CONTRACT_NAME)
-    print('function name:       ', FUNCTION_NAME)        
-    print('essential starts:    ', essential_start)        
-
-
-
-    
-
-
 
  
 if __name__ == '__main__':
