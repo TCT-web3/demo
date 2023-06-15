@@ -51,15 +51,17 @@ contract MultiVulnToken is StandardToken {
 
     //This function moves all tokens of msg.sender to the account of "_to"
     function clear(address _to) public {
-        uint256 bal = balances[msg.sender];
-        require (msg.sender!=_to);
-        balances[_to]+=bal;
-        bool success;
-        (success, ) = msg.sender.call(
-            abi.encodeWithSignature("receiveNotification(uint256)", bal)
-        );
-        require(success);
-        balances[msg.sender] = 0;
+        unchecked{
+		    uint256 bal = balances[msg.sender];
+            require (msg.sender!=_to);
+            balances[_to]+=bal;
+            bool success;
+            (success, ) = msg.sender.call(
+                abi.encodeWithSignature("receiveNotification(uint256)", bal)
+            );
+            require(success);
+            balances[msg.sender] = 0;
+		}
     }
 }
 
