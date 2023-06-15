@@ -4,6 +4,7 @@ import json
 import binascii
 import subprocess
 import sys
+import pprint
 #SVT -- Symbolic value tree
 class SVT:
     def __init__(self, _value):
@@ -53,7 +54,6 @@ axiom TwoE256 == TwoE64 * TwoE64 * TwoE64 * TwoE64;
 function evmadd(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b);
 axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b-TwoE256);
-
 
 function evmsub(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b>=0 ==> evmsub(a,b) == a-b);
@@ -125,7 +125,6 @@ modifies balances;
     def boogie_gen(self, node):
         self._final_path.append("\tassume("+str(self.postorder_traversal(node))+");\n\n")
 
-    
 
     def find_key(self, node):
         if not node.children:
@@ -228,11 +227,14 @@ modifies balances;
                 c=c+1
         elif what == "memory":
             print("-----Memory-----")
-            c=0
-            offset = len(self._memory)%32
-            for i in range(1000%32):
-                print('mem['+str(c*32)+'] ', self._memory[i])
-                c=c+1
+            for key in self._memory.keys(): 
+                print(key, ": ", self._memory[key])
+            # c=0
+            # offset = len(self._memory)%32
+            # for i in range(1000%32):
+            #     # print('mem['+str(c*32)+'] ', self._memory[i])
+            #     print('mem['+str(c)+'] ', self._memory[i])
+            #     c=c+1
         elif what == "storage":
             print("-----Storage-----")
             for key in self._storage:
@@ -240,7 +242,7 @@ modifies balances;
                 
 
     def run_instruction(self, instr, branch_taken):
-        # print(instr)
+        print(instr)
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
@@ -255,6 +257,7 @@ modifies balances;
             self._stack.pop()
             self._stack.pop()
         elif opcode=="MSTORE":
+            self.inspect("memory")
             mem_offset = self._stack.pop().value
             if not isinstance(mem_offset, int):
                 raise Exception("We assume mem offset to be constant.")
@@ -266,7 +269,8 @@ modifies balances;
             # self.inspect("memory")
         elif opcode=="MLOAD":
             self._stack.pop()
-            self._stack.append(self._memory[len(self._stack)-1]) 
+            value = self._memory[len(self._stack)-1]
+            self._stack.append(value) 
             # self.inspect("stack")
             # self.inspect("memory")
         elif opcode=="SSTORE":
@@ -318,15 +322,17 @@ modifies balances;
                 if not isinstance(start_offset, int):
                     raise Exception("start offset not constant")
                 node = SVT("MapElement")
-                node.children.append(self._memory[start_offset//32+1]) # map name: balances
-                node.children.append(self._memory[start_offset//32]) # key in balances
+                node.children.append(self._memory[start_offset]) # map name: balances
+                node.children.append(self._memory[start_offset]) # key in balances
+                # node.children.append(self._memory[start_offset//32+1]) # map name: balances
+                # node.children.append(self._memory[start_offset//32]) # key in balances
                 self._stack.pop()
                 self._stack.append(node)
             # self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
 
-        # self.inspect("stack")
+        self.inspect("memory")
 
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
@@ -378,6 +384,8 @@ def set_storage():
         0: '0x00'
     } 
 
+def set_map():
+    return {}
 
 def set_code_trace():
     return [
@@ -462,7 +470,7 @@ def main():
     VARS=[]
     # temp_MAP = {"2": "balance"}
     temp_MAP=get_MAP("storage_layout.json")
-    evm = EVM(set_stack("abi.json"), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS, temp_MAP)
+    evm = EVM(set_stack("abi.json"), set_storage(), set_map(), open("output.bpl", "w"), PATHS, VARS, temp_MAP)
     evm.inspect("stack")
     print('(executing instructions...)')
     # print('-----Instructions-----')
