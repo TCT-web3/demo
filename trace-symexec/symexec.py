@@ -423,6 +423,7 @@ def get_MAP(file_name):
     file = open(file_name, 'r')
     new_file = None
     file.readline()
+    file_names = []
     for line in file:
         if line.startswith("======"):
             # get name of contract
@@ -432,7 +433,9 @@ def get_MAP(file_name):
             line = line.strip("======")
             line = line.replace("MultiVulnToken.sol:", '')
             line = line.strip()
-            new_file = open(line + ".json", 'w')
+            new_name = line+".json"
+            new_file = open(new_name, 'w')
+            file_names.append(new_name)
         elif line.startswith("Contract Storage Layout:"):
             continue
         elif line != " ":
@@ -447,8 +450,9 @@ def get_MAP(file_name):
     
     for o in json_object:
         mapIDs[o["slot"]] = o["label"]
-    print(mapIDs)
-    os.remove("MultiVulnToken.json")
+    
+    for n in file_names:
+        os.remove(n)
 
     return mapIDs
       
@@ -504,7 +508,7 @@ def main():
             print(lines[i][0:4])
             # PRE=(int(lines[i][0:4]))
             TRACE_essential.write(lines[i+1]+"\n")
-        if (int(lines[i][0:4]) > int(essential_start)):
+        if ((lines[i][0:4]).isnumeric() and (int(lines[i][0:4]) > int(essential_start))):
             TRACE_essential.write(lines[i]+'\n')
     get_MAP("storage_layout.json")
       
