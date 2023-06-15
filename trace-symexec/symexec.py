@@ -458,10 +458,16 @@ def get_MAP(file_name):
     return mapIDs
       
 def main():
+    ARGS = sys.argv # output: ['symexec.py', solidity, theorem, trace]
+    # solidity
+    SOLIDITY_NAME = ARGS[1]
+
     PATHS=[]
     VARS=[]
     # temp_MAP = {"2": "balance"}
+    os.system('solc --storage-layout --pretty-json ' + SOLIDITY_NAME + ' > storage_layout.json')
     temp_MAP=get_MAP("storage_layout.json")
+    os.system('solc --abi --pretty-json ' + SOLIDITY_NAME + ' > abi.json')
     evm = EVM(set_stack("abi.json"), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS, temp_MAP)
     evm.inspect("stack")
     print('(executing instructions...)')
@@ -469,30 +475,15 @@ def main():
     # code_trace = set_code_trace()
     # code_trace = read_path("trace.txt")
     # code_trace = read_path("test.txt")
-    code_trace = read_path("transferProxy_essential.txt")
-    evm.sym_exec(code_trace)
-    evm.inspect("stack")
-    # evm.inspect("memory")
-    # evm.inspect("storage")
 
-    # write to final Boogie output
-    evm.write_preamble()
-    evm.write_vars()
-    evm.write_invariants()
-    evm.write_paths()
-    evm.write_epilogue()
-
-    ARGS = sys.argv
-    print(ARGS) 
-
-    # hard code this part in main for now
-    THEOREM_file = open("theorem.json", )
+    # theorem
+    THEOREM_file = open(ARGS[2], )
     THEOREM = json.load(THEOREM_file)
-
-    SOLIDITY_NAME = ("MultiVulnToken.sol")
     CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
     FUNCTION_NAME = (re.search("::(.*)", THEOREM['entry-for-test']))[0][2:]
 
+    # trace
+    # os.system('solc --combined-json function-debug-runtime --pretty-json ' + SOLIDITY_NAME + ' > runtime_functions.json')
     RUNTIME_BYTE_file = open('runtime_functions.json', )
     RUNTIME_BYTE = json.load(RUNTIME_BYTE_file)
     function_list = (RUNTIME_BYTE["contracts"][SOLIDITY_NAME+":"+CONTRACT_NAME]["function-debug-runtime"])
@@ -501,7 +492,7 @@ def main():
             essential_start = (function_list[func]["entryPoint"])
             break
 
-    TRACE_file = open("transferProxy_trace_from_contract_beginning.txt", "r")
+    TRACE_file = open(ARGS[3], "r")
     TRACE_essential = open("essential.txt", "w")
     lines = [line.rstrip() for line in TRACE_file]
     # PRE=9999
@@ -522,7 +513,19 @@ def main():
         if start and (lines[i][0:4]).isnumeric() and (int(lines[i][0:4]) > int(essential_start)):
             TRACE_essential.write(lines[i]+'\n')
     get_MAP("storage_layout.json")
-      
+    
+    code_trace = read_path("essential.txt")
+    evm.sym_exec(code_trace)
+    evm.inspect("stack")
+    # evm.inspect("memory")
+    # evm.inspect("storage")
+
+    # write to final Boogie output
+    evm.write_preamble()
+    evm.write_vars()
+    evm.write_invariants()
+    evm.write_paths()
+    evm.write_epilogue()
 
             
             
@@ -534,9 +537,7 @@ def main():
 
 
 
-    # os.system('solc --combined-json function-debug-runtime --pretty-json MultiVulnToken.sol > runtime_functions.json')
-    # os.system('solc --storage-layout --pretty-json MultiVulnToken.sol > storage_layout.json')
-    # os.system('solc --abi --pretty-json MultiVulnToken.sol > abi.txt')
+    
 
 
 
