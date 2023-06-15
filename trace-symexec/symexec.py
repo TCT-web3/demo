@@ -3,6 +3,7 @@ import os
 import json
 import binascii
 import subprocess
+import sys
 #SVT -- Symbolic value tree
 class SVT:
     def __init__(self, _value):
@@ -481,6 +482,8 @@ def main():
     evm.write_paths()
     evm.write_epilogue()
 
+    ARGS = sys.argv
+    print(ARGS) 
 
     # hard code this part in main for now
     THEOREM_file = open("theorem.json", )
