@@ -353,7 +353,7 @@ def set_stack(file_name):
                 new_file.close()
             line = line.rstrip("\n")
             line = line.strip("======")
-            line = line.replace("MultiVulnToken.sol:", '')
+            line = line.replace("MultiVulnToken1.sol:", '')
             line = line.strip()
             new_name = line+".json"
             new_file = open(new_name, 'w')
@@ -440,7 +440,7 @@ def get_MAP(file_name):
                 new_file.close()
             line = line.rstrip("\n")
             line = line.strip("======")
-            line = line.replace("MultiVulnToken.sol:", '')
+            line = line.replace("MultiVulnToken1.sol:", '')
             line = line.strip()
             new_name = line+".json"
             new_file = open(new_name, 'w')
@@ -475,7 +475,6 @@ def main():
     # temp_MAP = {"2": "balance"}
     os.system('solc --storage-layout --pretty-json ' + SOLIDITY_NAME + ' > storage_layout.json')
     temp_MAP=get_MAP("storage_layout.json")
-    os.system('solc --abi --pretty-json ' + SOLIDITY_NAME + ' > abi.json')
     evm = EVM(set_stack("abi.json"), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS, temp_MAP)
     evm.inspect("stack")
     print('(executing instructions...)')
