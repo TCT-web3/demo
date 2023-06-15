@@ -459,7 +459,8 @@ def get_MAP(file_name):
 def main():
     PATHS=[]
     VARS=[]
-    temp_MAP = {"2": "balance"}
+    # temp_MAP = {"2": "balance"}
+    temp_MAP=get_MAP("storage_layout.json")
     evm = EVM(set_stack("abi.json"), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS, temp_MAP)
     evm.inspect("stack")
     print('(executing instructions...)')
