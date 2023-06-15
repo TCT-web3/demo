@@ -497,18 +497,25 @@ def main():
             essential_start = (function_list[func]["entryPoint"])
             break
 
-    TRACE_file = open("trace.txt", "r")
+    TRACE_file = open("transferProxy_trace_from_contract_beginning.txt", "r")
     TRACE_essential = open("essential.txt", "w")
     lines = [line.rstrip() for line in TRACE_file]
-    PRE=9999
+    # PRE=9999
+    essential_end = 9999
+    start = False
+    print(essential_start)
     for i in range(0, len(lines)-1):
-        if (lines[i+1][0:4] == (PRE+1)):
-            break            
+        # if (lines[i+1][0:4] == (PRE+1)):
+        #     break
+        # print(lines[i+1][0:4])
+        if lines[i+1][0:4].isnumeric() and int(lines[i+1][0:4]) == essential_end:
+            break
         if (lines[i+1][0:4] == str(essential_start)):
-            print(lines[i][0:4])
+            essential_end = int(lines[i-1][0:4])+1
             # PRE=(int(lines[i][0:4]))
             TRACE_essential.write(lines[i+1]+"\n")
-        if ((lines[i][0:4]).isnumeric() and (int(lines[i][0:4]) > int(essential_start))):
+            start = True
+        if start and (lines[i][0:4]).isnumeric() and (int(lines[i][0:4]) > int(essential_start)):
             TRACE_essential.write(lines[i]+'\n')
     get_MAP("storage_layout.json")
       
