@@ -99,3 +99,5 @@ More details about `vmtrace` in official doc: https://ethereum-tests.readthedocs
 
 ### Get trace from Remix VSCode plugin
 Or we could use local [remix plugin](https://github.com/ethereum/remix-vscode). There are two ways to run & deploy contracts using local remix: remixd (which connect web ethereum) and locally run via `ganachi-cli` (https://trufflesuite.com/docs/ganache/quickstart/). Please refer to this link: https://medium.com/remix-ide/remix-in-vscode-compiling-debugging-metamask-remixd-42c4a61817e2.
+
+For how to deploy and test the contract, follow this blog: https://blog.logrocket.com/develop-test-deploy-smart-contracts-ganache/.
