@@ -336,13 +336,13 @@ modifies balances;
 
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
-def set_stack(file_name):
+def set_stack(abi, solidity_fname, contract_name, function_name):
     stack = [
         SVT("FourByteSelector"), 
         SVT("SomethingIDontKnow"), 
     ]
 
-    file = open(file_name, 'r')
+    file = open(abi, 'r')
     file.readline()
     file_names = []
     new_file = None
@@ -353,24 +353,26 @@ def set_stack(file_name):
                 new_file.close()
             line = line.rstrip("\n")
             line = line.strip("======")
-            line = line.replace("MultiVulnToken1.sol:", '')
+            line = line.replace(solidity_fname+":", '')
             line = line.strip()
             new_name = line+".json"
+            print(new_name)
             new_file = open(new_name, 'w')
             file_names.append(new_name)
         elif line.startswith("Contract"):
             continue
         elif line != " ":
             new_file.write(line)
+            # print(line)
     new_file.close()
     file.close()
 
     # get the map
-    file = open("MultiVulnToken.json", 'r')
+    file = open(contract_name+".json", 'r')
     json_object = json.load(file)
     
     for o in json_object:
-        if "name" in o and o["name"] == "transferProxy":
+        if "name" in o and o["name"] == function_name:
             for i in o["inputs"]:
                 stack.append(SVT(i["name"]))
 
@@ -386,20 +388,6 @@ def set_storage():
 
 def set_map():
     return {}
-
-def set_code_trace():
-    return [
-    (1174, "JUMPDEST",None),
-    (1175, "PUSH1", 0x00),
-    (1177, "DUP3",None),
-    (1178, "DUP3",None),
-    (1179, "ADD",None),
-    (1180, "PUSH1", 0x02),
-    (1182, "PUSH1", 0x00),
-    (1184, "DUP8",None),
-    (1185, "PUSH20", 0xffffffffffffffffffffffffffffffffffffffff),
-    (1206, "AND",None),
-    ]
 
 
 def read_path(filename):
@@ -428,8 +416,8 @@ def read_path(filename):
     return trace
 
 # a function to get a list of JSON from a text file  
-def get_MAP(file_name):
-    file = open(file_name, 'r')
+def get_MAP(storage, solidity_name, contract_name):
+    file = open(storage, 'r')
     new_file = None
     file.readline()
     file_names = []
@@ -440,7 +428,7 @@ def get_MAP(file_name):
                 new_file.close()
             line = line.rstrip("\n")
             line = line.strip("======")
-            line = line.replace("MultiVulnToken1.sol:", '')
+            line = line.replace(solidity_name+":", '')
             line = line.strip()
             new_name = line+".json"
             new_file = open(new_name, 'w')
@@ -449,11 +437,11 @@ def get_MAP(file_name):
             continue
         elif line != " ":
             new_file.write(line)
+            
     new_file.close()
     file.close()
-
     # get the map
-    file = open("MultiVulnToken.json", 'r')
+    file = open(contract_name+".json", 'r')
     json_object = json.load(file)["storage"]
     mapIDs = {}
     
@@ -462,70 +450,79 @@ def get_MAP(file_name):
     
     for n in file_names:
         os.remove(n)
-
     return mapIDs
-      
-def main():
-    ARGS = sys.argv # output: ['symexec.py', solidity, theorem, trace]
-    # solidity
-    SOLIDITY_NAME = ARGS[1]
 
-    PATHS=[]
-    VARS=[]
-    # temp_MAP = {"2": "balance"}
-    os.system('solc --storage-layout --pretty-json ' + SOLIDITY_NAME + ' > storage_layout.json')
-    temp_MAP=get_MAP("storage_layout.json")
-    evm = EVM(set_stack("abi.json"), set_storage(), [0] * 1000, open("output.bpl", "w"), PATHS, VARS, temp_MAP)
-    evm.inspect("stack")
-    print('(executing instructions...)')
-    # print('-----Instructions-----')
-    # code_trace = set_code_trace()
-    # code_trace = read_path("trace.txt")
-    # code_trace = read_path("test.txt")
-
-    # theorem
-    THEOREM_file = open(ARGS[2], )
-    THEOREM = json.load(THEOREM_file)
-    CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
-    FUNCTION_NAME = (re.search("::(.*)", THEOREM['entry-for-test']))[0][2:]
-
-    # trace
-    # os.system('solc --combined-json function-debug-runtime --pretty-json ' + SOLIDITY_NAME + ' > runtime_functions.json')
-    RUNTIME_BYTE_file = open('runtime_functions.json', )
-    RUNTIME_BYTE = json.load(RUNTIME_BYTE_file)
-    function_list = (RUNTIME_BYTE["contracts"][SOLIDITY_NAME+":"+CONTRACT_NAME]["function-debug-runtime"])
+def find_essential_start(runtime, solidity_fname, contract_name, function_name):
+    RUNTIME_BYTE = json.load(runtime)
+    essential_start=0
+    function_list = (RUNTIME_BYTE["contracts"][solidity_fname+":"+contract_name]["function-debug-runtime"])
     for func in function_list:
-        if (FUNCTION_NAME in func):
+        if (function_name in func):
             essential_start = (function_list[func]["entryPoint"])
             break
+    if (essential_start==0):
+        raise Exception("error, cannot find function entrypoint")
+    return essential_start
 
-    TRACE_file = open(ARGS[3], "r")
-    TRACE_essential = open("essential.txt", "w")
+def write_trace_essential(complete_trace, essential_trace, essential_start):
+    TRACE_file = open(complete_trace, "r")
+    TRACE_essential = open(essential_trace, "w")
     lines = [line.rstrip() for line in TRACE_file]
-    # PRE=9999
     essential_end = 9999
     start = False
-    print(essential_start)
     for i in range(0, len(lines)-1):
-        # if (lines[i+1][0:4] == (PRE+1)):
-        #     break
-        # print(lines[i+1][0:4])
         if lines[i+1][0:4].isnumeric() and int(lines[i+1][0:4]) == essential_end:
             break
         if (lines[i+1][0:4] == str(essential_start)):
+            if(not lines[i-1][0:4].isnumeric()):
+                raise Exception("input trace should include at least one pre instruction of the essential part")
             essential_end = int(lines[i-1][0:4])+1
-            # PRE=(int(lines[i][0:4]))
             TRACE_essential.write(lines[i+1]+"\n")
             start = True
         if start and (lines[i][0:4]).isnumeric() and (int(lines[i][0:4]) > int(essential_start)):
             TRACE_essential.write(lines[i]+'\n')
-    get_MAP("storage_layout.json")
-    
-    code_trace = read_path("essential.txt")
+
+def main():
+    ARGS = sys.argv # output: ['symexec.py', solidity, theorem, trace]
+
+    STORAGE     ="solc_storage.json"
+    ABI         ="solc_abi.json"
+    ESSENTIAL   ="trace_essential.txt"
+    RUNTIME     ="solc_runtime.json"
+    BOOGIE      ="output.bpl"
+
+    SOLIDITY_FNAME  = ARGS[1]
+    THEOREM_FNAME   = ARGS[2]
+    TRACE_FNAME     = ARGS[3]
+
+    os.system('solc --storage-layout --pretty-json ' + SOLIDITY_FNAME + ' > '+ STORAGE)
+    os.system('solc --abi --pretty-json ' + SOLIDITY_FNAME + ' > ' + ABI)
+    os.system('solc --combined-json function-debug-runtime --pretty-json ' + SOLIDITY_FNAME + ' > ' + RUNTIME)
+
+    # get contract and function name
+    THEOREM_file = open(THEOREM_FNAME, )
+    THEOREM = json.load(THEOREM_file)
+    CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
+    FUNCTION_NAME = (re.search("::(.*)", THEOREM['entry-for-test']))[0][2:]
+
+    # get essential part of the trace
+    RUNTIME_BYTE_file = open(RUNTIME, )
+    essential_start = find_essential_start(RUNTIME_BYTE_file, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+    write_trace_essential(TRACE_FNAME, ESSENTIAL, essential_start)
+
+    # EVM construction
+    STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+    PATHS = []
+    VARS  = []
+    MAP=get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
+    evm = EVM(STACK, set_storage(), [0] * 1000, open(BOOGIE, "w"), PATHS, VARS, MAP)
+    evm.inspect("stack")
+    print('(executing instructions...)')
+    code_trace = read_path(ESSENTIAL)
     evm.sym_exec(code_trace)
     evm.inspect("stack")
-    # evm.inspect("memory")
-    # evm.inspect("storage")
+    evm.inspect("memory")
+    evm.inspect("storage")
 
     # write to final Boogie output
     evm.write_preamble()
@@ -533,20 +530,6 @@ def main():
     evm.write_invariants()
     evm.write_paths()
     evm.write_epilogue()
-
-            
-            
-
-    print('-----Compilation Information-----')        
-    print('contract name:       ', CONTRACT_NAME)
-    print('function name:       ', FUNCTION_NAME)        
-    print('essential starts:    ', essential_start)        
-
-
-
-    
-
-
 
  
 if __name__ == '__main__':
