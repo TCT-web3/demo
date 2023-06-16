@@ -89,6 +89,7 @@ modifies balances;
         MVT_invariants = invariants["MultiVulnToken"]
         for inv in MVT_invariants:
             self._output_file.write("\tassume(" + inv + ");\n")
+        self._output_file.write("\n")
 
     def write_epilogue(self, invariants):
         MVT_invariants = invariants["MultiVulnToken"]
@@ -99,6 +100,7 @@ modifies balances;
     def write_vars(self):
         for var in self._final_vars:
             self._output_file.write(var+"\n")
+        self._output_file.write("\n")
 
     def write_paths(self):
         for path in self._final_path:
