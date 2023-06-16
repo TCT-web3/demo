@@ -452,6 +452,7 @@ def find_essential_start(runtime, solidity_fname, contract_name, function_name):
         if (function_name in func):
             essential_start = (function_list[func]["entryPoint"])
             break
+    print(essential_start)    
     if (essential_start==0):
         raise Exception("error, cannot find function entrypoint")
     return essential_start
@@ -540,7 +541,10 @@ def main():
     THEOREM_file = open(THEOREM_FNAME, )
     THEOREM = json.load(THEOREM_file)
     CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
-    FUNCTION_NAME = (re.search("::(.*)", THEOREM['entry-for-test']))[0][2:]
+    FUNCTION_NAME = (re.search("::(.*)\(", THEOREM['entry-for-test']))[0][2:-1]
+
+    print(CONTRACT_NAME)
+    print(FUNCTION_NAME)
 
     # check_entry_thingy(TRACE_FNAME, THEOREM)
 
