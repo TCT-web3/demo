@@ -16,6 +16,8 @@ abstract contract Token {
     function balanceOf(address _owner) public view virtual returns (uint256 balance);
 }
 
+/// @custom:tct invariant: forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply
+/// @custom:tct invariant: sum(balances) == totalSupply 
 abstract contract StandardToken is Token {
 
     function balanceOf(address _owner) public view override returns (uint256 balance) {
