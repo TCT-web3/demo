@@ -460,6 +460,18 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
     essential_end = 9999
     start = False
     for i in range(0, len(lines)-1):
+        if lines[i].startswith(">>enter"):
+            TRACE_essential.write(lines[i]+"\n")
+
+            line = ""
+            while not line.startswith(">>enter"):
+                line = lines[i]
+            
+            # get trace contract name
+            contract_name_start = line.find('(')+1
+            contract_name_end = line.find('::', contract_name_start)
+            contract_name = line[contract_name_start:contract_name_end]
+            print("contract name: ", contract_name)
 
         if lines[i+1][0:4].isnumeric() and int(lines[i+1][0:4]) == essential_end:
             break
@@ -509,11 +521,6 @@ def check_entry_thingy(trace, theorem):
 
     if m1 != m2:
         raise Exception("entry point wrong")
-    
-    # get trace contract name
-    contract_name_start = line.find('(')+1
-    contract_name_end = line.find('::', contract_name_start)
-    return line[contract_name_start:contract_name_end]
     
 def main():
     ARGS = sys.argv # output: ['symexec.py', solidity, theorem, trace]
