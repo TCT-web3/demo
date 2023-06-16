@@ -114,9 +114,7 @@ modifies balances;
 
     def boogie_gen_sstore(self, node0, node1):
         map_id = self.find_key(node0.children[1])
-
         rt="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
-        # rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
         self._final_path.append(rt)
                       
     def boogie_gen(self, node):
@@ -152,7 +150,6 @@ modifies balances;
             print_string = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)
-            # self._output_file.write(print_string)
         elif node.value == "SLOAD":
             print(node.children[0])
             map_id = self.find_mapID(node.children[0])
@@ -164,8 +161,7 @@ modifies balances;
             print_string = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
 
             self._final_vars.append("\tvar " + return_string + ": uint256;")
-            self._final_path.append(print_string)
-            # self._output_file.write(print_string)   
+            self._final_path.append(print_string)  
         elif node.value == "LT":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
@@ -174,7 +170,6 @@ modifies balances;
             print_string = "\ttmp"+str(self._tmp_var_count)+":="+str(val1)+"<"+str(val2)+";\n"
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)
-            # self._output_file.write(print_string)
         elif node.value == "GT":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
@@ -182,32 +177,29 @@ modifies balances;
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string = "\ttmp"+str(self._tmp_var_count)+":="+str(val1)+">"+str(val2)+";\n"
             self._final_vars.append("\tvar " + return_string + ": bool;")
-            self._final_path.append(print_string)
-            # self._output_file.write(print_string)    
+            self._final_path.append(print_string)  
         elif node.value == "ADD":
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)
-            # self._output_file.write(print_string)
         elif node.value == "SUB":
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
             self._final_vars.append("\tvar " + return_string + ": uint256;")
-            self._final_path.append(print_string)
-            # self._output_file.write(print_string)    
+            self._final_path.append(print_string) 
         elif node.value == "AND":    
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             print_string ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)
-            # self._output_file.write(print_string)
         else:
             return str(node)
         return return_string
+    
     def sym_exec(self, code_trace):
         for i in range(len(code_trace)):
             if(code_trace[i][1]=="JUMPI"):
@@ -233,7 +225,7 @@ modifies balances;
                 
 
     def run_instruction(self, instr, branch_taken):
-        print(instr)
+        # print(instr)
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
@@ -454,6 +446,7 @@ def find_essential_start(runtime, solidity_fname, contract_name, function_name):
     return essential_start
 
 def write_trace_essential(complete_trace, essential_trace, essential_start):
+    # TODO: use regex to accomodate digits with fix width or not
     TRACE_file = open(complete_trace, "r")
     TRACE_essential = open(essential_trace, "w")
     lines = [line.rstrip() for line in TRACE_file]
@@ -468,11 +461,12 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
             TRACE_essential.write(">>enter " + contract_name + '\n')
         elif lines[i].startswith("<<leave"):
             TRACE_essential.write(lines[i] + '\n')
-        elif not lines[i][0:4].isnumeric():
+        elif not lines[i][0:1].isnumeric():
             continue
         else:
-            if lines[i][0:4].isnumeric() and int(lines[i][0:4]) == essential_end:
+            if lines[i][0:1].isnumeric() and int(lines[i][0:4]) == essential_end:
                 break
+
             if (int(lines[i][0:4]) == int(essential_start)):
                 # raise Exception("input trace should include at least one pre instruction of the essential part")
                 essential_end = PRE_start+1
@@ -480,7 +474,7 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
                 start = True
             else:
                 PRE_start = int(lines[i][0:4])
-            if start and (lines[i][0:4]).isnumeric() and (int(lines[i][0:4]) > int(essential_start)):
+            if start and lines[i][0:1].isnumeric():
                 TRACE_essential.write(lines[i]+'\n')
 
 # invariant dictionary
@@ -546,9 +540,6 @@ def main():
     CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
     FUNCTION_NAME = (re.search("::(.*)\(", THEOREM['entry-for-test']))[0][2:-1]
 
-    print(CONTRACT_NAME)
-    print(FUNCTION_NAME)
-
     check_entry_thingy(TRACE_FNAME, THEOREM)
 
     # TODO: add a function get_hypothesis(THEOREM), to read how the theorem.txt and extract "hypothesis"
@@ -559,6 +550,14 @@ def main():
     RUNTIME_BYTE_file = open(RUNTIME, )
     essential_start = find_essential_start(RUNTIME_BYTE_file, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
     write_trace_essential(TRACE_FNAME, ESSENTIAL, essential_start)
+
+
+    CONTRACT_lst = json.load(open(RUNTIME,))
+    for contract in CONTRACT_lst["contracts"]:
+        trim = re.search("(.*):", contract)
+        print(contract.replace(trim[0], ""))
+
+    # exit()
 
     # EVM construction
     STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
