@@ -84,14 +84,14 @@ modifies balances;
     
     def write_invariants(self, invariants):
         # get from ast
-        for inv_list in invariants.values():
-            for inv in inv_list:
-                self._output_file.write("\tassume(" + inv + ");\n")
+        MVT_invariants = invariants["MultiVulnToken"]
+        for inv in MVT_invariants:
+            self._output_file.write("\tassume(" + inv + ");\n")
 
     def write_epilogue(self, invariants):
-        for inv_list in invariants.values():
-            for inv in inv_list:
-                self._output_file.write("\tassert(" + inv + ");\n")
+        MVT_invariants = invariants["MultiVulnToken"]
+        for inv in MVT_invariants:
+            self._output_file.write("\tassert(" + inv + ");\n")
         self._output_file.write("}")
 
     def write_vars(self):
