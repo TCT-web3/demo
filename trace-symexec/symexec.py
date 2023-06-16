@@ -82,16 +82,19 @@ modifies balances;
        
 """)
     
-    def write_invariants(self): 
-        self._output_file.write("""
+    def write_invariants(self, text):
+        pass
+        # get from ast
 
-    assume (0<=_value && _value<TwoE255+1 && 0<=_fee && _fee<TwoE255);           
-    assume (totalSupply<TwoE255);    
+#         self._output_file.write("""
 
-    assume (sum(balances) == totalSupply);
-    assume (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);  
+#     assume (0<=_value && _value<TwoE255+1 && 0<=_fee && _fee<TwoE255);           
+#     assume (totalSupply<TwoE255);    
 
-""")
+#     assume (sum(balances) == totalSupply);
+#     assume (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);  
+
+# """)
 
     def write_epilogue(self):
         self._output_file.write("""	
@@ -119,7 +122,7 @@ modifies balances;
     def boogie_gen_sstore(self, node0, node1):
         map_id = self.find_key(node0.children[1])
 
-        rt="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
+        rt="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
         # rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
         self._final_path.append(rt)
                       
@@ -167,7 +170,7 @@ modifies balances;
             return_string =  "tmp" + str(self._tmp_var_count)
             # print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
             # print(str(map_id))
-            print_string = "\ttemp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
+            print_string = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
 
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)
