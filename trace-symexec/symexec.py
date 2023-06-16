@@ -546,7 +546,7 @@ def main():
     print(CONTRACT_NAME)
     print(FUNCTION_NAME)
 
-    # check_entry_thingy(TRACE_FNAME, THEOREM)
+    check_entry_thingy(TRACE_FNAME, THEOREM)
 
     # TODO: add a function get_hypothesis(THEOREM), to read how the theorem.txt and extract "hypothesis"
     #       and attach it in "write_invariants()"
