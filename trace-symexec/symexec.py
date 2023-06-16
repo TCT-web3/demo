@@ -27,7 +27,10 @@ class SVT:
 
 class EVM:
 
-    def __init__(self, stack, storage, memory, output_file, final_path, final_vars, storage_map):  
+    def __init__(self, stack, storage, memory, output_file, final_path, final_vars, storage_map): 
+        # TODO: extend EVM with dictionaries of stack/memory for different contracts. 
+        #       - each should have it's own stack/memory
+        #       - var_count and final vars should be shared
         self._stack = stack  
         self._storage = storage
         self._memory = memory
@@ -159,11 +162,13 @@ modifies balances;
             self._final_path.append(print_string)
             # self._output_file.write(print_string)
         elif node.value == "SLOAD":
+            print(node.children[0])
             map_id = self.find_mapID(node.children[0])
             map_key = self.find_key(node.children[0].children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             # print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
+            # print(str(map_id))
             print_string = "\ttemp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
 
             self._final_vars.append("\tvar " + return_string + ": uint256;")
@@ -229,12 +234,6 @@ modifies balances;
             print("-----Memory-----")
             for key in self._memory.keys(): 
                 print(key, ": ", self._memory[key])
-            # c=0
-            # offset = len(self._memory)%32
-            # for i in range(1000%32):
-            #     # print('mem['+str(c*32)+'] ', self._memory[i])
-            #     print('mem['+str(c)+'] ', self._memory[i])
-            #     c=c+1
         elif what == "storage":
             print("-----Storage-----")
             for key in self._storage:
@@ -263,7 +262,7 @@ modifies balances;
                 raise Exception("We assume mem offset to be constant.")
             elif mem_offset % 32 != 0:
                 raise Exception("We assume mem offset to be a multiple of 32.")
-            mem_offset //= 32
+            # mem_offset //= 32 #   use actually offset
             value = self._stack.pop()
             self._memory[mem_offset] = value
             # self.inspect("memory")
@@ -271,8 +270,6 @@ modifies balances;
             self._stack.pop()
             value = self._memory[len(self._stack)-1]
             self._stack.append(value) 
-            # self.inspect("stack")
-            # self.inspect("memory")
         elif opcode=="SSTORE":
             self.boogie_gen_sstore(self._stack.pop(), self._stack.pop())
         elif opcode=="SLOAD":
@@ -287,9 +284,9 @@ modifies balances;
         elif opcode.startswith("POP"):
             self._stack.pop()
         elif opcode.startswith("CALLER"):
-            self._stack.append(SVT("msg.sender")) 
+            self._stack.append(SVT("msg.sender")) # symbolic
         elif opcode.startswith("ORIGIN"):
-            self._stack.append(SVT("tx.origin"))
+            self._stack.append(SVT("tx.origin")) # symbolic
         elif opcode.startswith("DUP"):
             position=int(re.search('[0-9]+', opcode)[0])
             self._stack.append(self._stack[len(self._stack)-position]) 
@@ -315,24 +312,26 @@ modifies balances;
                 node.children.append(self._stack.pop())
                 node.children.append(self._stack.pop())
             self._stack.append(node)
-            # self.inspect("stack")
         elif opcode=="SHA3":
+            self.inspect("stack")
+            self.inspect("memory")
             if self._stack[-2].value == 64:
                 start_offset = self._stack.pop().value
                 if not isinstance(start_offset, int):
                     raise Exception("start offset not constant")
                 node = SVT("MapElement")
-                node.children.append(self._memory[start_offset]) # map name: balances
-                node.children.append(self._memory[start_offset]) # key in balances
                 # node.children.append(self._memory[start_offset//32+1]) # map name: balances
                 # node.children.append(self._memory[start_offset//32]) # key in balances
-                self._stack.pop()
+
+                node.children.append(self._memory[start_offset+32])
+                node.children.append(self._memory[start_offset])
+
+                self._stack.pop() # pop 64
                 self._stack.append(node)
-            # self.inspect("stack")
+            self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
 
-        self.inspect("memory")
 
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
@@ -386,7 +385,7 @@ def set_storage():
         0: '0x00'
     } 
 
-def set_map():
+def set_memory():
     return {}
 
 
@@ -505,6 +504,11 @@ def main():
     CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
     FUNCTION_NAME = (re.search("::(.*)", THEOREM['entry-for-test']))[0][2:]
 
+    # TODO: add a function get_hypothesis(THEOREM), to read how the theorem.txt and extract "hypothesis"
+    #       and attach it in "write_invariants()"
+
+
+
     # get essential part of the trace
     RUNTIME_BYTE_file = open(RUNTIME, )
     essential_start = find_essential_start(RUNTIME_BYTE_file, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
@@ -515,7 +519,7 @@ def main():
     PATHS = []
     VARS  = []
     MAP=get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
-    evm = EVM(STACK, set_storage(), [0] * 1000, open(BOOGIE, "w"), PATHS, VARS, MAP)
+    evm = EVM(STACK, set_storage(), set_memory(), open(BOOGIE, "w"), PATHS, VARS, MAP)
     evm.inspect("stack")
     print('(executing instructions...)')
     code_trace = read_path(ESSENTIAL)
