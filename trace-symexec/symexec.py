@@ -81,7 +81,9 @@ modifies balances;
     var _fee: uint256;
        
 """)
-    
+    def write_hypothesis(self, hypothesis):
+        self._output_file.write("\tassume(" + hypothesis + ");\n")
+
     def write_invariants(self, invariants):
         # get from ast
         MVT_invariants = invariants["MultiVulnToken"]
@@ -545,6 +547,7 @@ def main():
     # write to final Boogie output
     evm.write_preamble()
     evm.write_vars()
+    evm.write_hypothesis(THEOREM["hypothesis"])
     evm.write_invariants(INVARIANTS)
     evm.write_paths()
     evm.write_epilogue(INVARIANTS)
