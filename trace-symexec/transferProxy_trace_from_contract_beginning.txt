@@ -1,6 +1,6 @@
 
 ======================================Begin==========================================
->>enter 0x73d5596f97950f1048b251e3e3ee5ab888d76d37::0xcf053d9d ("MultiVulnToken"::"transferProxy(address,address,uint256,uint256)")
+>>enter 0x73d5596f97950f1048b251e3e3ee5ab888d76d37::0xcf053d9d (MultiVulnToken::transferProxy(address,address,uint256,uint256))
 0000 PUSH1 80 - LINE 28
 0002 PUSH1 40 - LINE 28
 0004 MSTORE - LINE 28

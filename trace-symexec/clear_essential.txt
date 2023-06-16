@@ -8,7 +8,7 @@ stack
 	"0x000000000000000000000000000000000000000000000000000000003d0a4061"       // function hash for "clear(address)"
 ]
 ======================================Begin==========================================
->>enter 0x5c9eb5d6a6c2c1b3efc52255c0b356f116f6f66d::0x3d0a4061   ("MultiVulnToken"::"clear(address)")
+>>enter 0x5c9eb5d6a6c2c1b3efc52255c0b356f116f6f66d::0x3d0a4061   (MultiVulnToken::clear(address))
 // ... omitting the unessential part ...
 0188 JUMP - LINE 53
 
@@ -344,7 +344,7 @@ stack
 0859 GAS - LINE 59
 0860 CALL - LINE 59    external call !!!
 
->>enter 0x73d5596f97950f1048b251e3e3ee5ab888d76d37::0x85892c24 ("no_reentrancy_attack"::"receiveNotification(uint256)")
+>>enter 0x73d5596f97950f1048b251e3e3ee5ab888d76d37::0x85892c24 (no_reentrancy_attack::receiveNotification(uint256))
 // ... omitting the unessential part ...
 125 JUMP - LINE 97
 
