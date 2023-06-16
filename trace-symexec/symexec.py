@@ -132,7 +132,6 @@ modifies balances;
             if return_val:
                 return return_val
 
-
     def postorder_traversal(self, node):
         # children then parent
         return_string = ""
@@ -145,7 +144,6 @@ modifies balances;
         # return_string += ")"
         # return_string += str(node.value)
         if node.value == "ISZERO":
-            # return_string += "tmp"+str(self._tmp_var_count)+":="
             return_string += self.postorder_traversal(node.children[0]) # + "==0;\n"
             val1=self._tmp_var_count
             self._tmp_var_count+=1
@@ -240,7 +238,6 @@ modifies balances;
         opcode=instr[1]
         operand=instr[2]
 
-        
         if opcode=="JUMPDEST":
             pass
         elif opcode=="JUMP":
@@ -250,7 +247,7 @@ modifies balances;
             self._stack.pop()
             self._stack.pop()
         elif opcode=="MSTORE":
-            self.inspect("memory")
+            # self.inspect("memory")
             mem_offset = self._stack.pop().value
             if not isinstance(mem_offset, int):
                 raise Exception("We assume mem offset to be constant.")
@@ -307,8 +304,8 @@ modifies balances;
                 node.children.append(self._stack.pop())
             self._stack.append(node)
         elif opcode=="SHA3":
-            self.inspect("stack")
-            self.inspect("memory")
+            # self.inspect("stack")
+            # self.inspect("memory")
             if self._stack[-2].value == 64:
                 start_offset = self._stack.pop().value
                 if not isinstance(start_offset, int):
@@ -322,7 +319,7 @@ modifies balances;
 
                 self._stack.pop() # pop 64
                 self._stack.append(node)
-            self.inspect("stack")
+            # self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
 
@@ -380,7 +377,6 @@ def set_storage():
 
 def set_memory():
     return {}
-
 
 def read_path(filename):
     trace=[]
@@ -464,6 +460,7 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
     essential_end = 9999
     start = False
     for i in range(0, len(lines)-1):
+
         if lines[i+1][0:4].isnumeric() and int(lines[i+1][0:4]) == essential_end:
             break
         if (lines[i+1][0:4] == str(essential_start)):
