@@ -463,14 +463,10 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
         if lines[i].startswith(">>enter"):
             TRACE_essential.write(lines[i]+"\n")
 
-            line = ""
-            while not line.startswith(">>enter"):
-                line = lines[i]
             
-            # get trace contract name
-            contract_name_start = line.find('(')+1
-            contract_name_end = line.find('::', contract_name_start)
-            contract_name = line[contract_name_start:contract_name_end]
+            contract_name_start = lines[i].find('(')+1
+            contract_name_end = lines[i].find('::', contract_name_start)
+            contract_name = lines[i][contract_name_start:contract_name_end]
             print("contract name: ", contract_name)
 
         if lines[i+1][0:4].isnumeric() and int(lines[i+1][0:4]) == essential_end:
