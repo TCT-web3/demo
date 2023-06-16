@@ -27,7 +27,7 @@ class SVT:
 
 class EVM:
 
-    def __init__(self, stack, storage, memory, output_file, final_path, final_vars, storage_map): 
+    def __init__(self, stack, storage, storage_map, memory, output_file, final_path, final_vars): 
         # TODO: extend EVM with dictionaries of stack/memory for different contracts. 
         #       - each should have it's own stack/memory
         #       - var_count and final vars should be shared
@@ -38,7 +38,6 @@ class EVM:
         self._tmp_var_count = 0
         self._final_path = final_path
         self._final_vars = final_vars
-
         self._storage_map = storage_map
     
     def write_preamble(self):
@@ -123,8 +122,7 @@ modifies balances;
         rt="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
         # rt="\tmapID"+str(self.find_mapID(node0))+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+"\n\n"
         self._final_path.append(rt)
-
-                                
+                      
     def boogie_gen(self, node):
         self._final_path.append("\tassume("+str(self.postorder_traversal(node))+");\n\n")
 
@@ -519,7 +517,7 @@ def main():
     PATHS = []
     VARS  = []
     MAP=get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
-    evm = EVM(STACK, set_storage(), set_memory(), open(BOOGIE, "w"), PATHS, VARS, MAP)
+    evm = EVM(STACK, set_storage(), MAP, set_memory(), open(BOOGIE, "w"), PATHS, VARS)
     evm.inspect("stack")
     print('(executing instructions...)')
     code_trace = read_path(ESSENTIAL)
