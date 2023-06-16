@@ -498,6 +498,25 @@ def map_invariant(ast_fname, sol_fname):
     
     return invariants
 
+def check_entry_thingy(trace, theorem):
+    # check theorem against trace
+    trace = open(trace, 'r')
+    line = ""
+    while not line.startswith(">>enter"):
+        line = trace.readline()
+    trace_i1, trace_i2 = line.find("(")+1, line.find(")")
+    m1 = line[trace_i1:trace_i2+1]
+
+    m2 = theorem["entry-for-test"]
+
+    if m1 != m2:
+        raise Exception("entry point wrong")
+    
+    # get trace contract name
+    contract_name_start = line.find('(')+1
+    contract_name_end = line.find('::', contract_name_start)
+    return line[contract_name_start:contract_name_end]
+    
 def main():
     ARGS = sys.argv # output: ['symexec.py', solidity, theorem, trace]
 
@@ -522,6 +541,8 @@ def main():
     THEOREM = json.load(THEOREM_file)
     CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
     FUNCTION_NAME = (re.search("::(.*)", THEOREM['entry-for-test']))[0][2:]
+
+    # check_entry_thingy(TRACE_FNAME, THEOREM)
 
     # TODO: add a function get_hypothesis(THEOREM), to read how the theorem.txt and extract "hypothesis"
     #       and attach it in "write_invariants()"
