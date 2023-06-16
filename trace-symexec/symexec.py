@@ -459,26 +459,29 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
     lines = [line.rstrip() for line in TRACE_file]
     essential_end = 9999
     start = False
+    PRE_start = 0
     for i in range(0, len(lines)-1):
         if lines[i].startswith(">>enter"):
-            TRACE_essential.write(lines[i]+"\n")
-
-            
             contract_name_start = lines[i].find('(')+1
             contract_name_end = lines[i].find('::', contract_name_start)
             contract_name = lines[i][contract_name_start:contract_name_end]
-            print("contract name: ", contract_name)
-
-        if lines[i+1][0:4].isnumeric() and int(lines[i+1][0:4]) == essential_end:
-            break
-        if (lines[i+1][0:4] == str(essential_start)):
-            if(not lines[i-1][0:4].isnumeric()):
-                raise Exception("input trace should include at least one pre instruction of the essential part")
-            essential_end = int(lines[i-1][0:4])+1
-            TRACE_essential.write(lines[i+1]+"\n")
-            start = True
-        if start and (lines[i][0:4]).isnumeric() and (int(lines[i][0:4]) > int(essential_start)):
-            TRACE_essential.write(lines[i]+'\n')
+            TRACE_essential.write(">>enter " + contract_name + '\n')
+        elif lines[i].startswith("<<leave"):
+            TRACE_essential.write(lines[i] + '\n')
+        elif not lines[i][0:4].isnumeric():
+            continue
+        else:
+            if lines[i][0:4].isnumeric() and int(lines[i][0:4]) == essential_end:
+                break
+            if (int(lines[i][0:4]) == int(essential_start)):
+                # raise Exception("input trace should include at least one pre instruction of the essential part")
+                essential_end = PRE_start+1
+                TRACE_essential.write(lines[i+1]+"\n")
+                start = True
+            else:
+                PRE_start = int(lines[i][0:4])
+            if start and (lines[i][0:4]).isnumeric() and (int(lines[i][0:4]) > int(essential_start)):
+                TRACE_essential.write(lines[i]+'\n')
 
 # invariant dictionary
 def map_invariant(ast_fname, sol_fname):
