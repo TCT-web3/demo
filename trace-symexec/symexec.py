@@ -258,6 +258,7 @@ modifies balances;
                 self._memory[str(mem_offset)] = value
             else:
                 self._memory[hex(mem_offset.value)] = value    
+            self._memory = dict(sorted(self._memory.items()))  # use sorted dictionary to mimic memory allocation  
         elif opcode=="MLOAD":
             # print((self._stacks[self._curr_contract])-1)
             mem_offset = self._stacks[self._curr_contract].pop()
