@@ -27,14 +27,15 @@ class SVT:
 
 class EVM:
 
-    def __init__(self, stacks, storage, storage_map, memory, output_file, final_path, final_vars, curr_contract, curr_function): 
+    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, function_stack): 
         # TODO: extend EVM with dictionaries of stack/memory for different contracts. 
         #       - each should have it's own stack/memory
         #       - var_count and final vars should be shared
         # self._stacks[0] = stack 
         self._stacks = stacks  
         self._storage = storage
-        self._memory = memory
+        # self._memory = memory
+        self._memories = memories
         self._output_file = output_file
         self._tmp_var_count = 0
         self._final_path = final_path
@@ -42,6 +43,8 @@ class EVM:
         self._storage_map = storage_map
         self._curr_contract = curr_contract
         self._curr_function = curr_function
+
+        self._function_stack = function_stack
     
     def write_preamble(self):
         self._output_file.write("""type address = int;
@@ -219,14 +222,14 @@ modifies balances;
                     c=c+1
         elif what == "memory":
             print("-----Memory-----")
-            for key in self._memory.keys(): 
-                print(key, ": ", self._memory[key])
+            for memory_name in self._memories:
+                for key in memory_name.keys(): 
+                    print(key, ": ", memory_name[key])
         elif what == "storage":
             print("-----Storage-----")
             for key in self._storage:
                 print('(', key, ',', self._storage[key], ')')
                 
-
     def run_instruction(self, instr, branch_taken):
         # self.inspect("stack")
         # self.inspect("memory")
@@ -236,14 +239,17 @@ modifies balances;
         operand=instr[2]
 
         if instr[0]==(">"):
-            print(instr)
+            # print(instr)
             info = re.search("\((.*)\)", instr)[0]
             info = info.split("::")
             self._curr_contract = (info[0][1:])
             self._curr_function = (info[1][:-1])
             print("switch to ", info)
+            self._function_stack.append(info)
             # set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
             # sys.exit()
+        elif instr[0]==("<"):
+            self._function_stack.pop() #TODO: finish !
         elif opcode=="JUMPDEST":
             pass
         elif opcode=="GAS":
@@ -269,22 +275,22 @@ modifies balances;
             # mem_offset //= 32 #   use actually offset
             value = self._stacks[self._curr_contract].pop()
             if not isinstance(mem_offset.value, int):
-                self._memory[str(mem_offset)] = value
+                self._memories[self._curr_contract][str(mem_offset)] = value
             else:
-                self._memory[hex(mem_offset.value)] = value    
-            self._memory = dict(sorted(self._memory.items()))  # use sorted dictionary to mimic memory allocation  
+                self._memories[self._curr_contract][hex(mem_offset.value)] = value    
+            self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation  
         elif opcode=="MLOAD":
             mem_offset = self._stacks[self._curr_contract].pop()
             if not isinstance(mem_offset.value, int):
-                if mem_offset not in self._memory.keys():
+                if mem_offset not in self._memories[self._curr_contract].keys():
                     value = 0 # empty memory space
                 else:    
-                    value = self._memory[str(mem_offset)] # get symbolic memory location (?)
+                    value = self._memories[self._curr_contract][str(mem_offset)] # get symbolic memory location (?)
             else:
-                if hex(mem_offset.value) not in self._memory.keys():
+                if hex(mem_offset.value) not in self._memories[self._curr_contract].keys():
                     value = SVT(0) # empty memory space
                 else:    
-                    value = self._memory[hex(mem_offset.value)] # get exact memory location
+                    value = self._memories[self._curr_contract][hex(mem_offset.value)] # get exact memory location
             self._stacks[self._curr_contract].append(value)  
         elif opcode=="SSTORE":
             self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
@@ -348,8 +354,8 @@ modifies balances;
                 # node.children.append(self._memory[start_offset//32+1]) # map name: balances
                 # node.children.append(self._memory[start_offset//32]) # key in balances
 
-                node.children.append(self._memory[hex(start_offset+32)])
-                node.children.append(self._memory[hex(start_offset)])
+                node.children.append(self._memories[self._curr_contract][hex(start_offset+32)])
+                node.children.append(self._memories[self._curr_contract][hex(start_offset)])
 
                 self._stacks[self._curr_contract].pop() # pop 64
                 self._stacks[self._curr_contract].append(node)
@@ -437,7 +443,7 @@ def read_path(filename):
                 operand = None
             trace_node = (PC, operator, operand) 
             trace.append(trace_node)
-        elif(">>" in line):
+        elif(">>" in line or "<<" in line):
             trace.append(line)     
     inputfile.close()
     return trace
@@ -501,7 +507,7 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
     start = False
     PRE_start = 0
     for i in range(0, len(lines)-1):
-        if lines[i].startswith(">>enter"):
+        if lines[i].startswith(">>") or lines[i].startswith("<<"):
             # contract_name_start = lines[i].find('(')+1
             # contract_name_end = lines[i].find('::', contract_name_start)
             # contract_name = lines[i][contract_name_start:contract_name_end]
@@ -523,8 +529,6 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
                 start = True
             else:
                 PRE_start = int(lines[i][0:4])
-
-            
 
 # invariant dictionary
 def map_invariant(ast_fname, sol_fname):
@@ -591,11 +595,8 @@ def main():
 
     check_entry_thingy(TRACE_FNAME, THEOREM)
 
-    # TODO: add a function get_hypothesis(THEOREM), to read how the theorem.txt and extract "hypothesis"
-    #       and attach it in "write_invariants()"
+
     INVARIANTS = map_invariant(AST, SOLIDITY_FNAME)
-
-
 
     # get essential part of the trace
     RUNTIME_BYTE_file = open(RUNTIME, )
@@ -605,7 +606,6 @@ def main():
 
     # TODO: how to initialize different stacks? on-the-fly? stacks with actual value? 
     CONTRACT_lst = json.load(open(RUNTIME,))
-    STACKS = {}
     for entries in CONTRACT_lst["contracts"]:
         parts = entries.split(":")
         solidity_file=parts[0]
@@ -618,14 +618,52 @@ def main():
         # function_name
 
 
+
     # EVM construction
-    # init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
-    # STACKS[CONTRACT_NAME] = init_STACK
+    STACKS = {}
+    init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+    STACKS[CONTRACT_NAME] = init_STACK
     
+    MEMORIES = {}
+    init_MEM = set_memory()
+    MEMORIES[CONTRACT_NAME] = init_MEM
+
+
+    STACKS["no_reentrancy_attack"] = [
+        "0x000000000000000000000000000000000000000000000000000000000000430e",
+	    "0x00000000000000000000000073d5596f97950f1048b251e3e3ee5ab888d76d37",
+	    "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x00000000000000000000000000000000000000000000000000000000000000c4",
+        "0x0000000000000000000000000000000000000000000000000000000000000024",
+        "0x00000000000000000000000000000000000000000000000000000000000000c4",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x00000000000000000000000000000000000000000000000000000000000000e8",
+        "0x00000000000000000000000073d5596f97950f1048b251e3e3ee5ab888d76d37",
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000005",
+        "0x00000000000000000000000071c7656ec7ab88b098defb751b7401b5f6d8976f",
+        "0x00000000000000000000000000000000000000000000000000000000000000bd",
+        "0x000000000000000000000000000000000000000000000000000000003d0a4061"
+    ]
+
+    MEMORIES["no_reentrancy_attack"] = {
+        0x0: "00000000000000000000000071c7656ec7ab88b098defb751b7401b5f6d8976f",
+	    0x20: "0000000000000000000000000000000000000000000000000000000000000002",
+	    0x40: "00000000000000000000000000000000000000000000000000000000000000c4",
+	    0x60: "0000000000000000000000000000000000000000000000000000000000000000",
+	    0x80: "0000000000000000000000000000000000000000000000000000000000000024",
+	    0xa0: "85892c2400000000000000000000000000000000000000000000000000000000",
+	    0xc0: "0000000585892c24000000000000000000000000000000000000000000000000",
+	    0xe0: "0000000000000005000000000000000000000000000000000000000000000000",
+	    0x100: "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+
+
+
     PATHS = []
     VARS  = []
     MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
-    evm = EVM(STACKS, set_storage(), MAP, set_memory(), open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME)
+    evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [])
     evm.inspect("stack")
     print('(executing instructions...)')
     code_trace = read_path(ESSENTIAL)
