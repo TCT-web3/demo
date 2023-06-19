@@ -27,11 +27,12 @@ class SVT:
 
 class EVM:
 
-    def __init__(self, stack, storage, storage_map, memory, output_file, final_path, final_vars): 
+    def __init__(self, stacks, storage, storage_map, memory, output_file, final_path, final_vars, curr_contract, curr_function): 
         # TODO: extend EVM with dictionaries of stack/memory for different contracts. 
         #       - each should have it's own stack/memory
         #       - var_count and final vars should be shared
-        self._stack = stack  
+        # self._stacks[0] = stack 
+        self._stacks = stacks  
         self._storage = storage
         self._memory = memory
         self._output_file = output_file
@@ -39,6 +40,8 @@ class EVM:
         self._final_path = final_path
         self._final_vars = final_vars
         self._storage_map = storage_map
+        self._curr_contract = curr_contract
+        self._curr_function = curr_function
     
     def write_preamble(self):
         self._output_file.write("""type address = int;
@@ -119,7 +122,6 @@ modifies balances;
                       
     def boogie_gen(self, node):
         self._final_path.append("\tassume("+str(self.postorder_traversal(node))+");\n\n")
-
 
     def find_key(self, node):
         if not node.children:
@@ -210,10 +212,12 @@ modifies balances;
     def inspect(self, what):
         if what == "stack":
             print("-----Stack-----")
-            c=0
-            for elem in self._stack[::-1]:
-                print('stack['+str(c)+'] ', elem)
-                c=c+1
+            for stack_name in self._stacks:
+                c=0
+                print(stack_name)
+                for elem in self._stacks[stack_name][::-1]:
+                    print('stack['+str(c)+'] ', elem)
+                    c=c+1
         elif what == "memory":
             print("-----Memory-----")
             for key in self._memory.keys(): 
@@ -232,74 +236,77 @@ modifies balances;
 
         if opcode=="JUMPDEST":
             pass
+        elif opcode.startswith(">>enter"):
+            print(opcode)
+            print(re.search( "\((.*)\)", opcode))
         elif opcode=="JUMP":
-            self._stack.pop()
+            self._stacks[self._curr_contract].pop()
         elif opcode=="JUMPI":
-            self.boogie_gen(self._stack[-2])
-            self._stack.pop()
-            self._stack.pop()
+            self.boogie_gen(self._stacks[0][-2])
+            self._stacks[self._curr_contract].pop()
+            self._stacks[self._curr_contract].pop()
         elif opcode=="MSTORE":
             # self.inspect("memory")
-            mem_offset = self._stack.pop().value
+            mem_offset = self._stacks[0].pop().value
             if not isinstance(mem_offset, int):
                 raise Exception("We assume mem offset to be constant.")
             elif mem_offset % 32 != 0:
                 raise Exception("We assume mem offset to be a multiple of 32.")
             # mem_offset //= 32 #   use actually offset
-            value = self._stack.pop()
+            value = self._stacks[0].pop()
             self._memory[mem_offset] = value
             # self.inspect("memory")
         elif opcode=="MLOAD":
-            self._stack.pop()
-            value = self._memory[len(self._stack)-1]
-            self._stack.append(value) 
+            self._stacks[self._curr_contract].pop()
+            value = self._memory[len(self._stacks[0])-1]
+            self._stacks[self._curr_contract].append(value) 
         elif opcode=="SSTORE":
-            self.boogie_gen_sstore(self._stack.pop(), self._stack.pop())
+            self.boogie_gen_sstore(self._stacks[0].pop(), self._stacks[0].pop())
         elif opcode=="SLOAD":
             # self.inspect("storage")
             node = SVT("SLOAD")
-            node.children.append(self._stack.pop())
-            self._stack.append(node)
+            node.children.append(self._stacks[0].pop())
+            self._stacks[self._curr_contract].append(node)
         elif opcode=="PC":
-            self._stack.append(SVT(PC))
+            self._stacks[self._curr_contract].append(SVT(PC))
         elif opcode.startswith("PUSH"):
-            self._stack.append(SVT(operand))
+            self._stacks[self._curr_contract].append(SVT(operand))
         elif opcode.startswith("POP"):
-            self._stack.pop()
+            self._stacks[self._curr_contract].pop()
         elif opcode.startswith("CALLER"):
-            self._stack.append(SVT("msg.sender")) # symbolic
+            self._stacks[self._curr_contract].append(SVT("msg.sender")) # symbolic
         elif opcode.startswith("ORIGIN"):
-            self._stack.append(SVT("tx.origin")) # symbolic
+            self._stacks[self._curr_contract].append(SVT("tx.origin")) # symbolic
         elif opcode.startswith("DUP"):
             position=int(re.search('[0-9]+', opcode)[0])
-            self._stack.append(self._stack[len(self._stack)-position]) 
+            self._stacks[self._curr_contract].append(self._stacks[self._curr_contract][len(self._stacks[0])-position]) 
         elif opcode.startswith("SWAP"):
             position=int(re.search('[0-9]+', opcode)[0])
-            dest = self._stack[len(self._stack)-position-1] 
-            self._stack[len(self._stack)-position] = self._stack.pop()
-            self._stack.append(dest)
+            dest = self._stacks[self._curr_contract][len(self._stacks[0])-position-1] 
+            self._stacks[self._curr_contract][len(self._stacks[0])-position] = self._stacks[0].pop()
+            self._stacks[self._curr_contract].append(dest)
         elif opcode=="ISZERO":
             node = SVT(opcode)
-            node.children.append(self._stack.pop())
-            self._stack.append(node)
+            node.children.append(self._stacks[self._curr_contract].pop())
+            self._stacks[self._curr_contract].append(node)
         elif opcode=="ADD" or opcode=="AND" or opcode=="LT" or opcode=="GT" or opcode=="SUB":
-            if isinstance(self._stack[-1].value, int) and isinstance(self._stack[-2].value, int):
+            if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
                 if opcode == "ADD":
-                    node = SVT((self._stack.pop().value + self._stack.pop().value)%2**256)
+                    node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256)
                 elif opcode == "AND":
-                    node = SVT((self._stack.pop().value & self._stack.pop().value)%2**256) 
+                    node = SVT((self._stacks[self._curr_contract].pop().value & self._stacks[self._curr_contract].pop().value)%2**256) 
                 elif opcode == "SUB":
-                    node = SVT((self._stack.pop().value - self._stack.pop().value)%2**256)       
+                    node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256)       
             else:
                 node = SVT(opcode)
-                node.children.append(self._stack.pop())
-                node.children.append(self._stack.pop())
-            self._stack.append(node)
+                node.children.append(self._stacks[self._curr_contract].pop())
+                node.children.append(self._stacks[self._curr_contract].pop())
+            self._stacks[self._curr_contract].append(node)
         elif opcode=="SHA3":
             # self.inspect("stack")
             # self.inspect("memory")
-            if self._stack[-2].value == 64:
-                start_offset = self._stack.pop().value
+            if self._stacks[self._curr_contract][-2].value == 64:
+                start_offset = self._stacks[self._curr_contract].pop().value
                 if not isinstance(start_offset, int):
                     raise Exception("start offset not constant")
                 node = SVT("MapElement")
@@ -309,8 +316,8 @@ modifies balances;
                 node.children.append(self._memory[start_offset+32])
                 node.children.append(self._memory[start_offset])
 
-                self._stack.pop() # pop 64
-                self._stack.append(node)
+                self._stacks[self._curr_contract].pop() # pop 64
+                self._stacks[self._curr_contract].append(node)
             # self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
@@ -455,10 +462,11 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
     PRE_start = 0
     for i in range(0, len(lines)-1):
         if lines[i].startswith(">>enter"):
-            contract_name_start = lines[i].find('(')+1
-            contract_name_end = lines[i].find('::', contract_name_start)
-            contract_name = lines[i][contract_name_start:contract_name_end]
-            TRACE_essential.write(">>enter " + contract_name + '\n')
+            # contract_name_start = lines[i].find('(')+1
+            # contract_name_end = lines[i].find('::', contract_name_start)
+            # contract_name = lines[i][contract_name_start:contract_name_end]
+            # TRACE_essential.write(">>enter " + contract_name + '\n')
+            TRACE_essential.write(lines[i] + '\n')
         elif lines[i].startswith("<<leave"):
             TRACE_essential.write(lines[i] + '\n')
         elif not lines[i][0:1].isnumeric():
@@ -546,6 +554,8 @@ def main():
     #       and attach it in "write_invariants()"
     INVARIANTS = map_invariant(AST, SOLIDITY_FNAME)
 
+
+
     # get essential part of the trace
     RUNTIME_BYTE_file = open(RUNTIME, )
     essential_start = find_essential_start(RUNTIME_BYTE_file, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
@@ -553,19 +563,27 @@ def main():
 
 
     CONTRACT_lst = json.load(open(RUNTIME,))
-    for contract in CONTRACT_lst["contracts"]:
-        trim = re.search("(.*):", contract)
-        print(contract.replace(trim[0], ""))
+    STACKS = {}
+    for entries in CONTRACT_lst["contracts"]:
+        parts = entries.split(":")
+        solidity_file=parts[0]
+        contract=parts[1]
+        # contract_name=(contract.replace(trim[0], ""))
+        # function_name
 
-    # exit()
+    
 
     # EVM construction
-    STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+    init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+
+    STACKS[CONTRACT_NAME] = init_STACK
+    
     PATHS = []
     VARS  = []
     MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
-    evm = EVM(STACK, set_storage(), MAP, set_memory(), open(BOOGIE, "w"), PATHS, VARS)
+    evm = EVM(STACKS, set_storage(), MAP, set_memory(), open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME)
     evm.inspect("stack")
+    sys.exit()
     print('(executing instructions...)')
     code_trace = read_path(ESSENTIAL)
     evm.sym_exec(code_trace)
