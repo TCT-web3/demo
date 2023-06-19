@@ -228,18 +228,32 @@ modifies balances;
                 
 
     def run_instruction(self, instr, branch_taken):
-        self.inspect("stack")
-        self.inspect("memory")
+        # self.inspect("stack")
+        # self.inspect("memory")
         print(instr)
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
 
-        if opcode=="JUMPDEST":
+        if instr[0]==(">"):
+            print(instr)
+            info = re.search("\((.*)\)", instr)[0]
+            info = info.split("::")
+            self._curr_contract = (info[0][1:])
+            self._curr_function = (info[1][:-1])
+            print("switch to ", info)
+            # set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+            # sys.exit()
+        elif opcode=="JUMPDEST":
             pass
-        elif opcode.startswith(">>enter"):
-            print(opcode)
-            print(re.search( "\((.*)\)", opcode))
+        elif opcode=="GAS":
+            self._stacks[self._curr_contract].append(SVT("GAS"))  # what is the GAS amount? 
+        elif opcode=="RETURNDATASIZE":
+            self._stacks[self._curr_contract].append(SVT("RETURNDATASIZE"))
+        elif opcode=="CALL":
+            pass # we can skip now since >>enter
+        elif opcode=="STOP":
+            pass     
         elif opcode=="JUMP":
             self._stacks[self._curr_contract].pop()
         elif opcode=="JUMPI":
@@ -260,14 +274,17 @@ modifies balances;
                 self._memory[hex(mem_offset.value)] = value    
             self._memory = dict(sorted(self._memory.items()))  # use sorted dictionary to mimic memory allocation  
         elif opcode=="MLOAD":
-            # print((self._stacks[self._curr_contract])-1)
             mem_offset = self._stacks[self._curr_contract].pop()
             if not isinstance(mem_offset.value, int):
-                # mem_offset = 
-                value = self._memory[str(mem_offset)] # get symbolic memory location
+                if mem_offset not in self._memory.keys():
+                    value = 0 # empty memory space
+                else:    
+                    value = self._memory[str(mem_offset)] # get symbolic memory location (?)
             else:
-                value = self._memory[hex(mem_offset.value)] # get exact memory location
-            # value = 0
+                if hex(mem_offset.value) not in self._memory.keys():
+                    value = SVT(0) # empty memory space
+                else:    
+                    value = self._memory[hex(mem_offset.value)] # get exact memory location
             self._stacks[self._curr_contract].append(value)  
         elif opcode=="SSTORE":
             self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
@@ -298,19 +315,23 @@ modifies balances;
             node = SVT(opcode)
             node.children.append(self._stacks[self._curr_contract].pop())
             self._stacks[self._curr_contract].append(node)
-        elif opcode=="ADD" or opcode=="AND" or opcode=="LT" or opcode=="GT" or opcode=="SUB":
+        elif opcode=="ADD" or opcode=="AND" or opcode=="OR" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
             # self.inspect("stack")
             if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256)
                 elif opcode == "AND":
                     node = SVT((self._stacks[self._curr_contract].pop().value & self._stacks[self._curr_contract].pop().value)%2**256) 
+                elif opcode == "OR":
+                    node = SVT((self._stacks[self._curr_contract].pop().value | self._stacks[self._curr_contract].pop().value)%2**256)    
                 elif opcode == "SUB":
                     node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256) 
                 elif opcode == "LT":
                     node = SVT((self._stacks[self._curr_contract].pop().value < self._stacks[self._curr_contract].pop().value)) #True or False 
                 elif opcode == "GT":
-                    node = SVT((self._stacks[self._curr_contract].pop().value > self._stacks[self._curr_contract].pop().value)) #True or False      
+                    node = SVT((self._stacks[self._curr_contract].pop().value > self._stacks[self._curr_contract].pop().value)) #True or False
+                elif opcode == "EQ":
+                    node = SVT((self._stacks[self._curr_contract].pop().value == self._stacks[self._curr_contract].pop().value)) #True or False          
             else:
                 node = SVT(opcode)
                 node.children.append(self._stacks[self._curr_contract].pop())
@@ -415,7 +436,9 @@ def read_path(filename):
             else:  
                 operand = None
             trace_node = (PC, operator, operand) 
-            trace.append(trace_node) 
+            trace.append(trace_node)
+        elif(">>" in line):
+            trace.append(line)     
     inputfile.close()
     return trace
 
@@ -580,21 +603,24 @@ def main():
     write_trace_essential(TRACE_FNAME, ESSENTIAL, essential_start)
 
 
+    # TODO: how to initialize different stacks? on-the-fly? stacks with actual value? 
     CONTRACT_lst = json.load(open(RUNTIME,))
     STACKS = {}
     for entries in CONTRACT_lst["contracts"]:
         parts = entries.split(":")
         solidity_file=parts[0]
         contract=parts[1]
+        print(solidity_file)
+        print(contract)
+        # stack = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+        # STACKS[CONTRACT_NAME] = stack
         # contract_name=(contract.replace(trim[0], ""))
         # function_name
 
-    
 
     # EVM construction
-    init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
-
-    STACKS[CONTRACT_NAME] = init_STACK
+    # init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+    # STACKS[CONTRACT_NAME] = init_STACK
     
     PATHS = []
     VARS  = []
