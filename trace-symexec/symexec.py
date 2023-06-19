@@ -161,7 +161,6 @@ modifies balances;
             # print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
             # print(str(map_id))
             print_string = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
-
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)  
         elif node.value == "LT":
@@ -229,7 +228,9 @@ modifies balances;
                 
 
     def run_instruction(self, instr, branch_taken):
-        # print(instr)
+        self.inspect("stack")
+        self.inspect("memory")
+        print(instr)
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
@@ -242,30 +243,37 @@ modifies balances;
         elif opcode=="JUMP":
             self._stacks[self._curr_contract].pop()
         elif opcode=="JUMPI":
-            self.boogie_gen(self._stacks[0][-2])
+            self.boogie_gen(self._stacks[self._curr_contract][-2])
             self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].pop()
         elif opcode=="MSTORE":
-            # self.inspect("memory")
-            mem_offset = self._stacks[0].pop().value
-            if not isinstance(mem_offset, int):
-                raise Exception("We assume mem offset to be constant.")
-            elif mem_offset % 32 != 0:
-                raise Exception("We assume mem offset to be a multiple of 32.")
+            mem_offset = (self._stacks[self._curr_contract].pop())
+            # if not isinstance(mem_offset, int):
+            #     raise Exception("We assume mem offset to be constant.")
+            # elif mem_offset % 32 != 0:
+            #     raise Exception("We assume mem offset to be a multiple of 32.")
             # mem_offset //= 32 #   use actually offset
-            value = self._stacks[0].pop()
-            self._memory[mem_offset] = value
-            # self.inspect("memory")
+            value = self._stacks[self._curr_contract].pop()
+            if not isinstance(mem_offset.value, int):
+                self._memory[str(mem_offset)] = value
+            else:
+                self._memory[hex(mem_offset.value)] = value    
         elif opcode=="MLOAD":
-            self._stacks[self._curr_contract].pop()
-            value = self._memory[len(self._stacks[0])-1]
-            self._stacks[self._curr_contract].append(value) 
+            # print((self._stacks[self._curr_contract])-1)
+            mem_offset = self._stacks[self._curr_contract].pop()
+            if not isinstance(mem_offset.value, int):
+                # mem_offset = 
+                value = self._memory[str(mem_offset)] # get symbolic memory location
+            else:
+                value = self._memory[hex(mem_offset.value)] # get exact memory location
+            # value = 0
+            self._stacks[self._curr_contract].append(value)  
         elif opcode=="SSTORE":
-            self.boogie_gen_sstore(self._stacks[0].pop(), self._stacks[0].pop())
+            self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
         elif opcode=="SLOAD":
             # self.inspect("storage")
             node = SVT("SLOAD")
-            node.children.append(self._stacks[0].pop())
+            node.children.append(self._stacks[self._curr_contract].pop())
             self._stacks[self._curr_contract].append(node)
         elif opcode=="PC":
             self._stacks[self._curr_contract].append(SVT(PC))
@@ -279,24 +287,29 @@ modifies balances;
             self._stacks[self._curr_contract].append(SVT("tx.origin")) # symbolic
         elif opcode.startswith("DUP"):
             position=int(re.search('[0-9]+', opcode)[0])
-            self._stacks[self._curr_contract].append(self._stacks[self._curr_contract][len(self._stacks[0])-position]) 
+            self._stacks[self._curr_contract].append(self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position]) 
         elif opcode.startswith("SWAP"):
             position=int(re.search('[0-9]+', opcode)[0])
-            dest = self._stacks[self._curr_contract][len(self._stacks[0])-position-1] 
-            self._stacks[self._curr_contract][len(self._stacks[0])-position] = self._stacks[0].pop()
+            dest = self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position-1] 
+            self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position] = self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].append(dest)
-        elif opcode=="ISZERO":
+        elif opcode=="ISZERO" or opcode=="NOT":
             node = SVT(opcode)
             node.children.append(self._stacks[self._curr_contract].pop())
             self._stacks[self._curr_contract].append(node)
         elif opcode=="ADD" or opcode=="AND" or opcode=="LT" or opcode=="GT" or opcode=="SUB":
+            # self.inspect("stack")
             if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256)
                 elif opcode == "AND":
                     node = SVT((self._stacks[self._curr_contract].pop().value & self._stacks[self._curr_contract].pop().value)%2**256) 
                 elif opcode == "SUB":
-                    node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256)       
+                    node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256) 
+                elif opcode == "LT":
+                    node = SVT((self._stacks[self._curr_contract].pop().value < self._stacks[self._curr_contract].pop().value)) #True or False 
+                elif opcode == "GT":
+                    node = SVT((self._stacks[self._curr_contract].pop().value > self._stacks[self._curr_contract].pop().value)) #True or False      
             else:
                 node = SVT(opcode)
                 node.children.append(self._stacks[self._curr_contract].pop())
@@ -313,14 +326,15 @@ modifies balances;
                 # node.children.append(self._memory[start_offset//32+1]) # map name: balances
                 # node.children.append(self._memory[start_offset//32]) # key in balances
 
-                node.children.append(self._memory[start_offset+32])
-                node.children.append(self._memory[start_offset])
+                node.children.append(self._memory[hex(start_offset+32)])
+                node.children.append(self._memory[hex(start_offset)])
 
                 self._stacks[self._curr_contract].pop() # pop 64
                 self._stacks[self._curr_contract].append(node)
             # self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
+            sys.exit()
 
 
         
@@ -375,7 +389,9 @@ def set_storage():
     } 
 
 def set_memory():
-    return {}
+    return {
+        hex(64): SVT(128) # initial setting of the memory 
+    }
 
 def read_path(filename):
     trace=[]
@@ -474,16 +490,17 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
         else:
             if lines[i][0:1].isnumeric() and int(lines[i][0:4]) == essential_end:
                 break
-
+            if start and lines[i][0:1].isnumeric():
+                TRACE_essential.write(lines[i]+'\n')
             if (int(lines[i][0:4]) == int(essential_start)):
                 # raise Exception("input trace should include at least one pre instruction of the essential part")
                 essential_end = PRE_start+1
-                TRACE_essential.write(lines[i+1]+"\n")
+                TRACE_essential.write(lines[i]+"\n")
                 start = True
             else:
                 PRE_start = int(lines[i][0:4])
-            if start and lines[i][0:1].isnumeric():
-                TRACE_essential.write(lines[i]+'\n')
+
+            
 
 # invariant dictionary
 def map_invariant(ast_fname, sol_fname):
@@ -583,7 +600,6 @@ def main():
     MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
     evm = EVM(STACKS, set_storage(), MAP, set_memory(), open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME)
     evm.inspect("stack")
-    sys.exit()
     print('(executing instructions...)')
     code_trace = read_path(ESSENTIAL)
     evm.sym_exec(code_trace)
@@ -591,6 +607,7 @@ def main():
     evm.inspect("memory")
     evm.inspect("storage")
 
+    # sys.exit()
     # write to final Boogie output
     evm.write_preamble()
     evm.write_vars()
