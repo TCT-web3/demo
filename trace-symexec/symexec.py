@@ -222,14 +222,19 @@ modifies balances;
                     c=c+1
         elif what == "memory":
             print("-----Memory-----")
-            for memory_name in self._memories:
-                for key in memory_name.keys(): 
-                    print(key, ": ", memory_name[key])
+            for memory_name in self._memories.keys():
+                temp = self._memories[memory_name]
+                for key in temp.keys(): 
+                    print(key, ": ", temp[key])
         elif what == "storage":
             print("-----Storage-----")
             for key in self._storage:
                 print('(', key, ',', self._storage[key], ')')
-                
+
+    def set_callStack(offset, data):
+        # TODO: use current stack/memory to get setup the call data
+        return {}
+
     def run_instruction(self, instr, branch_taken):
         # self.inspect("stack")
         # self.inspect("memory")
@@ -239,17 +244,25 @@ modifies balances;
         operand=instr[2]
 
         if instr[0]==(">"):
-            # print(instr)
+            self.inspect("memory")
+            self.inspect("stack")
+
+            # TODO: Ashley
+            # implement self.set_callStack(offset, length) 
+            # get offset and length for call data, in the printed out stack and memory you 
+            # could see "stack[3] = 196", which is hex c4, and in memory, we see 0xc4 points to
+            # OR(AND(0, fff....
+            # so the set_callStack will be [FunctionSelector -- something -- OR(AND(0, fff...]
+
             info = re.search("\((.*)\)", instr)[0]
             info = info.split("::")
             self._curr_contract = (info[0][1:])
             self._curr_function = (info[1][:-1])
-            print("switch to ", info)
             self._call_stack.append((self._curr_contract, self._curr_function))
+            print("switched to ", info)
             # sys.exit()
         elif instr[0]==("<"):
-            self._call_stack.pop() #TODO: finish !
-
+            self._call_stack.pop()
         elif opcode=="JUMPDEST":
             pass
         elif opcode=="GAS":
@@ -625,36 +638,6 @@ def main():
     MEMORIES = {}
     init_MEM = set_memory()
     MEMORIES[CONTRACT_NAME] = init_MEM
-
-
-    STACKS["no_reentrancy_attack"] = [
-        "0x000000000000000000000000000000000000000000000000000000000000430e",
-	    "0x00000000000000000000000073d5596f97950f1048b251e3e3ee5ab888d76d37",
-	    "0x0000000000000000000000000000000000000000000000000000000000000000",
-        "0x00000000000000000000000000000000000000000000000000000000000000c4",
-        "0x0000000000000000000000000000000000000000000000000000000000000024",
-        "0x00000000000000000000000000000000000000000000000000000000000000c4",
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
-        "0x00000000000000000000000000000000000000000000000000000000000000e8",
-        "0x00000000000000000000000073d5596f97950f1048b251e3e3ee5ab888d76d37",
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
-        "0x0000000000000000000000000000000000000000000000000000000000000005",
-        "0x00000000000000000000000071c7656ec7ab88b098defb751b7401b5f6d8976f",
-        "0x00000000000000000000000000000000000000000000000000000000000000bd",
-        "0x000000000000000000000000000000000000000000000000000000003d0a4061"
-    ]
-
-    MEMORIES["no_reentrancy_attack"] = {
-        0x0: "00000000000000000000000071c7656ec7ab88b098defb751b7401b5f6d8976f",
-	    0x20: "0000000000000000000000000000000000000000000000000000000000000002",
-	    0x40: "00000000000000000000000000000000000000000000000000000000000000c4",
-	    0x60: "0000000000000000000000000000000000000000000000000000000000000000",
-	    0x80: "0000000000000000000000000000000000000000000000000000000000000024",
-	    0xa0: "85892c2400000000000000000000000000000000000000000000000000000000",
-	    0xc0: "0000000585892c24000000000000000000000000000000000000000000000000",
-	    0xe0: "0000000000000005000000000000000000000000000000000000000000000000",
-	    0x100: "0000000000000000000000000000000000000000000000000000000000000000"
-    }
 
 
 
