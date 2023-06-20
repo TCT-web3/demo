@@ -51,7 +51,7 @@ contract MultiVulnToken is StandardToken {
     function clear(address _to) public {
         unchecked{
 		    uint256 bal = balances[msg.sender];
-            require (msg.sender!=_to);
+            // require (msg.sender!=_to); // try remove 54
             balances[_to]+=bal;
             bool success;
             (success, ) = msg.sender.call(

@@ -27,7 +27,7 @@ class SVT:
 
 class EVM:
 
-    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, function_stack): 
+    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack): 
         # TODO: extend EVM with dictionaries of stack/memory for different contracts. 
         #       - each should have it's own stack/memory
         #       - var_count and final vars should be shared
@@ -44,7 +44,7 @@ class EVM:
         self._curr_contract = curr_contract
         self._curr_function = curr_function
 
-        self._function_stack = function_stack
+        self._call_stack = call_stack
     
     def write_preamble(self):
         self._output_file.write("""type address = int;
@@ -245,12 +245,10 @@ modifies balances;
             self._curr_contract = (info[0][1:])
             self._curr_function = (info[1][:-1])
             print("switch to ", info)
-            self._function_stack.append((self._curr_contract, self._curr_function))
-            # TODO: call stack: add curr_PC
-            # set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+            self._call_stack.append((self._curr_contract, self._curr_function))
             # sys.exit()
         elif instr[0]==("<"):
-            self._function_stack.pop() #TODO: finish !
+            self._call_stack.pop() #TODO: finish !
 
         elif opcode=="JUMPDEST":
             pass
@@ -606,7 +604,7 @@ def main():
     write_trace_essential(TRACE_FNAME, ESSENTIAL, essential_start)
 
 
-    # TODO: how to initialize different stacks? on-the-fly? stacks with actual value? 
+    # TODO: initialize all the stacks for each functions in each contracts 
     CONTRACT_lst = json.load(open(RUNTIME,))
     for entries in CONTRACT_lst["contracts"]:
         parts = entries.split(":")
@@ -614,16 +612,14 @@ def main():
         contract=parts[1]
         print(solidity_file)
         print(contract)
-        # stack = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
-        # STACKS[CONTRACT_NAME] = stack
-        # contract_name=(contract.replace(trim[0], ""))
-        # function_name
 
 
 
     # EVM construction
     STACKS = {}
     init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+
+
     STACKS[CONTRACT_NAME] = init_STACK
     
     MEMORIES = {}
