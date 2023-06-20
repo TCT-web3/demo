@@ -245,11 +245,13 @@ modifies balances;
             self._curr_contract = (info[0][1:])
             self._curr_function = (info[1][:-1])
             print("switch to ", info)
-            self._function_stack.append(info)
+            self._function_stack.append((self._curr_contract, self._curr_function))
+            # TODO: call stack: add curr_PC
             # set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
             # sys.exit()
         elif instr[0]==("<"):
             self._function_stack.pop() #TODO: finish !
+
         elif opcode=="JUMPDEST":
             pass
         elif opcode=="GAS":
