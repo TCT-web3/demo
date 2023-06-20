@@ -14,7 +14,6 @@ function evmadd(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b);
 axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b-TwoE256);
 
-
 function evmsub(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b>=0 ==> evmsub(a,b) == a-b);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b<0 ==> evmsub(a,b) == a-b+TwoE256);
@@ -39,25 +38,44 @@ modifies balances;
     var _fee: uint256;
        
 	var tmp2: uint256;
-	var tmp1: uint256;
 	var tmp3: uint256;
+	var tmp1: uint256;
+	var tmp5: uint256;
+	var tmp6: uint256;
 	var tmp4: uint256;
-	var tmp5: bool;
-	var tmp6: bool;
+	var tmp7: bool;
+	var tmp8: bool;
+	var tmp9: bool;
 
-    assume (0<=_value && _value<TwoE255+1 && 0<=_fee && _fee<TwoE255);           
-    assume (totalSupply<TwoE255);    
+	assume(totalSupply<TwoE256 && msg.sender!=_to );
+	assume(forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply);
+	assume( sum(balances) == totalSupply );
 
-    assume (sum(balances) == totalSupply);
-    assume (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);  
-	tmp2:=evmand(1461501637330902918203684832716283019655932542975,_from);
-	tmp1:=evmand(1461501637330902918203684832716283019655932542975,tmp2);
-	tmp3:=balances[tmp1];
-	tmp4:=evmadd(_fee,_value);
-	tmp5:=tmp3<tmp4;
-	tmp6:=!tmp5;
-	assume(tmp6);
-	
-    assert (sum(balances) == totalSupply);         
-    assert (forall x:address :: 0<=balances[x] && balances[x]<=totalSupply);
-}   
+	tmp2:=evmand(fff,msg.sender);
+	tmp3:=evmand(fff,_to);
+	tmp1:=evmsub(tmp2,tmp3);
+	assume(tmp1);
+
+	tmp5:=balances[_to];
+	tmp6:=balances[msg.sender];
+	tmp4:=evmadd(tmp5,tmp6);
+	balances[_to]:=tmp4;
+
+	tmp7:=!tmp6;
+	assume(tmp7);
+
+	tmp8:=!tmp7;
+	assume(tmp8);
+
+	tmp9:=!tmp8;
+	assume(tmp9);
+
+	assume(EQ(RETURNDATASIZE,0));
+
+	assume(GAS);
+
+	balances[msg.sender]:=0;
+
+	assert(forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply);
+	assert( sum(balances) == totalSupply );
+}

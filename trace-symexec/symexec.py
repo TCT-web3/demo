@@ -119,11 +119,20 @@ modifies balances;
 
     def boogie_gen_sstore(self, node0, node1):
         map_id = self.find_key(node0.children[1])
-        rt="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
-        self._final_path.append(rt)
+        path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
+        self._final_path.append(path)
+        print("\n[code gen]")
+        print(node0)
+        print(node1)
+        print(path)
                       
     def boogie_gen(self, node):
-        self._final_path.append("\tassume("+str(self.postorder_traversal(node))+");\n\n")
+        path = "\tassume("+str(self.postorder_traversal(node))+");\n\n"
+        self._final_path.append(path)
+        print("\n[code gen]") 
+        print(node)
+        print(path)
+
 
     def find_key(self, node):
         if not node.children:
@@ -155,7 +164,6 @@ modifies balances;
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)
         elif node.value == "SLOAD":
-            print(node.children[0])
             map_id = self.find_mapID(node.children[0])
             map_key = self.find_key(node.children[0].children[1])
             self._tmp_var_count+=1
@@ -240,14 +248,12 @@ modifies balances;
     def run_instruction(self, instr, branch_taken):
         # self.inspect("stack")
         # self.inspect("memory")
-        print(instr)
+        # print(instr)
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
 
         if instr[0]==(">"):
-            # self.inspect("memory")
-            # self.inspect("stack")
             info = re.search("\((.*)\)", instr)[0]
             info = info.split("::")
             dest_contract = (info[0][1:])
@@ -283,6 +289,7 @@ modifies balances;
             self._stacks[self._curr_contract].pop()
         elif opcode=="JUMPI":
             self.boogie_gen(self._stacks[self._curr_contract][-2])
+            print(instr)
             self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].pop()
         elif opcode=="MSTORE":
@@ -313,6 +320,7 @@ modifies balances;
             self._stacks[self._curr_contract].append(value)  
         elif opcode=="SSTORE":
             self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
+            print(instr)
         elif opcode=="SLOAD":
             # self.inspect("storage")
             node = SVT("SLOAD")
@@ -437,7 +445,7 @@ def set_storage():
 
 def set_memory():
     return {
-        hex(64): SVT(128) # initial setting of the memory 
+        hex(64): SVT(128) # initial setting of the memory!!! 
     }
 
 def read_path(filename):
@@ -511,8 +519,7 @@ def find_essential_start(runtime, solidity_fname, contract_name, function_name):
     for func in function_list:
         if (function_name in func):
             essential_start = (function_list[func]["entryPoint"])
-            break
-    print(essential_start)    
+            break 
     if (essential_start==0):
         raise Exception("error, cannot find function entrypoint")
     return essential_start
@@ -591,17 +598,17 @@ def check_entry_thingy(trace, theorem):
     
 def main():
     ARGS = sys.argv # output: ['symexec.py', solidity, theorem, trace]
-
-    STORAGE     ="solc_storage.json"
-    ABI         ="solc_abi.json"
-    AST         ="solc_ast.json"
-    ESSENTIAL   ="trace_essential.txt"
-    RUNTIME     ="solc_runtime.json"
-    BOOGIE      ="output.bpl"
-
     SOLIDITY_FNAME  = ARGS[1]
     THEOREM_FNAME   = ARGS[2]
     TRACE_FNAME     = ARGS[3]
+    STORAGE         = "temp_solc_storage.json"
+    ABI             = "temp_solc_abi.json"
+    AST             = "temp_solc_ast.json"
+    ESSENTIAL       = "temp_essential.txt"
+    RUNTIME         = "temp_solc_runtime.json"
+    BOOGIE          = "TCToutput_"+THEOREM_FNAME[:-5]+".bpl"
+
+   
 
     os.system('solc --storage-layout --pretty-json ' + SOLIDITY_FNAME + ' > '+ STORAGE)
     os.system('solc --abi --pretty-json ' + SOLIDITY_FNAME + ' > ' + ABI)
@@ -625,17 +632,6 @@ def main():
     write_trace_essential(TRACE_FNAME, ESSENTIAL, essential_start)
 
 
-    # TODO: initialize all the stacks for each functions in each contracts 
-    CONTRACT_lst = json.load(open(RUNTIME,))
-    for entries in CONTRACT_lst["contracts"]:
-        parts = entries.split(":")
-        solidity_file=parts[0]
-        contract=parts[1]
-        print(solidity_file)
-        print(contract)
-
-
-
     # EVM construction
     STACKS = {}
     init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
@@ -654,12 +650,13 @@ def main():
     MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
     evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL])
     evm.inspect("stack")
-    print('(executing instructions...)')
+    print('\n(executing instructions...)')
     code_trace = read_path(ESSENTIAL)
     evm.sym_exec(code_trace)
-    evm.inspect("stack")
-    evm.inspect("memory")
-    evm.inspect("storage")
+    print('\n(execution ends.)')
+    # evm.inspect("stack")
+    # evm.inspect("memory")
+    # evm.inspect("storage")
 
     # sys.exit()
     # write to final Boogie output
