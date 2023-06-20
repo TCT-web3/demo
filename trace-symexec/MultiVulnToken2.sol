@@ -51,7 +51,7 @@ contract MultiVulnToken is StandardToken {
     function clear(address _to) public {
         unchecked{
 		    uint256 bal = balances[msg.sender];
-            // require (msg.sender!=_to); // try remove 54
+            // require (msg.sender!=_to); // remove line 54 and add it to the hypothesis
             balances[_to]+=bal;
             bool success;
             (success, ) = msg.sender.call(
