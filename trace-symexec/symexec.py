@@ -231,9 +231,14 @@ modifies balances;
             for key in self._storage:
                 print('(', key, ',', self._storage[key], ')')
 
-    def set_callStack(offset, data):
+    def set_callStack(self, offset, data):
         # TODO: use current stack/memory to get setup the call data
-        return {}
+        stack = [
+            SVT("FourByteSelector"),
+            SVT("SomethingIDontKnow"),
+            offset
+        ]
+        return stack
 
     def run_instruction(self, instr, branch_taken):
         # self.inspect("stack")
@@ -253,11 +258,16 @@ modifies balances;
             # could see "stack[3] = 196", which is hex c4, and in memory, we see 0xc4 points to
             # OR(AND(0, fff....
             # so the set_callStack will be [FunctionSelector -- something -- OR(AND(0, fff...]
-
+            offset = self._memories[self._curr_contract][hex(self._stacks[self._curr_contract][-4].value)]
+            length = self._stacks[self._curr_contract][-5]
+            stack = self.set_callStack(offset, length)
+            # if len(curr_stack > )
+            # print([-4])
             info = re.search("\((.*)\)", instr)[0]
             info = info.split("::")
             self._curr_contract = (info[0][1:])
             self._curr_function = (info[1][:-1])
+            self._stacks[self._curr_contract] = stack
             self._call_stack.append((self._curr_contract, self._curr_function))
             print("switched to ", info)
             # sys.exit()
@@ -525,7 +535,9 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
             # contract_name_end = lines[i].find('::', contract_name_start)
             # contract_name = lines[i][contract_name_start:contract_name_end]
             # TRACE_essential.write(">>enter " + contract_name + '\n')
-            TRACE_essential.write(lines[i] + '\n')
+            # temp line
+            if not lines[i-1].startswith("==="):
+                TRACE_essential.write(lines[i] + '\n')
         elif lines[i].startswith("<<leave"):
             TRACE_essential.write(lines[i] + '\n')
         elif not lines[i][0:1].isnumeric():
