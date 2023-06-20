@@ -246,9 +246,8 @@ modifies balances;
         operand=instr[2]
 
         if instr[0]==(">"):
-            self.inspect("memory")
-            self.inspect("stack")
-
+            # self.inspect("memory")
+            # self.inspect("stack")
             info = re.search("\((.*)\)", instr)[0]
             info = info.split("::")
             dest_contract = (info[0][1:])
@@ -263,13 +262,13 @@ modifies balances;
             self._call_stack.append((dest_contract, dest_function))
             self._curr_contract = dest_contract
             self._curr_function = dest_function
+            print(">>> switched to contract: ", self._call_stack[-1][0])
 
-            print("switched to ", info)
-            self.inspect("memory")
-            self.inspect("stack")
-            sys.exit()
         elif instr[0]==("<"):
             self._call_stack.pop()
+            self._curr_contract = self._call_stack[-1][0]
+            self._curr_function = self._call_stack[-1][1]
+            print(">>> switched to contract: ", self._call_stack[-1][0])
         elif opcode=="JUMPDEST":
             pass
         elif opcode=="GAS":
@@ -640,20 +639,20 @@ def main():
     # EVM construction
     STACKS = {}
     init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
-
-
     STACKS[CONTRACT_NAME] = init_STACK
     
     MEMORIES = {}
     init_MEM = set_memory()
     MEMORIES[CONTRACT_NAME] = init_MEM
 
-
+    CALL_STACK = []
+    init_CALL = (CONTRACT_NAME, FUNCTION_NAME)
+    CALL_STACK.append(init_CALL)
 
     PATHS = []
     VARS  = []
     MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
-    evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [])
+    evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL])
     evm.inspect("stack")
     print('(executing instructions...)')
     code_trace = read_path(ESSENTIAL)
