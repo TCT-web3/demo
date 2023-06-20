@@ -36,23 +36,65 @@ modifies balances;
     var _to: address;
     var _value: uint256;
     var _fee: uint256;
-
-	var tmp1: uint256;
        
-	assume(totalSupply<TwoE256 && msg.sender!=_to );
+	var tmp1: uint256;
+	var tmp2: uint256;
+	var tmp3: bool;
+	var tmp4: bool;
+	var tmp6: uint256;
+	var tmp5: uint256;
+	var tmp7: uint256;
+	var tmp8: bool;
+	var tmp9: bool;
+	var tmp11: uint256;
+	var tmp10: uint256;
+	var tmp12: uint256;
+	var tmp13: bool;
+	var tmp14: bool;
+	var tmp16: uint256;
+	var tmp15: uint256;
+	var tmp18: uint256;
+	var tmp17: uint256;
+	var tmp20: uint256;
+	var tmp21: uint256;
+	var tmp19: uint256;
+
+	assume(0<=_value && _value<TwoE255 && 0<=_fee && _fee<TwoE255 && totalSupply<TwoE255);
 	assume(forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply);
 	assume( sum(balances) == totalSupply );
 
-	bal := balances[meg.sender];
-	assume(mes.sender != _to);
+	tmp1:=balances[_from];
+	tmp2:=evmadd(_fee,_value);
+	tmp3:=tmp1<tmp2;
+	tmp4:=!tmp3;
+	assume(tmp4);
 
-	tmp1 := add(balances[_to], bal)
-	balances[_to] := tmp1;
+	tmp6:=balances[_to];
+	tmp5:=evmadd(tmp6,_value);
+	tmp7:=balances[_to];
+	tmp8:=tmp5<tmp7;
+	tmp9:=!tmp8;
+	assume(tmp9);
 
-	tmp1 := add(balances[_to], bal)
-	balances[_to] := tmp1;
+	tmp11:=balances[msg.sender];
+	tmp10:=evmadd(tmp11,_fee);
+	tmp12:=balances[msg.sender];
+	tmp13:=tmp10<tmp12;
+	tmp14:=!tmp13;
+	assume(tmp14);
 
-	balances[msg.sender] := 0
+	tmp16:=balances[_to];
+	tmp15:=evmadd(tmp16,_value);
+	balances[_to]:=tmp15;
+
+	tmp18:=balances[msg.sender];
+	tmp17:=evmadd(tmp18,_fee);
+	balances[msg.sender]:=tmp17;
+
+	tmp20:=balances[_from];
+	tmp21:=evmadd(_value,_fee);
+	tmp19:=evmsub(tmp20,tmp21);
+	balances[_from]:=tmp19;
 
 	assert(forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply);
 	assert( sum(balances) == totalSupply );

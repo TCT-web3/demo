@@ -44,8 +44,6 @@ modifies balances;
 	var tmp6: uint256;
 	var tmp4: uint256;
 	var tmp7: bool;
-	var tmp8: bool;
-	var tmp9: bool;
 
 	assume(totalSupply<TwoE256 && msg.sender!=_to );
 	assume(forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply);
@@ -63,12 +61,6 @@ modifies balances;
 
 	tmp7:=!tmp6;
 	assume(tmp7);
-
-	tmp8:=!tmp7;
-	assume(tmp8);
-
-	tmp9:=!tmp8;
-	assume(tmp9);
 
 	assume(EQ(RETURNDATASIZE,0));
 

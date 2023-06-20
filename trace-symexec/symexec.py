@@ -121,17 +121,17 @@ modifies balances;
         map_id = self.find_key(node0.children[1])
         path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
         self._final_path.append(path)
-        print("\n[code gen]")
-        print(node0)
-        print(node1)
-        print(path)
+        # print("\n[code gen SSTORE]")
+        # print(node0)
+        # print(node1)
+        # print(path)
                       
-    def boogie_gen(self, node):
+    def boogie_gen_jumpi(self, node):
         path = "\tassume("+str(self.postorder_traversal(node))+");\n\n"
         self._final_path.append(path)
-        print("\n[code gen]") 
-        print(node)
-        print(path)
+        # print("\n[code gen JUMPI]") 
+        # print(node)
+        # print(path)
 
 
     def find_key(self, node):
@@ -214,7 +214,7 @@ modifies balances;
     def sym_exec(self, code_trace):
         for i in range(len(code_trace)):
             if(code_trace[i][1]=="JUMPI"):
-                self.run_instruction(code_trace[i], code_trace[i][0]+1 != code_trace[i+1][0])
+                self.run_instruction(code_trace[i], (code_trace[i][0]+1 != code_trace[i+1][0]))
             else:
                 self.run_instruction(code_trace[i], None)
         
@@ -246,9 +246,10 @@ modifies balances;
         return stack
 
     def run_instruction(self, instr, branch_taken):
+        # print(instr)
         # self.inspect("stack")
         # self.inspect("memory")
-        # print(instr)
+        
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
@@ -268,12 +269,14 @@ modifies balances;
             self._call_stack.append((dest_contract, dest_function))
             self._curr_contract = dest_contract
             self._curr_function = dest_function
+            # self.inspect("stack")
             print(">>> switched to contract: ", self._call_stack[-1][0])
 
         elif instr[0]==("<"):
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]
+            
             print(">>> switched to contract: ", self._call_stack[-1][0])
         elif opcode=="JUMPDEST":
             pass
@@ -288,8 +291,9 @@ modifies balances;
         elif opcode=="JUMP":
             self._stacks[self._curr_contract].pop()
         elif opcode=="JUMPI":
-            self.boogie_gen(self._stacks[self._curr_contract][-2])
-            print(instr)
+            if(branch_taken):
+                self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2])
+
             self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].pop()
         elif opcode=="MSTORE":
@@ -311,7 +315,7 @@ modifies balances;
                 if mem_offset not in self._memories[self._curr_contract].keys():
                     value = 0 # empty memory space
                 else:    
-                    value = self._memories[self._curr_contract][str(mem_offset)] # get symbolic memory location (?)
+                    value = self._memories[self._curr_contract][str(mem_offset)] # get symbolic memory location 
             else:
                 if hex(mem_offset.value) not in self._memories[self._curr_contract].keys():
                     value = SVT(0) # empty memory space
@@ -319,8 +323,9 @@ modifies balances;
                     value = self._memories[self._curr_contract][hex(mem_offset.value)] # get exact memory location
             self._stacks[self._curr_contract].append(value)  
         elif opcode=="SSTORE":
+            # print(instr)
             self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
-            print(instr)
+            # sys.exit()
         elif opcode=="SLOAD":
             # self.inspect("storage")
             node = SVT("SLOAD")
@@ -606,7 +611,7 @@ def main():
     AST             = "temp_solc_ast.json"
     ESSENTIAL       = "temp_essential.txt"
     RUNTIME         = "temp_solc_runtime.json"
-    BOOGIE          = "TCToutput_"+THEOREM_FNAME[:-5]+".bpl"
+    BOOGIE          = "TCT_out_"+THEOREM_FNAME[:-5]+".bpl"
 
    
 
@@ -649,12 +654,14 @@ def main():
     VARS  = []
     MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
     evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL])
+    print('\n(pre-execution)')
     evm.inspect("stack")
     print('\n(executing instructions...)')
     code_trace = read_path(ESSENTIAL)
     evm.sym_exec(code_trace)
-    print('\n(execution ends.)')
-    # evm.inspect("stack")
+    print('\n(end)')
+    print('\n(post-execution)')
+    evm.inspect("stack")
     # evm.inspect("memory")
     # evm.inspect("storage")
 
