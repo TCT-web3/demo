@@ -212,16 +212,15 @@ modifies balances;
         
     def inspect(self, what):
         if what == "stack":
-            print("-----Stack-----")
             for stack_name in self._stacks:
+                print("-----Stack: "+stack_name+"-----")
                 c=0
-                print(stack_name)
                 for elem in self._stacks[stack_name][::-1]:
                     print('stack['+str(c)+'] ', elem)
                     c=c+1
         elif what == "memory":
-            print("-----Memory-----")
             for memory_name in self._memories.keys():
+                print("-----Memory: "+memory_name+"-----")
                 temp = self._memories[memory_name]
                 for key in temp.keys(): 
                     print(key, ": ", temp[key])
@@ -231,7 +230,6 @@ modifies balances;
                 print('(', key, ',', self._storage[key], ')')
 
     def set_callStack(self, offset, data):
-        # TODO: use current stack/memory to get setup the call data
         stack = [
             SVT("FourByteSelector"),
             SVT("SomethingIDontKnow"),
@@ -251,25 +249,25 @@ modifies balances;
             self.inspect("memory")
             self.inspect("stack")
 
-            # TODO: Ashley
-            # implement self.set_callStack(offset, length) 
-            # get offset and length for call data, in the printed out stack and memory you 
-            # could see "stack[3] = 196", which is hex c4, and in memory, we see 0xc4 points to
-            # OR(AND(0, fff....
-            # so the set_callStack will be [FunctionSelector -- something -- OR(AND(0, fff...]
-            offset = self._memories[self._curr_contract][hex(self._stacks[self._curr_contract][-4].value)]
-            length = self._stacks[self._curr_contract][-5]
-            stack = self.set_callStack(offset, length)
-            # if len(curr_stack > )
-            # print([-4])
             info = re.search("\((.*)\)", instr)[0]
             info = info.split("::")
-            self._curr_contract = (info[0][1:])
-            self._curr_function = (info[1][:-1])
-            self._stacks[self._curr_contract] = stack
-            self._call_stack.append((self._curr_contract, self._curr_function))
+            dest_contract = (info[0][1:])
+            dest_function = (info[1][:-1])
+
+            if (dest_contract not in self._stacks.keys()):
+                offset = self._memories[self._curr_contract][hex(self._stacks[self._curr_contract][-4].value)]
+                length = self._stacks[self._curr_contract][-5]
+                self._stacks[dest_contract] = self.set_callStack(offset, length)  
+                self._memories[dest_contract] = {}
+
+            self._call_stack.append((dest_contract, dest_function))
+            self._curr_contract = dest_contract
+            self._curr_function = dest_function
+
             print("switched to ", info)
-            # sys.exit()
+            self.inspect("memory")
+            self.inspect("stack")
+            sys.exit()
         elif instr[0]==("<"):
             self._call_stack.pop()
         elif opcode=="JUMPDEST":
