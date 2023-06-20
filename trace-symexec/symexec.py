@@ -43,7 +43,6 @@ class EVM:
         self._storage_map = storage_map
         self._curr_contract = curr_contract
         self._curr_function = curr_function
-
         self._call_stack = call_stack
     
     def write_preamble(self):
