@@ -121,17 +121,17 @@ modifies balances;
         map_id = self.find_key(node0.children[1])
         path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
         self._final_path.append(path)
-        # print("\n[code gen SSTORE]")
-        # print(node0)
-        # print(node1)
-        # print(path)
+        print("\n[code gen SSTORE]")
+        print(node0)
+        print(node1)
+        print(path)
                       
     def boogie_gen_jumpi(self, node):
         path = "\tassume("+str(self.postorder_traversal(node))+");\n\n"
         self._final_path.append(path)
-        # print("\n[code gen JUMPI]") 
-        # print(node)
-        # print(path)
+        print("\n[code gen JUMPI]") 
+        print(node)
+        print(path)
 
 
     def find_key(self, node):
@@ -178,7 +178,7 @@ modifies balances;
             val2 = self.postorder_traversal(node.children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":="+str(val1)+"<"+str(val2)+";\n"
+            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)
         elif node.value == "GT":
@@ -186,9 +186,17 @@ modifies balances;
             val2 = self.postorder_traversal(node.children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":="+str(val1)+">"+str(val2)+";\n"
+            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)  
+        elif node.value == "EQ":
+            val1 = self.postorder_traversal(node.children[0])
+            val2 = self.postorder_traversal(node.children[1])
+            self._tmp_var_count+=1
+            return_string = "tmp" + str(self._tmp_var_count)
+            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"="+str(val2)+");\n"
+            self._final_vars.append("\tvar " + return_string + ": bool;")
+            self._final_path.append(print_string)    
         elif node.value == "ADD":
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
@@ -367,12 +375,16 @@ modifies balances;
                     node = SVT((self._stacks[self._curr_contract].pop().value | self._stacks[self._curr_contract].pop().value)%2**256)    
                 elif opcode == "SUB":
                     node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256) 
-                elif opcode == "LT":
-                    node = SVT((self._stacks[self._curr_contract].pop().value < self._stacks[self._curr_contract].pop().value)) #True or False 
-                elif opcode == "GT":
-                    node = SVT((self._stacks[self._curr_contract].pop().value > self._stacks[self._curr_contract].pop().value)) #True or False
-                elif opcode == "EQ":
-                    node = SVT((self._stacks[self._curr_contract].pop().value == self._stacks[self._curr_contract].pop().value)) #True or False          
+                elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
+                    node = SVT(opcode)
+                    node.children.append(self._stacks[self._curr_contract].pop())
+                    node.children.append(self._stacks[self._curr_contract].pop())
+                # elif opcode == "LT":
+                #     node = SVT((self._stacks[self._curr_contract].pop().value < self._stacks[self._curr_contract].pop().value)) #True or False 
+                # elif opcode == "GT":
+                #     node = SVT((self._stacks[self._curr_contract].pop().value > self._stacks[self._curr_contract].pop().value)) #True or False
+                # elif opcode == "EQ":
+                #     node = SVT((self._stacks[self._curr_contract].pop().value == self._stacks[self._curr_contract].pop().value)) #True or False          
             else:
                 node = SVT(opcode)
                 node.children.append(self._stacks[self._curr_contract].pop())
@@ -398,6 +410,8 @@ modifies balances;
         else:
             print('[!]',str(instr), 'not supported yet')  
             sys.exit()
+        
+        self.inspect("stack")
 
 
         
