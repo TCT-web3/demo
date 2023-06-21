@@ -246,7 +246,7 @@ modifies balances;
         return stack
 
     def run_instruction(self, instr, branch_taken):
-        # print(instr)
+        print(instr)
         # self.inspect("stack")
         # self.inspect("memory")
         
@@ -255,6 +255,8 @@ modifies balances;
         operand=instr[2]
 
         if instr[0]==(">"):
+            # self.inspect("memory")
+            # self.inspect("stack")
             info = re.search("\((.*)\)", instr)[0]
             info = info.split("::")
             dest_contract = (info[0][1:])
@@ -271,7 +273,8 @@ modifies balances;
             self._curr_function = dest_function
             # self.inspect("stack")
             print(">>> switched to contract: ", self._call_stack[-1][0])
-
+            # self.inspect("memory")
+            # self.inspect("stack")
         elif instr[0]==("<"):
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
