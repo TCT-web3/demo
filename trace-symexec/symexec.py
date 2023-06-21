@@ -121,17 +121,17 @@ modifies balances;
         map_id = self.find_key(node0.children[1])
         path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
         self._final_path.append(path)
-        print("\n[code gen SSTORE]")
-        print(node0)
-        print(node1)
-        print(path)
+        # print("\n[code gen SSTORE]")
+        # print(node0)
+        # print(node1)
+        # print(path)
                       
     def boogie_gen_jumpi(self, node):
         path = "\tassume("+str(self.postorder_traversal(node))+");\n\n"
         self._final_path.append(path)
-        print("\n[code gen JUMPI]") 
-        print(node)
-        print(path)
+        # print("\n[code gen JUMPI]") 
+        # print(node)
+        # print(path)
 
 
     def find_key(self, node):
@@ -254,7 +254,7 @@ modifies balances;
         return stack
 
     def run_instruction(self, instr, branch_taken):
-        print(instr)
+        # print(instr)
         # self.inspect("stack")
         # self.inspect("memory")
         
@@ -270,11 +270,17 @@ modifies balances;
             dest_contract = (info[0][1:])
             dest_function = (info[1][:-1])
 
+
             if (dest_contract not in self._stacks.keys()):
                 offset = self._memories[self._curr_contract][hex(self._stacks[self._curr_contract][-4].value)]
                 length = self._stacks[self._curr_contract][-5]
                 self._stacks[dest_contract] = self.set_callStack(offset, length)  
                 self._memories[dest_contract] = {}
+
+             # pops out the operands for a successful CALL operation
+            for i in range(7):
+                self._stacks[self._curr_contract].pop()
+            self._stacks[self._curr_contract].append(SVT(1))
 
             self._call_stack.append((dest_contract, dest_function))
             self._curr_contract = dest_contract
@@ -296,7 +302,7 @@ modifies balances;
         elif opcode=="RETURNDATASIZE":
             self._stacks[self._curr_contract].append(SVT("RETURNDATASIZE"))
         elif opcode=="CALL":
-            pass # we can skip now since >>enter
+            pass
         elif opcode=="STOP":
             pass     
         elif opcode=="JUMP":
@@ -411,7 +417,7 @@ modifies balances;
             print('[!]',str(instr), 'not supported yet')  
             sys.exit()
         
-        self.inspect("stack")
+        # self.inspect("stack")
 
 
         
