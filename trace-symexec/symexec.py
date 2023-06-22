@@ -17,10 +17,14 @@ class SVT:
             return ret
         ret+="("
         for i in range(len(self.children)):
-            if i<len(self.children)-1:
-                ret+=str(self.children[i])+","
+            if isinstance(self.children[i].value, int):
+                s = hex(self.children[i].value)
             else:
-                ret+=str(self.children[i])
+                s = str(self.children[i])
+            if i<len(self.children)-1:
+                ret+=s+","
+            else:
+                ret+=s
         ret+=")"
         return ret
 
@@ -136,7 +140,7 @@ modifies balances;
 
     def find_key(self, node):
         if not node.children:
-            if isinstance(node.value, str) and not (node.value == 'fff'):
+            if isinstance(node.value, str): # and not (node.value == 0xffffffffffffffffffffffffffffffffffffffff):
                 return node.value # or self.postorder_traversal(node)
         for c in node.children:
             return_val = self.find_key(c)
@@ -224,14 +228,22 @@ modifies balances;
                 print("-----Stack: "+stack_name+"-----")
                 c=0
                 for elem in self._stacks[stack_name][::-1]:
-                    print('stack['+str(c)+'] ', elem)
+                    if isinstance(elem.value, int):
+                        s = hex(elem.value)
+                    else:
+                        s = elem
+                    print('stack['+str(c)+'] ', s)
                     c=c+1
         elif what == "memory":
             for memory_name in self._memories.keys():
                 print("-----Memory: "+memory_name+"-----")
                 temp = self._memories[memory_name]
                 for key in temp.keys(): 
-                    print(key, ": ", temp[key])
+                    if isinstance(temp[key].value, int):
+                        s = hex(temp[key].value)
+                    else:
+                        s = temp[key]
+                    print(key, ": ", s)
         elif what == "storage":
             print("-----Storage-----")
             for key in self._storage:
@@ -244,7 +256,22 @@ modifies balances;
             offset
         ]
         return stack
-
+    def count_lower_ffs(self, a):
+        c = 0
+        while a > 0:
+            if a % 0x100 != 0xff:
+                return -1
+            c += 1
+            a //= 0x100
+        return c
+    def count_lower_00s(self, a):
+        if a == 0:
+            return -1
+        c = 0
+        while a % 0x100 == 0x00:
+            c += 1
+            a //= 0x100
+        return c, a
     def run_instruction(self, instr, branch_taken):
         print(instr)
         # self.inspect("stack")
@@ -253,6 +280,25 @@ modifies balances;
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
+
+        if isinstance(PC, int):
+            if int(PC) == 860 or int(PC) == 174:
+                self.inspect("stack")
+                self.inspect("memory")
+
+
+        # if int(PC) == 757 or int(PC) == 786:
+        #     print("=======before======")
+        #     self.inspect("memory")
+        #     self.inspect("stack")
+        # if int(PC) >= 787 and int(PC) <= 825:
+        #     print("=======before======")
+        #     self.inspect("memory")
+        #     self.inspect("stack")
+        # if int(PC) >= 825 and int(PC) <= 830:
+        #     print("=======before======")
+        #     self.inspect("memory")
+        #     self.inspect("stack")
 
         if instr[0]==(">"):
             # self.inspect("memory")
@@ -300,6 +346,9 @@ modifies balances;
             self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].pop()
         elif opcode=="MSTORE":
+            print("=======before======")
+            self.inspect("memory")
+            self.inspect("stack")
             mem_offset = (self._stacks[self._curr_contract].pop())
             # if not isinstance(mem_offset, int):
             #     raise Exception("We assume mem offset to be constant.")
@@ -310,8 +359,31 @@ modifies balances;
             if not isinstance(mem_offset.value, int):
                 self._memories[self._curr_contract][str(mem_offset)] = value
             else:
-                self._memories[self._curr_contract][hex(mem_offset.value)] = value    
+                if not mem_offset.value in self._memories[self._curr_contract].keys() and value.value == "OR":
+                    rl = value.children[0]
+                    rr = value.children[1]
+                    if rl.value == "AND":
+                        rlr = rl.children[1]
+                        ffs = self.count_lower_ffs(rlr.value)
+                    print(type(rr.value))
+                    print(isinstance(rr.value, int))
+                    if rr.value == "AND":
+                        rrr = rr.children[1]
+                        OOs, a = self.count_lower_00s(rrr.value)
+                    elif isinstance(rr.value, int):
+                        OOs, a = self.count_lower_00s(rr.value)
+                    if ffs != OOs:
+                        raise Exception("MSTORE exception")
+                    print(hex(a))
+                    self._memories[self._curr_contract][hex(mem_offset.value)] = SVT(a) 
+
+                else:
+                    self._memories[self._curr_contract][hex(mem_offset.value)] = value   
             self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation  
+            
+            print("=======after======")
+            self.inspect("memory")
+            self.inspect("stack")
         elif opcode=="MLOAD":
             mem_offset = self._stacks[self._curr_contract].pop()
             if not isinstance(mem_offset.value, int):
@@ -321,8 +393,8 @@ modifies balances;
                     value = self._memories[self._curr_contract][str(mem_offset)] # get symbolic memory location 
             else:
                 if hex(mem_offset.value) not in self._memories[self._curr_contract].keys():
-                    value = SVT(0) # empty memory space
-                else:    
+                    value = SVT("unknown") # empty memory space
+                else:   
                     value = self._memories[self._curr_contract][hex(mem_offset.value)] # get exact memory location
             self._stacks[self._curr_contract].append(value)  
         elif opcode=="SSTORE":
@@ -353,9 +425,19 @@ modifies balances;
             self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position] = self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].append(dest)
         elif opcode=="ISZERO" or opcode=="NOT":
-            node = SVT(opcode)
-            node.children.append(self._stacks[self._curr_contract].pop())
-            self._stacks[self._curr_contract].append(node)
+            print("top of stack", self._stacks[self._curr_contract][-1].value, type(self._stacks[self._curr_contract][-1].value))
+            if type(self._stacks[self._curr_contract][-1].value) == int:
+                val = self._stacks[self._curr_contract].pop().value
+                print(hex(val))
+                node = SVT(~(2**256|val) & (2**256-1))
+                self._stacks[self._curr_contract].append(node)
+                # print(hex(node.value & f))
+                self.inspect("stack")
+                print(hex(node.value))
+            else:
+                node = SVT(opcode)
+                node.children.append(self._stacks[self._curr_contract].pop())
+                self._stacks[self._curr_contract].append(node)
         elif opcode=="ADD" or opcode=="AND" or opcode=="OR" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
             # self.inspect("stack")
             if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
@@ -470,10 +552,7 @@ def read_path(filename):
             PC=int(instr[0])
             operator=instr[1]
             if(len(instr)>2):
-                if 'fff' in str(instr[2]):
-                    operand = 'fff'
-                else:    
-                    operand=int('0x'+ instr[2], 16)
+                operand=int('0x'+ instr[2], 16)
             else:  
                 operand = None
             trace_node = (PC, operator, operand) 
