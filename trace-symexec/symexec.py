@@ -182,7 +182,7 @@ modifies balances;
             val2 = self.postorder_traversal(node.children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":="+str(val1)+"<"+str(val2)+";\n"
+            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)
         elif node.value == "GT":
@@ -190,9 +190,17 @@ modifies balances;
             val2 = self.postorder_traversal(node.children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":="+str(val1)+">"+str(val2)+";\n"
+            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)  
+        elif node.value == "EQ":
+            val1 = self.postorder_traversal(node.children[0])
+            val2 = self.postorder_traversal(node.children[1])
+            self._tmp_var_count+=1
+            return_string = "tmp" + str(self._tmp_var_count)
+            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"="+str(val2)+");\n"
+            self._final_vars.append("\tvar " + return_string + ": bool;")
+            self._final_path.append(print_string)    
         elif node.value == "ADD":
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
@@ -273,7 +281,7 @@ modifies balances;
             a //= 0x100
         return c, a
     def run_instruction(self, instr, branch_taken):
-        print(instr)
+        # print(instr)
         # self.inspect("stack")
         # self.inspect("memory")
         
@@ -308,11 +316,17 @@ modifies balances;
             dest_contract = (info[0][1:])
             dest_function = (info[1][:-1])
 
+
             if (dest_contract not in self._stacks.keys()):
                 offset = self._memories[self._curr_contract][hex(self._stacks[self._curr_contract][-4].value)]
                 length = self._stacks[self._curr_contract][-5]
                 self._stacks[dest_contract] = self.set_callStack(offset, length)  
                 self._memories[dest_contract] = {}
+
+             # pops out the operands for a successful CALL operation
+            for i in range(7):
+                self._stacks[self._curr_contract].pop()
+            self._stacks[self._curr_contract].append(SVT(1))
 
             self._call_stack.append((dest_contract, dest_function))
             self._curr_contract = dest_contract
@@ -334,7 +348,7 @@ modifies balances;
         elif opcode=="RETURNDATASIZE":
             self._stacks[self._curr_contract].append(SVT("RETURNDATASIZE"))
         elif opcode=="CALL":
-            pass # we can skip now since >>enter
+            pass
         elif opcode=="STOP":
             pass     
         elif opcode=="JUMP":
@@ -449,12 +463,16 @@ modifies balances;
                     node = SVT((self._stacks[self._curr_contract].pop().value | self._stacks[self._curr_contract].pop().value)%2**256)    
                 elif opcode == "SUB":
                     node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256) 
-                elif opcode == "LT":
-                    node = SVT((self._stacks[self._curr_contract].pop().value < self._stacks[self._curr_contract].pop().value)) #True or False 
-                elif opcode == "GT":
-                    node = SVT((self._stacks[self._curr_contract].pop().value > self._stacks[self._curr_contract].pop().value)) #True or False
-                elif opcode == "EQ":
-                    node = SVT((self._stacks[self._curr_contract].pop().value == self._stacks[self._curr_contract].pop().value)) #True or False          
+                elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
+                    node = SVT(opcode)
+                    node.children.append(self._stacks[self._curr_contract].pop())
+                    node.children.append(self._stacks[self._curr_contract].pop())
+                # elif opcode == "LT":
+                #     node = SVT((self._stacks[self._curr_contract].pop().value < self._stacks[self._curr_contract].pop().value)) #True or False 
+                # elif opcode == "GT":
+                #     node = SVT((self._stacks[self._curr_contract].pop().value > self._stacks[self._curr_contract].pop().value)) #True or False
+                # elif opcode == "EQ":
+                #     node = SVT((self._stacks[self._curr_contract].pop().value == self._stacks[self._curr_contract].pop().value)) #True or False          
             else:
                 node = SVT(opcode)
                 node.children.append(self._stacks[self._curr_contract].pop())
@@ -480,6 +498,8 @@ modifies balances;
         else:
             print('[!]',str(instr), 'not supported yet')  
             sys.exit()
+        
+        # self.inspect("stack")
 
 
         
