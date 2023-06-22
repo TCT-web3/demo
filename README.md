@@ -8,7 +8,7 @@ The first demo of TCT using [metadata](https://docs.soliditylang.org/en/v0.8.19/
 
 - use the command to get the NatSpec
     ```shell
-    solc --userdoc --devdoc re_victim.sol
+    solc --userdoc --devdoc re_victim.sol // under get-trace folder
     ```
 
     natspec content for `re_victim.sol`
@@ -101,3 +101,9 @@ More details about `vmtrace` in official doc: https://ethereum-tests.readthedocs
 Or we could use local [remix plugin](https://github.com/ethereum/remix-vscode). There are two ways to run & deploy contracts using local remix: remixd (which connect web ethereum) and locally run via `ganachi-cli` (https://trufflesuite.com/docs/ganache/quickstart/). Please refer to this link: https://medium.com/remix-ide/remix-in-vscode-compiling-debugging-metamask-remixd-42c4a61817e2.
 
 For how to deploy and test the contract, follow this blog: https://blog.logrocket.com/develop-test-deploy-smart-contracts-ganache/.
+
+after you successfully deploy a contract and issue an transaction, you could use this cmd to get trace of the transaction.
+
+```bash
+curl -H 'Content-Type: application/json' --data '{"jsonrpc":"2.0", "id": 1, "method": "debug_traceTransaction", "params": ["<transaction hash>",{} ] }' http://localhost:8545 -o trace.json
+```
