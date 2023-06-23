@@ -537,7 +537,7 @@ def set_stack(abi, solidity_fname, contract_name, function_name):
         if "name" in o and o["name"] == function_name:
             for i in o["inputs"]:
                 stack.append(SVT(i["name"]))
-
+    file.close()
     for n in file_names:
         os.remove(n)
     
@@ -609,7 +609,7 @@ def get_MAP(storage, solidity_name, contract_name):
     
     for o in json_object:
         mapIDs[o["slot"]] = o["label"]
-    
+    file.close()
     for n in file_names:
         os.remove(n)
     return mapIDs
