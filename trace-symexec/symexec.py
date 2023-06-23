@@ -199,7 +199,7 @@ modifies balances;
             val2 = self.postorder_traversal(node.children[1])
             self._tmp_var_count+=1
             return_string = "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"="+str(val2)+");\n"
+            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+" == "+str(val2)+");\n"
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)    
         elif node.value == "ADD":
