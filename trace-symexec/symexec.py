@@ -290,12 +290,7 @@ modifies balances;
         opcode=instr[1]
         operand=instr[2]
 
-        if isinstance(PC, int):
-            if int(PC) == 860 or int(PC) == 174:
-                self.inspect("stack")
-                self.inspect("memory")
-
-
+        
         # if int(PC) == 757 or int(PC) == 786:
         #     print("=======before======")
         #     self.inspect("memory")
@@ -367,9 +362,6 @@ modifies balances;
             self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].pop()
         elif opcode=="MSTORE":
-            print("=======before======")
-            self.inspect("memory")
-            self.inspect("stack")
             mem_offset = (self._stacks[self._curr_contract].pop())
             # if not isinstance(mem_offset, int):
             #     raise Exception("We assume mem offset to be constant.")
@@ -402,9 +394,6 @@ modifies balances;
                     self._memories[self._curr_contract][hex(mem_offset.value)] = value   
             self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation  
             
-            print("=======after======")
-            self.inspect("memory")
-            self.inspect("stack")
         elif opcode=="MLOAD":
             mem_offset = self._stacks[self._curr_contract].pop()
             if not isinstance(mem_offset.value, int):
@@ -446,7 +435,6 @@ modifies balances;
             self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position] = self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].append(dest)
         elif opcode=="ISZERO" or opcode=="NOT":
-            print("top of stack", self._stacks[self._curr_contract][-1].value, type(self._stacks[self._curr_contract][-1].value))
             if type(self._stacks[self._curr_contract][-1].value) == int:
                 val = self._stacks[self._curr_contract].pop().value
                 print(hex(val))
@@ -639,7 +627,7 @@ def find_essential_start(runtime, solidity_fname, contract_name, function_name):
         raise Exception("error, cannot find function entrypoint")
     return essential_start
 
-def write_trace_essential(complete_trace, essential_trace, essential_start):
+def write_trace_essential(complete_trace, essential_trace, essential_start, solidity_fname):
     # TODO: use regex to accomodate digits with fix width or not
     TRACE_file = open(complete_trace, "r")
     TRACE_essential = open(essential_trace, "w")
@@ -648,14 +636,16 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
     start = False
     PRE_start = 0
     for i in range(0, len(lines)-1):
-        if lines[i].startswith(">>") or lines[i].startswith("<<"):
-            # contract_name_start = lines[i].find('(')+1
-            # contract_name_end = lines[i].find('::', contract_name_start)
-            # contract_name = lines[i][contract_name_start:contract_name_end]
-            # TRACE_essential.write(">>enter " + contract_name + '\n')
-            # temp line
+        if lines[i].startswith(">>"):
+            matches = re.search(r"\(([^:]+)::([^()]+)\(.*?\)\)", lines[i])
+            contract_name = matches.group(1)
+            function_name = matches.group(2)
+            # print("Class name:", contract_name)
+            # print("Function signature:", function_name)
             if not lines[i-1].startswith("==="):
                 TRACE_essential.write(lines[i] + '\n')
+                essential_start = find_essential_start("temp_solc_runtime.json", solidity_fname, contract_name, function_name)
+                start = False
         elif lines[i].startswith("<<leave"):
             TRACE_essential.write(lines[i] + '\n')
         elif not lines[i][0:1].isnumeric():
@@ -665,7 +655,7 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
                 break
             if start and lines[i][0:1].isnumeric():
                 TRACE_essential.write(lines[i]+'\n')
-            if (int(lines[i][0:4]) == int(essential_start)):
+            if essential_end == 9999 and (int(lines[i][0:4]) == int(essential_start)):
                 # raise Exception("input trace should include at least one pre instruction of the essential part")
                 essential_end = PRE_start+1
                 TRACE_essential.write(lines[i]+"\n")
@@ -786,7 +776,7 @@ def main():
     # get essential part of the trace
     # RUNTIME_BYTE_file = open(RUNTIME, )
     essential_start = find_essential_start(RUNTIME, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
-    write_trace_essential(TRACE_FNAME, ESSENTIAL, essential_start)
+    write_trace_essential(TRACE_FNAME, ESSENTIAL, essential_start, SOLIDITY_FNAME)
 
 
     # EVM construction
