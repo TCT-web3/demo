@@ -31,7 +31,7 @@ class SVT:
 
 class EVM:
 
-    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack): 
+    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info): 
         # TODO: extend EVM with dictionaries of stack/memory for different contracts. 
         #       - each should have it's own stack/memory
         #       - var_count and final vars should be shared
@@ -48,7 +48,8 @@ class EVM:
         self._curr_contract = curr_contract
         self._curr_function = curr_function
         self._call_stack = call_stack
-    
+        self._abi_info = abi_info
+
     def write_preamble(self):
         self._output_file.write("""type address = int;
 type uint256 = int;
@@ -346,7 +347,13 @@ modifies balances;
         elif opcode=="GAS":
             self._stacks[self._curr_contract].append(SVT("GAS"))  # what is the GAS amount? 
         elif opcode=="RETURNDATASIZE":
-            self._stacks[self._curr_contract].append(SVT("RETURNDATASIZE"))
+            for elmt in self._abi_info[self._curr_contract]:
+                if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
+                    return_count = len(elmt["outputs"])
+                    if(return_count == 0):
+                        self._stacks[self._curr_contract].append(SVT(0))
+                    else:
+                        raise Exception("return data SIZE to be implemented. ")    
         elif opcode=="CALL":
             pass
         elif opcode=="STOP":
@@ -620,7 +627,8 @@ def get_MAP(storage, solidity_name, contract_name):
     return mapIDs
 
 def find_essential_start(runtime, solidity_fname, contract_name, function_name):
-    RUNTIME_BYTE = json.load(runtime)
+    RUNTIME_file = open(runtime, )
+    RUNTIME_BYTE = json.load(RUNTIME_file)
     essential_start=0
     function_list = (RUNTIME_BYTE["contracts"][solidity_fname+":"+contract_name]["function-debug-runtime"])
     for func in function_list:
@@ -664,6 +672,50 @@ def write_trace_essential(complete_trace, essential_trace, essential_start):
                 start = True
             else:
                 PRE_start = int(lines[i][0:4])
+
+def get_FUNCTIONINFO(runtime, solidity_fname):
+    RUNTIME_file = open(runtime, )
+    RUNTIME_BYTE = json.load(RUNTIME_file)
+    contracts_info = {}
+    for contract in RUNTIME_BYTE["contracts"].keys():
+        c_name = contract.replace(solidity_fname+":", "")
+        contracts_info[c_name] = {}
+        for function in RUNTIME_BYTE["contracts"][contract]["function-debug-runtime"].keys():
+            if '@' in function:
+                function_info = {}
+                f_name = function[1:function.rfind('_')]
+                function_info = RUNTIME_BYTE["contracts"][contract]["function-debug-runtime"][function]
+                contracts_info[c_name][f_name] = (function_info)
+    # print(contracts_info)
+    return contracts_info
+
+
+def get_FUNCTIONINFO2(abi, solidity_fname):
+    ABI_file = open(abi, "r")
+    tmp = ""
+    lines = ABI_file.readlines()
+    for line in lines:
+        # print("l" + line)
+        if line[0] == '{':
+            continue
+        elif len(line.strip()) == 0:
+            # print("},")
+            line = ",\n"
+        elif '===' in line:
+            c_name = line.replace("======= ", "").replace(" =======", "").replace(solidity_fname+":", "").replace("\n", "")
+            line = "\"" + c_name + "\"" +":\n"
+            # print(c_name)
+        elif 'JSON ABI' in line:
+            continue    
+        tmp = tmp + line
+        # print(line)
+    tmp = tmp + '}'
+    tmp = '{' + tmp[1:] #patch
+    # print(tmp)
+    INFO = json.loads(tmp)
+    return INFO
+   
+
 
 # invariant dictionary
 def map_invariant(ast_fname, sol_fname):
@@ -729,13 +781,11 @@ def main():
     FUNCTION_NAME = (re.search("::(.*)\(", THEOREM['entry-for-test']))[0][2:-1]
 
     check_entry_thingy(TRACE_FNAME, THEOREM)
-
-
     INVARIANTS = map_invariant(AST, SOLIDITY_FNAME)
 
     # get essential part of the trace
-    RUNTIME_BYTE_file = open(RUNTIME, )
-    essential_start = find_essential_start(RUNTIME_BYTE_file, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+    # RUNTIME_BYTE_file = open(RUNTIME, )
+    essential_start = find_essential_start(RUNTIME, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
     write_trace_essential(TRACE_FNAME, ESSENTIAL, essential_start)
 
 
@@ -752,10 +802,16 @@ def main():
     init_CALL = (CONTRACT_NAME, FUNCTION_NAME)
     CALL_STACK.append(init_CALL)
 
+
+    # Function_info = get_FUNCTIONINFO(RUNTIME, SOLIDITY_FNAME)
+
+    ABI_INFO = get_FUNCTIONINFO2(ABI, SOLIDITY_FNAME)
+
+
     PATHS = []
     VARS  = []
     MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
-    evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL])
+    evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL], ABI_INFO)
     print('\n(pre-execution)')
     evm.inspect("stack")
     print('\n(executing instructions...)')
