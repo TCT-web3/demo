@@ -25,18 +25,18 @@ def output_trace(trace_fname, deployment_fname):
         elif opcode == "CALL":
             # hex
             contract_address = trace[i]["stack"][-2]
-            line += "\n>>enter " + '0x' + contract_address
+            line += "-\n>>enter " + '0x' + contract_address
             offset = int(trace[i]["stack"][-4], 16)
             row = offset // 32
-            col = offset % 32
+            col = (offset % 32)*2
             func_selector = trace[i]["memory"][row][col:col+8]
             line += "::0x" + func_selector
             # deployment info
             line += "(" + deploy_info[contract_address] + "::" + deploy_info[func_selector] + ") "
         elif opcode == "RETURN":
-            line += "\n<<leave "
+            line += "-\n<<leave "
         elif opcode == "STOP":
-            line += "\n<<leave "
+            line += "-\n<<leave "
         output.write(line + "-\n")
     output.write("======================================End==========================================")
     trace_file.close()
