@@ -107,3 +107,9 @@ after you successfully deploy a contract and issue an transaction, you could use
 ```bash
 curl -H 'Content-Type: application/json' --data '{"jsonrpc":"2.0", "id": 1, "method": "debug_traceTransaction", "params": ["<transaction hash>",{} ] }' http://localhost:8545 -o trace.json
 ```
+
+then you will get a json file `trace.json` which contains the execution trace. And we process the raw json file to get the evm opcode trace. For example
+
+```bash
+python3 trace_process.py --trace_file trace.json --output trace1.txt
+```

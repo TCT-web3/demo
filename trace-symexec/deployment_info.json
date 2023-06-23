@@ -1,5 +1,9 @@
 {
     "0000000000000000000000006199cae03f19be147929da1dd899291ec68b6c60": "MultiVulnToken",
     "000000000000000000000000866d57c5399b37dde8c1e4011e253671dab0f1f6": "MultiVulnToken",
-    "cf053d9d": "transferProxy(address,address,uint256,uint256)"
+    "cf053d9d": "transferProxy(address,address,uint256,uint256)",
+    "000000000000000000000000374c745774587b517bf5fb3526a52e0550c3f8f1": "MultiVulnToken",
+    "3d0a4061": "clear(address)",
+    "0000000000000000000000002b06fe99a419e1f93b8831e2935c351e1c02342f": "no_reentrancy_attack",
+    "85892c24": "receiveNotification(uint256)"
 }

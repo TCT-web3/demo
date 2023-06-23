@@ -1,8 +1,11 @@
+# Convert trace file
+After getting the json trace file, parse into txt with python program.
+```shell
+python3 convert_trace.py <trace json>
+```
+The resulting output file will be ```output.txt``` which can then be inputted into the symexec.py file under ```<trace file>```.
 # symexec.py file
 ## Running the Python file
-Use ```python3 symexec.py```
-
-## Required files
-These lines are currently commented out in the file, but we need these two files. Copy these commands: 
-1. ```solc --storage-layout --pretty-json MultiVulnToken.sol > storage_layout.json```
-2. ```solc --abi --pretty-json MultiVulnToken.sol > abi.json```
+```shell
+python3 symexec.py <solidity file> <theorem file> <trace file>
+```
