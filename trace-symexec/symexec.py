@@ -655,9 +655,10 @@ def write_trace_essential(complete_trace, essential_trace, essential_start, soli
                 break
             if start and lines[i][0:1].isnumeric():
                 TRACE_essential.write(lines[i]+'\n')
-            if essential_end == 9999 and (int(lines[i][0:4]) == int(essential_start)):
+            if (int(lines[i][0:4]) == int(essential_start)):
                 # raise Exception("input trace should include at least one pre instruction of the essential part")
-                essential_end = PRE_start+1
+                if essential_end == 9999:
+                    essential_end = PRE_start+1
                 TRACE_essential.write(lines[i]+"\n")
                 start = True
             else:
