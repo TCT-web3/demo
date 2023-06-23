@@ -1,0 +1,5 @@
+{
+    "0000000000000000000000006199cae03f19be147929da1dd899291ec68b6c60": "MultiVulnToken",
+    "000000000000000000000000866d57c5399b37dde8c1e4011e253671dab0f1f6": "MultiVulnToken",
+    "cf053d9d": "transferProxy(address,address,uint256,uint256)"
+}
