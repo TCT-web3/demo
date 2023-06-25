@@ -178,6 +178,7 @@ modifies balances;
             print_string = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)  
+
         elif node.value == "LT":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
@@ -265,6 +266,7 @@ modifies balances;
             offset
         ]
         return stack
+    '''    
     def count_lower_ffs(self, a):
         c = 0
         while a > 0:
@@ -273,6 +275,45 @@ modifies balances;
             c += 1
             a //= 0x100
         return c
+        
+    def count_upper_ffs(self, a):
+        a = (1<<256) - 1 - a
+        return self.count_lower_ffs(a)
+    '''
+
+    def recognize_32B_mask(self,a):
+        separation_position = None
+        if a % 0x100 == 0xff:   # potentially a (?,31) mask
+            for i in range(32):
+                scanned_byte = a % 0x100
+                if scanned_byte != 0x00 and scanned_byte != 0xff:
+                    return -1,-1
+                if scanned_byte == 0x00 and separation_position==None:
+                    separation_position = 32-i   # the position of the left-most 0xff
+                if scanned_byte == 0xff and separation_position!=None:
+                    return -1,-1
+                a//=0x100
+            if separation_position == None:
+                return 0,31
+            else:
+                return separation_position,31
+        elif a % 0x100 == 0x00:  # potentially a (0,?) mask
+            for i in range(32):
+                scanned_byte = a % 0x100
+                if scanned_byte != 0x00 and scanned_byte != 0xff:
+                    return -1,-1
+                if scanned_byte == 0xff and separation_position==None:
+                    separation_position = 32-i   # the position of the left-most 0x00
+                if scanned_byte == 0x00 and separation_position!=None:
+                    return -1,-1
+                a//=0x100
+            if separation_position == None:
+                return -1,-1
+            else:
+                return 0,separation_position-1
+        else:
+            return -1,-1  #a is not a 32-byte mask
+        
     def count_lower_00s(self, a):
         if a == 0:
             return -1
@@ -282,8 +323,9 @@ modifies balances;
             a //= 0x100
         return c, a
     def run_instruction(self, instr, branch_taken):
-        # print(instr)
         # self.inspect("stack")
+        print(instr)
+ 
         # self.inspect("memory")
         
         PC=instr[0]
@@ -412,10 +454,12 @@ modifies balances;
             self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
             # sys.exit()
         elif opcode=="SLOAD":
-            # self.inspect("storage")
+            # self.inspect("storage") 
+            # self.inspect("stack")
             node = SVT("SLOAD")
             node.children.append(self._stacks[self._curr_contract].pop())
             self._stacks[self._curr_contract].append(node)
+            #self.inspect("stack")
         elif opcode=="PC":
             self._stacks[self._curr_contract].append(SVT(PC))
         elif opcode.startswith("PUSH"):
@@ -441,19 +485,44 @@ modifies balances;
                 node = SVT(~(2**256|val) & (2**256-1))
                 self._stacks[self._curr_contract].append(node)
                 # print(hex(node.value & f))
-                self.inspect("stack")
+                # self.inspect("stack")
                 print(hex(node.value))
             else:
                 node = SVT(opcode)
                 node.children.append(self._stacks[self._curr_contract].pop())
                 self._stacks[self._curr_contract].append(node)
-        elif opcode=="ADD" or opcode=="AND" or opcode=="OR" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
+        elif opcode=="AND":
+            a = self._stacks[self._curr_contract].pop()
+            b = self._stacks[self._curr_contract].pop()
+            mask = None
+            if isinstance(a.value, int):
+                first,last = self.recognize_32B_mask(a.value)
+                if first!=-1:
+                    mask = (first,last)
+                    num = b
+            elif isinstance(b.value, int):
+                first,last = self.recognize_32B_mask(b.value)
+                if first!=-1:
+                    mask = (first,last)
+                    num = a
+            if mask != None:
+                node = SVT("Masked32B")
+                node.children.append(SVT(mask))
+                node.children.append(num)
+            else:
+                if isinstance(a.value, int) and isinstance(b.value, int):
+                    node = SVT((a.value & b.value)%2**256)
+                else:
+                    node = SVT(opcode)
+                    node.children.append(a)
+                    node.children.append(b)
+            self._stacks[self._curr_contract].append(node)
+            self.inspect("stack")
+        elif opcode=="ADD" or opcode=="OR" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
             # self.inspect("stack")
             if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
                 if opcode == "ADD":
-                    node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256)
-                elif opcode == "AND":
-                    node = SVT((self._stacks[self._curr_contract].pop().value & self._stacks[self._curr_contract].pop().value)%2**256) 
+                    node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256) 
                 elif opcode == "OR":
                     node = SVT((self._stacks[self._curr_contract].pop().value | self._stacks[self._curr_contract].pop().value)%2**256)    
                 elif opcode == "SUB":
@@ -493,7 +562,6 @@ modifies balances;
         else:
             print('[!]',str(instr), 'not supported yet')  
             sys.exit()
-        
         # self.inspect("stack")
 
 
@@ -758,7 +826,7 @@ def main():
     RUNTIME         = "temp_solc_runtime.json"
     BOOGIE          = "TCT_out_"+THEOREM_FNAME[:-5]+".bpl"
 
-   
+    
 
     os.system('solc --storage-layout --pretty-json ' + SOLIDITY_FNAME + ' > '+ STORAGE)
     os.system('solc --abi --pretty-json ' + SOLIDITY_FNAME + ' > ' + ABI)
@@ -804,6 +872,15 @@ def main():
     MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
     evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL], ABI_INFO)
     print('\n(pre-execution)')
+    
+    '''
+    first,last = evm.recognize_32B_mask(0xff)
+    print (first,last)
+    first,last = evm.recognize_32B_mask(0xff * (256**30))
+    print (first,last)
+    return
+    '''
+    
     evm.inspect("stack")
     print('\n(executing instructions...)')
     code_trace = read_path(ESSENTIAL)
