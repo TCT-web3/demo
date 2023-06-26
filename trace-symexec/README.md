@@ -17,14 +17,13 @@ module.exports = function(deployer) {
     deployer.deploy(MVT, 30000);
 };
 ```
-```
-asdfasdgasdg
-```
 6. Inside Ganache, create a new workspace. In Server, set the port number and network ID to match the Truffle development mode's port number and network ID to match the migration network ID. In most cases, the port number should be set to 9545 and network ID to 5777.
 7. In Accounts & Keys, set the mnemonic to match with the mnemonic from Truffle development mode. I think it is consistent for everyone:
-```hub normal easy valid clinic jeans soon distance service wagon ketchup update```
-8. Return to terminal and deploy your contract by typing either ```deploy``` or ```migrate```. Check that the contract has been created in Ganache. 
-9. Run these lines of JS to run a transaction. In this example, we will run ```transferProxy``` from the MultiVulnToken contract:
+```
+hub normal easy valid clinic jeans soon distance service wagon ketchup update
+```
+9. Return to terminal and deploy your contract by typing either ```deploy``` or ```migrate```. Check that the contract has been created in Ganache. 
+10. Run these lines of JS to run a transaction. In this example, we will run ```transferProxy``` from the MultiVulnToken contract:
 ```js
 let MVT = await MultiVulnToken.deployed()
 MVT
