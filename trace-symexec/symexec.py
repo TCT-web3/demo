@@ -96,7 +96,6 @@ modifies balances;
 """)
     def write_hypothesis(self, hypothesis):
         self._output_file.write("\tassume(" + hypothesis + ");\n")
-
     def write_invariants(self, invariants):
         # get from ast
         MVT_invariants = invariants["MultiVulnToken"]
@@ -134,8 +133,26 @@ modifies balances;
         # print(node1)
         # print(path)
                       
-    def boogie_gen_jumpi(self, node):
-        path = "\tassume("+str(self.postorder_traversal(node))+");\n\n"
+    def boogie_gen_jumpi(self, node, isNotZero):
+        if (type(node.value) == int):
+            if (isNotZero):
+                path =  "\tassume("+str(self.postorder_traversal(node))+"!=0);\n\n"
+            else:    
+                path =  "\tassume("+str(self.postorder_traversal(node))+"==0);\n\n"
+        elif (isNotZero):
+            path =  "\tassume("+str(self.postorder_traversal(node))+");\n\n"
+        elif (not isNotZero):
+            path = "\tassume(!"+str(self.postorder_traversal(node))+");\n\n" 
+        else: 
+            raise Exception("wrong JUMPI value.")
+
+
+        # if (node.value == 1):
+        #     path = "\tassume(true);\n\n"
+        # else:
+        # # print(">>>>>", node)
+        #     path = "\tassume("+str(self.postorder_traversal(node))+");\n\n"
+        
         self._final_path.append(path)
         # print("\n[code gen JUMPI]") 
         # print(node)
@@ -164,11 +181,11 @@ modifies balances;
         # return_string += ")"
         # return_string += str(node.value)
         if node.value == "ISZERO":
+            print(">>>", node.children[0])
             return_string += self.postorder_traversal(node.children[0]) # + "==0;\n"
             val1=self._tmp_var_count
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            # print_string = "tmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==0;\n"
             print_string = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)
@@ -204,7 +221,7 @@ modifies balances;
             val2 = self.postorder_traversal(node.children[1])
             self._tmp_var_count+=1
             return_string = "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+" == "+str(val2)+");\n"
+            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)    
         elif node.value == "ADD":
@@ -326,6 +343,7 @@ modifies balances;
             c += 1
             a //= 0x100
         return c, a
+
     '''    
     def mem_item_len(self, mem_item):
         if mem_item.value != "Partial32B":
@@ -527,10 +545,10 @@ modifies balances;
             node.children.append(b)
         
     def run_instruction(self, instr, branch_taken):
+
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
-
         
         # if int(PC) == 757 or int(PC) == 786:
         #     print("=======before======")
@@ -605,8 +623,17 @@ modifies balances;
         elif opcode=="JUMP":
             self._stacks[self._curr_contract].pop()
         elif opcode=="JUMPI":
+            print(self.inspect("stack"))
+            print(instr)
+            print(self._stacks[self._curr_contract][-2])
+
+            # if branch taken we assume stack [-1] is not 0 
+            # if not taken we should assume [-2] == 0
+            # thiss part is kinda 
             if(branch_taken):
-                self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2])
+                self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], True) 
+            else:
+                self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], False)
 
             self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].pop()
