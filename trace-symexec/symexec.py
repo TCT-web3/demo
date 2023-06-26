@@ -329,27 +329,21 @@ modifies balances;
         segment = mem_item.children[0]
         return segment[1]-segment[0]+1
         
-    def handle_mload(self, mem_offset):
+    def handle_mload(self, offset):
         prev_k=None
-        in_copy_mode = false
+        in_copy_mode = False
         node = SVT("concat")
         bytes_to_copy = 32
         for k,v in self._memories[self._curr_contract].items():
-            if k == mem_offset:
-                return self._memories[self._curr_contract][hex(mem_offset.value)]
-            if in_copy_mode:
-                if bytes_to_copy == 0:
-                    return node
-                elif bytes_to_copy < 0:
-                    raise Exception("number of remaining bytes < 0!") 
-                else:
-                    pass
-            elif k > mem_offset:   
-            # We have found the place to insert the mem item of mem_offset. It is between prev_k and k
-                prev_len = mem_item_len(prev_v)
-                if (mem_offset - prev_k < prev_len):
-                #In this case, mem_offset falls into the previous item.
-                    ignored_len = mem_offset - prev_k
+            if k == offset:
+                return self._memories[self._curr_contract][offset]
+                
+            if k > offset and not in_copy_mode:   
+            # We have found the place to insert the mem item of offset. It is between prev_k and k
+                prev_len = self.mem_item_len(prev_v)
+                if (offset - prev_k < prev_len):
+                #In this case, offset falls into the previous item.
+                    ignored_len = offset - prev_k
                     len_to_copy = prev_len - ignored_len
                     node1=SVT("Partial32B")
                     if prev_v!= "Partial32B":
@@ -365,29 +359,47 @@ modifies balances;
                     bytes_to_copy -= len_to_copy
                     unfilled_position = prev_k + prev_len
                 else:
-                    unfilled_position = mem_offset
+                    unfilled_position = offset
+                in_copy_mode = True
                 
+            if in_copy_mode:
                 #We handle the bytes between unfilled_position and k
                 len_uninitialized_bytes = k-unfilled_position
                 if len_uninitialized_bytes >= 32 and bytes_to_copy==32:                   
-                    node.children.append(SVT(0))
-                    bytes_to_copy = 0
-                    break
-                elif len_uninitialized_bytes > 0:
+                    return SVT(0)
+                if len_uninitialized_bytes > 0:
                     node1=SVT("Partial32B")
                     num_zero_bytes = min(len_uninitialized_bytes,bytes_to_copy)
-                    node1.children.append(0,num_zero_bytes-1)
+                    node1.children.append((0,num_zero_bytes-1))
                     node1.children.append(SVT(0))
                     node.children.append(node1)
                     bytes_to_copy-=num_zero_bytes
-                #start the copy mode
-                in_copy_mode = true
+                    unfilled_position+=num_zero_bytes
+                curr_len = self.mem_item_len(v)
+                if bytes_to_copy >= curr_len:
+                    # copy the current mem item in entirety 
+                    node.children.append(v)
+                    bytes_to_copy-=curr_len
+                    unfilled_position+=curr_len
+                    if bytes_to_copy==0:
+                        return node
+                else:
+                    node1=SVT("Partial32B")
+                    if v!= "Partial32B":
+                        node1_segment = (0,bytes_to_copy-1)
+                        node1_value = v
+                    else:
+                        original_segment = v.children[0]
+                        node1_segment = (original_segment[0], original_segment[1]+bytes_to_copy)
+                        node1_value = v.children[1]
+                    node.children.append(node1)
+                    bytes_to_copy = 0
+                    return node
             prev_k = k
             prev_v = v
-                
-        if immediate_next==None:   
-        # This is an uninitialized space. It is zero according to EVM's spec
-            return SVT(0)
+        
+        # Because memory has dummy item 0x10000:SVT(0), the function should return before the loop ends.
+        raise Exception ("In handle_mload. It should always return before the loop ends")
             
         
     
@@ -405,12 +417,19 @@ modifies balances;
         #     print("=======before======")
         #     self.inspect("memory")
         #     self.inspect("stack")
-        if int(PC)==829 or int(PC) >= 1749 and int(PC) <= 1775:
+        if int(PC)==711 or int(PC)==712 or int(PC)==829 or int(PC) >= 1749 and int(PC) <= 1775:
             print("=======before======")
             self.inspect("memory")
             self.inspect("stack")
+        
+        if opcode=="MSTORE":
+            print("=======before======")
+            self.inspect("memory")
+            self.inspect("stack")
+            
         print(instr)
         
+
         if instr[0]==(">"):
             # self.inspect("memory")
             # self.inspect("stack")
@@ -518,7 +537,8 @@ modifies balances;
                 else:   
                     value = self._memories[self._curr_contract][hex(mem_offset.value)] # get exact memory location
                 '''
-                value = self.handle_mload(mem_offset)
+                value = self.handle_mload(mem_offset.value)
+                
             self._stacks[self._curr_contract].append(value)  
         elif opcode=="SSTORE":
             # print(instr)
@@ -588,7 +608,7 @@ modifies balances;
                     node.children.append(a)
                     node.children.append(b)
             self._stacks[self._curr_contract].append(node)
-            self.inspect("stack")
+            #self.inspect("stack")
         elif opcode=="ADD" or opcode=="OR" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
             # self.inspect("stack")
             if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
@@ -634,6 +654,10 @@ modifies balances;
             print('[!]',str(instr), 'not supported yet')  
             sys.exit()
         # self.inspect("stack")
+        if opcode=="MSTORE":
+            print("=======after======")
+            self.inspect("memory")
+            self.inspect("stack")
 
 
         
@@ -689,11 +713,11 @@ def set_storage():
 
 def set_memory():
     return {
-        # Why does this mem item exist?
-        # hex(64): SVT(128) # initial setting of the memory!!! 
-        
+        # We need to understand why this 0x40 is needed. Perhaps need to read more thoroughly the yellow paper, 
+        # or ask other people
+        0x40: SVT(0x80),
         # Dummy mem item
-        0xffff: SVT(0)
+        0x10000000000: SVT(0)
     }
 
 def read_path(filename):
