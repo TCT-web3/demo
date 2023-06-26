@@ -22,8 +22,8 @@ module.exports = function(deployer) {
 ```
 hub normal easy valid clinic jeans soon distance service wagon ketchup update
 ```
-9. Return to terminal and deploy your contract by typing either ```deploy``` or ```migrate```. Check that the contract has been created in Ganache. 
-10. Run these lines of JS to run a transaction. In this example, we will run ```transferProxy``` from the MultiVulnToken contract:
+8. Return to terminal and deploy your contract by typing either ```deploy``` or ```migrate```. Check that the contract has been created in Ganache. 
+9. Run these lines of JS to run a transaction. In this example, we will run ```transferProxy``` from the MultiVulnToken contract:
 ```js
 let MVT = await MultiVulnToken.deployed()
 MVT
@@ -31,7 +31,7 @@ let accounts = await web3.eth.getAccounts()
 let result = await MVT.transferProxy(accounts[0], accounts[1 /* or any number 0-9*/], 10, 1)
 result
 ```
-11. Go back to Ganache and you should now see the transaction. The tx hash in your terminal should match with the tx hash in Ganache.
+10. Go back to Ganache and you should now see the transaction. The tx hash in your terminal should match with the tx hash in Ganache.
 # Get trace
 Follow Nanqing's guide on the demo README or run the script in ```run_demo.sh```.
 # Convert trace file
