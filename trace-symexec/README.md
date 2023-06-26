@@ -31,7 +31,7 @@ let accounts = await web3.eth.getAccounts()
 let result = await MVT.transferProxy(accounts[0], accounts[1 /* or any number 0-9*/], 10, 1)
 result
 ```
-10. Go back to Ganache and you should now see the transaction. The tx hash in your terminal should match with the tx hash in Ganache.
+1`. Go back to Ganache and you should now see the transaction. The tx hash in your terminal should match with the tx hash in Ganache.
 # Get trace
 Follow Nanqing's guide on the demo README or run the script in ```run_demo.sh```.
 # Convert trace file
