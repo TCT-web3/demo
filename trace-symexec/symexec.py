@@ -5,6 +5,7 @@ import binascii
 import subprocess
 import sys
 import pprint
+
 #SVT -- Symbolic value tree
 class SVT:
     def __init__(self, _value):
@@ -431,6 +432,30 @@ modifies balances;
                 segment = (first,last)
                 num = a
         if segment != None:
+            if num.value == "Partial32B" and num.children[0][0] == first and num.children[0][1] == last:
+            # This means the new Partial32B would be superfuous
+                return num
+                          
+            if num.value == "concat":
+                new_concat_node = SVT("concat")
+                if last ==31:
+                # It is the lower-mask situation
+                    left_zero_node= SVT("Partial32B")
+                    left_zero_node.children.append((0,first-1))
+                    left_zero_node.children.append(SVT(0x0))
+                    new_concat_node.children.append(left_zero_node)
+                    pos = 0
+                    for child in num.children:
+                        print(child)
+                        if pos>=first:
+                            new_concat_node.children.append(child)
+                        elif pos+child.children[0][1]-child.children[0][0]+1 > first:
+                            newPartial32BNode = SVT("Partial32B")
+                            newPartial32BNode.children.append(child.children[0][0]+first-pos,child.children[0][1])
+                            newPartial32BNode.children.append(child.children[1])
+                            new_concat_node.children.append(newPartial32BNode)
+                        pos+= child.children[0][1]-child.children[0][0]+1
+                    return new_concat_node
             node = SVT("Partial32B")
             node.children.append((segment))
             node.children.append(num)
@@ -442,7 +467,50 @@ modifies balances;
                 node.children.append(a)
                 node.children.append(b)
         return node
-    
+        
+    def handle_OR(self):
+        a = self._stacks[self._curr_contract].pop()
+        b = self._stacks[self._curr_contract].pop()
+        if a.value == "Partial32B" and b.value == "Partial32B":
+            if b.children[0][0]==0:
+                tmp=a
+                a=b
+                b=tmp
+            if a.children[0][0]==0 and b.children[0][1] == 31 and a.children[0][1]+1 == b.children[0][0]:
+                node = SVT("concat")
+                node.children.append(a)
+                node.children.append(b)
+                return node
+                
+                
+        if a.value == "concat" and b.value == "Partial32B":
+            tmp=a
+            a=b
+            b=tmp
+        if a.value == "Partial32B" and b.value == "concat":
+            pos = 0
+            node = SVT("concat")
+            for child in b.children:
+                l = pos
+                r = pos + child.children[0][1]-child.children[0][0]
+                if isinstance(child.children[1].value,int) and child.children[1].value == 0x0 and a.children[0][0]==l and a.children[0][1]==r:
+                    newnode = SVT("Partial32B")
+                    newnode.children.append(child.children[0])
+                    newnode.children.append(a.children[1])
+                    node.children.append(newnode)
+                else:
+                    node.children.append(child)
+                pos+= child.children[0][1]-child.children[0][0]+1
+            return node
+            
+            
+        if isinstance(a.value, int) and isinstance(b.value, int):
+            node = SVT((a.value & b.value)%2**256)
+        else:
+            node = SVT("OR")
+            node.children.append(a)
+            node.children.append(b)
+        
     def run_instruction(self, instr, branch_taken):
         PC=instr[0]
         opcode=instr[1]
@@ -608,14 +676,15 @@ modifies balances;
         elif opcode=="AND":
             node = self.handle_AND()
             self._stacks[self._curr_contract].append(node)
+        elif opcode=="OR":
+            node = self.handle_OR()
+            self._stacks[self._curr_contract].append(node)
             self.inspect("stack")
-        elif opcode=="ADD" or opcode=="OR" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
             # self.inspect("stack")
             if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256) 
-                elif opcode == "OR":
-                    node = SVT((self._stacks[self._curr_contract].pop().value | self._stacks[self._curr_contract].pop().value)%2**256)    
                 elif opcode == "SUB":
                     node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256) 
                 elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
@@ -658,10 +727,10 @@ modifies balances;
             print("=======after======")
             self.inspect("memory")
             self.inspect("stack")
-        if int(PC)==827:
-            print("=======after======")
-            self.inspect("memory")
-            self.inspect("stack")
+        if int(PC)==829:
+            #print("=======after======")
+            #self.inspect("memory")
+            #self.inspect("stack")
             raise Exception ("debug stop")
 
         
