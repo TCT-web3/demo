@@ -26,7 +26,7 @@ module.exports = function(deployer) {
 let MVT = await MultiVulnToken.deployed()
 MVT
 let accounts = await web3.eth.getAccounts()
-let result = await MVT.transferProxy(accounts[0], accounts[1 /* or any number 1-9*/], 10, 1)
+let result = await MVT.transferProxy(accounts[0], accounts[1 /* or any number 0-9*/], 10, 1)
 result
 ```
 9. Go back to Ganache and you should now see the transaction. The tx hash in your terminal should match with the tx hash in Ganache.
