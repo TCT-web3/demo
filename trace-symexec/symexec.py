@@ -17,7 +17,9 @@ class SVT:
             return ret
         ret+="("
         for i in range(len(self.children)):
-            if isinstance(self.children[i].value, int):
+            if isinstance(self.children[i], tuple):
+                s = str(self.children[i])
+            elif isinstance(self.children[i].value, int):
                 s = hex(self.children[i].value)
             else:
                 s = str(self.children[i])
@@ -144,9 +146,10 @@ modifies balances;
             if isinstance(node.value, str): # and not (node.value == 0xffffffffffffffffffffffffffffffffffffffff):
                 return node.value # or self.postorder_traversal(node)
         for c in node.children:
-            return_val = self.find_key(c)
-            if return_val:
-                return return_val
+            if not isinstance(c, tuple):
+                return_val = self.find_key(c)
+                if return_val:
+                    return return_val
 
     def postorder_traversal(self, node):
         # children then parent
@@ -378,7 +381,7 @@ modifies balances;
                     node1=SVT("Partial32B")
                     num_zero_bytes = min(len_uninitialized_bytes,bytes_to_copy)
                     #print("num_zero_bytes="+hex(num_zero_bytes))
-                    node1.children.append(SVT((0,num_zero_bytes-1)))
+                    node1.children.append((0,num_zero_bytes-1))
                     node1.children.append(SVT(0))
                     node.children.append(node1)
                     #print(node1)
@@ -401,7 +404,7 @@ modifies balances;
                         original_segment = v.children[0]
                         node1_segment = (original_segment[0], original_segment[1]+bytes_to_copy)
                         node1_value = v.children[1]
-                    node1.children.append(SVT(node1_segment))
+                    node1.children.append(node1_segment)
                     node1.children.append(node1_value)
                     #print(node1)
                     node.children.append(node1)
@@ -429,7 +432,7 @@ modifies balances;
                 num = a
         if segment != None:
             node = SVT("Partial32B")
-            node.children.append(SVT(segment))
+            node.children.append((segment))
             node.children.append(num)
         else:
             if isinstance(a.value, int) and isinstance(b.value, int):
