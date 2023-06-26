@@ -37,7 +37,8 @@ After getting the json trace file, parse into txt with python program.
 ```shell
 python3 convert_trace.py <trace json>
 ```
-The resulting output file is currently ```output.txt```.
+The resulting output file is currently ```output.txt```. As of now, our ```symexec.py``` file still requires the entry point which our file is not producing because we have directly called the ```transferProxy``` function. In the ```output.txt``` file, after the "Begin" line, create a new line and paste this line:
+```>>enter <tx hash>::0xcf053d9d (MultiVulnToken::transferProxy(address,address,uint256,uint256))```
 # Symexec
 ```shell
 python3 symexec.py <solidity file> <theorem file> <trace file>
