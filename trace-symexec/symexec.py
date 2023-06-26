@@ -5,6 +5,7 @@ import binascii
 import subprocess
 import sys
 import pprint
+
 #SVT -- Symbolic value tree
 class SVT:
     def __init__(self, _value):
@@ -17,7 +18,9 @@ class SVT:
             return ret
         ret+="("
         for i in range(len(self.children)):
-            if isinstance(self.children[i].value, int):
+            if isinstance(self.children[i], tuple):
+                s = str(self.children[i])
+            elif isinstance(self.children[i].value, int):
                 s = hex(self.children[i].value)
             else:
                 s = str(self.children[i])
@@ -161,9 +164,10 @@ modifies balances;
             if isinstance(node.value, str): # and not (node.value == 0xffffffffffffffffffffffffffffffffffffffff):
                 return node.value # or self.postorder_traversal(node)
         for c in node.children:
-            return_val = self.find_key(c)
-            if return_val:
-                return return_val
+            if not isinstance(c, tuple):
+                return_val = self.find_key(c)
+                if return_val:
+                    return return_val
 
     def postorder_traversal(self, node):
         # children then parent
@@ -195,6 +199,7 @@ modifies balances;
             print_string = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)  
+
         elif node.value == "LT":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
@@ -269,7 +274,7 @@ modifies balances;
                         s = hex(temp[key].value)
                     else:
                         s = temp[key]
-                    print(key, ": ", s)
+                    print(hex(key), ": ", s)
         elif what == "storage":
             print("-----Storage-----")
             for key in self._storage:
@@ -282,6 +287,7 @@ modifies balances;
             offset
         ]
         return stack
+    '''    
     def count_lower_ffs(self, a):
         c = 0
         while a > 0:
@@ -290,6 +296,45 @@ modifies balances;
             c += 1
             a //= 0x100
         return c
+        
+    def count_upper_ffs(self, a):
+        a = (1<<256) - 1 - a
+        return self.count_lower_ffs(a)
+    '''
+
+    def recognize_32B_mask(self,a):
+        separation_position = None
+        if a % 0x100 == 0xff:   # potentially a (?,31) mask
+            for i in range(32):
+                scanned_byte = a % 0x100
+                if scanned_byte != 0x00 and scanned_byte != 0xff:
+                    return -1,-1
+                if scanned_byte == 0x00 and separation_position==None:
+                    separation_position = 32-i   # the position of the left-most 0xff
+                if scanned_byte == 0xff and separation_position!=None:
+                    return -1,-1
+                a//=0x100
+            if separation_position == None:
+                return 0,31
+            else:
+                return separation_position,31
+        elif a % 0x100 == 0x00:  # potentially a (0,?) mask
+            for i in range(32):
+                scanned_byte = a % 0x100
+                if scanned_byte != 0x00 and scanned_byte != 0xff:
+                    return -1,-1
+                if scanned_byte == 0xff and separation_position==None:
+                    separation_position = 32-i   # the position of the left-most 0x00
+                if scanned_byte == 0x00 and separation_position!=None:
+                    return -1,-1
+                a//=0x100
+            if separation_position == None:
+                return -1,-1
+            else:
+                return 0,separation_position-1
+        else:
+            return -1,-1  #a is not a 32-byte mask
+    '''    
     def count_lower_00s(self, a):
         if a == 0:
             return -1
@@ -298,10 +343,194 @@ modifies balances;
             c += 1
             a //= 0x100
         return c, a
+
+    '''    
+    def mem_item_len(self, mem_item):
+        if mem_item.value != "Partial32B":
+            return 32
+        segment = mem_item.children[0]
+        return segment[1]-segment[0]+1
+        
+    def handle_MLOAD(self):
+        offset = self._stacks[self._curr_contract].pop().value
+        if not isinstance(offset, int):
+                 raise Exception("Memory offset is not a concrete value. CodeGen is needed here!")
+            
+        prev_k=None
+        in_copy_mode = False
+        node = SVT("concat")
+        bytes_to_copy = 32
+        for k,v in self._memories[self._curr_contract].items():
+            if k == offset:
+                return self._memories[self._curr_contract][offset]
+                
+            if k > offset and not in_copy_mode:   
+            # We have found the place to insert the mem item of offset. It is between prev_k and k
+                #print("found k="+hex(k)+"   prev_k"+hex(prev_k))
+                prev_len = self.mem_item_len(prev_v)
+                #print("prev_len="+hex(prev_len))
+                if (offset - prev_k < prev_len):
+                #In this case, offset falls into the previous item.
+                    ignored_len = offset - prev_k
+                    len_to_copy = prev_len - ignored_len
+                    node1=SVT("Partial32B")
+                    if prev_v!= "Partial32B":
+                        node1_segment = (ignored_len,31)
+                        node1_value = prev_v
+                    else:
+                        original_segment = prev_v.children[0]
+                        node1_segment = (original_segment[0]+ignored_len, original_segment[1])
+                        node1_value = prev_v.children[1]
+                    node1.children.append(node1_segment)
+                    node1.children.append(node1_value)
+                    node.children.append(node1)
+                    bytes_to_copy -= len_to_copy
+                    unfilled_position = prev_k + prev_len
+                else:
+                    unfilled_position = offset
+                in_copy_mode = True
+                
+            if in_copy_mode:
+                #We handle the bytes between unfilled_position and k
+                len_uninitialized_bytes = k-unfilled_position
+                if len_uninitialized_bytes >= 32 and bytes_to_copy==32:                   
+                    return SVT(0)
+                if len_uninitialized_bytes > 0:
+                    
+                    node1=SVT("Partial32B")
+                    num_zero_bytes = min(len_uninitialized_bytes,bytes_to_copy)
+                    #print("num_zero_bytes="+hex(num_zero_bytes))
+                    node1.children.append((0,num_zero_bytes-1))
+                    node1.children.append(SVT(0))
+                    node.children.append(node1)
+                    #print(node1)
+                    bytes_to_copy-=num_zero_bytes
+                    unfilled_position+=num_zero_bytes
+                curr_len = self.mem_item_len(v)
+                if bytes_to_copy >= curr_len:
+                    # copy the current mem item in entirety 
+                    node.children.append(v)
+                    bytes_to_copy-=curr_len
+                    unfilled_position+=curr_len
+                    if bytes_to_copy==0:
+                        return node
+                else:
+                    node1=SVT("Partial32B")
+                    if v!= "Partial32B":
+                        node1_segment = (0,bytes_to_copy-1)
+                        node1_value = v
+                    else:
+                        original_segment = v.children[0]
+                        node1_segment = (original_segment[0], original_segment[1]+bytes_to_copy)
+                        node1_value = v.children[1]
+                    node1.children.append(node1_segment)
+                    node1.children.append(node1_value)
+                    #print(node1)
+                    node.children.append(node1)
+                    bytes_to_copy = 0
+                    return node
+            prev_k = k
+            prev_v = v
+        
+        # Because memory has dummy item 0x10000:SVT(0), the function should return before the loop ends.
+        raise Exception ("In handle_mload. It should always return before the loop ends")
+            
+    def handle_AND(self):
+        a = self._stacks[self._curr_contract].pop()
+        b = self._stacks[self._curr_contract].pop()
+        segment = None
+        if isinstance(a.value, int):
+            first,last = self.recognize_32B_mask(a.value)
+            if first!=-1:
+                segment = (first,last)
+                num = b
+        elif isinstance(b.value, int):
+            first,last = self.recognize_32B_mask(b.value)
+            if first!=-1:
+                segment = (first,last)
+                num = a
+        if segment != None:
+            if num.value == "Partial32B" and num.children[0][0] == first and num.children[0][1] == last:
+            # This means the new Partial32B would be superfuous
+                return num
+                          
+            if num.value == "concat":
+                new_concat_node = SVT("concat")
+                if last ==31:
+                # It is the lower-mask situation
+                    left_zero_node= SVT("Partial32B")
+                    left_zero_node.children.append((0,first-1))
+                    left_zero_node.children.append(SVT(0x0))
+                    new_concat_node.children.append(left_zero_node)
+                    pos = 0
+                    for child in num.children:
+                        print(child)
+                        if pos>=first:
+                            new_concat_node.children.append(child)
+                        elif pos+child.children[0][1]-child.children[0][0]+1 > first:
+                            newPartial32BNode = SVT("Partial32B")
+                            newPartial32BNode.children.append(child.children[0][0]+first-pos,child.children[0][1])
+                            newPartial32BNode.children.append(child.children[1])
+                            new_concat_node.children.append(newPartial32BNode)
+                        pos+= child.children[0][1]-child.children[0][0]+1
+                    return new_concat_node
+            node = SVT("Partial32B")
+            node.children.append((segment))
+            node.children.append(num)
+        else:
+            if isinstance(a.value, int) and isinstance(b.value, int):
+                node = SVT((a.value & b.value)%2**256)
+            else:
+                node = SVT("AND")
+                node.children.append(a)
+                node.children.append(b)
+        return node
+        
+    def handle_OR(self):
+        a = self._stacks[self._curr_contract].pop()
+        b = self._stacks[self._curr_contract].pop()
+        if a.value == "Partial32B" and b.value == "Partial32B":
+            if b.children[0][0]==0:
+                tmp=a
+                a=b
+                b=tmp
+            if a.children[0][0]==0 and b.children[0][1] == 31 and a.children[0][1]+1 == b.children[0][0]:
+                node = SVT("concat")
+                node.children.append(a)
+                node.children.append(b)
+                return node
+                
+                
+        if a.value == "concat" and b.value == "Partial32B":
+            tmp=a
+            a=b
+            b=tmp
+        if a.value == "Partial32B" and b.value == "concat":
+            pos = 0
+            node = SVT("concat")
+            for child in b.children:
+                l = pos
+                r = pos + child.children[0][1]-child.children[0][0]
+                if isinstance(child.children[1].value,int) and child.children[1].value == 0x0 and a.children[0][0]==l and a.children[0][1]==r:
+                    newnode = SVT("Partial32B")
+                    newnode.children.append(child.children[0])
+                    newnode.children.append(a.children[1])
+                    node.children.append(newnode)
+                else:
+                    node.children.append(child)
+                pos+= child.children[0][1]-child.children[0][0]+1
+            return node
+            
+            
+        if isinstance(a.value, int) and isinstance(b.value, int):
+            node = SVT((a.value & b.value)%2**256)
+        else:
+            node = SVT("OR")
+            node.children.append(a)
+            node.children.append(b)
+        
     def run_instruction(self, instr, branch_taken):
-        print(instr)
-        # self.inspect("stack")
-        # self.inspect("memory")
+
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
@@ -314,10 +543,18 @@ modifies balances;
         #     print("=======before======")
         #     self.inspect("memory")
         #     self.inspect("stack")
-        # if int(PC) >= 825 and int(PC) <= 830:
-        #     print("=======before======")
-        #     self.inspect("memory")
-        #     self.inspect("stack")
+        if int(PC)==711 or int(PC)==712 or int(PC)==829 or int(PC) >= 1749 and int(PC) <= 1775:
+            print("=======before======")
+            self.inspect("memory")
+            self.inspect("stack")
+        
+        if opcode=="MSTORE":
+            print("=======before======")
+            self.inspect("memory")
+            self.inspect("stack")
+            
+        print(instr)
+        
 
         if instr[0]==(">"):
             # self.inspect("memory")
@@ -329,10 +566,10 @@ modifies balances;
 
 
             if (dest_contract not in self._stacks.keys()):
-                offset = self._memories[self._curr_contract][hex(self._stacks[self._curr_contract][-4].value)]
+                offset = self._memories[self._curr_contract][self._stacks[self._curr_contract][-4].value]
                 length = self._stacks[self._curr_contract][-5]
                 self._stacks[dest_contract] = self.set_callStack(offset, length)  
-                self._memories[dest_contract] = {}
+                self._memories[dest_contract] = self.set_memory()
 
              # pops out the operands for a successful CALL operation
             for i in range(7):
@@ -394,7 +631,7 @@ modifies balances;
             # mem_offset //= 32 #   use actually offset
             value = self._stacks[self._curr_contract].pop()
             if not isinstance(mem_offset.value, int):
-                self._memories[self._curr_contract][str(mem_offset)] = value
+                self._memories[self._curr_contract][mem_offset] = value
             else:
                 if not mem_offset.value in self._memories[self._curr_contract].keys() and value.value == "OR":
                     rl = value.children[0]
@@ -412,34 +649,26 @@ modifies balances;
                     if ffs != OOs:
                         raise Exception("MSTORE exception")
                     print(hex(a))
-                    self._memories[self._curr_contract][hex(mem_offset.value)] = SVT(a) 
+                    self._memories[self._curr_contract][mem_offset.value] = SVT(a) 
 
                 else:
-                    self._memories[self._curr_contract][hex(mem_offset.value)] = value   
+                    self._memories[self._curr_contract][mem_offset.value] = value   
             self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation  
             
         elif opcode=="MLOAD":
-            mem_offset = self._stacks[self._curr_contract].pop()
-            if not isinstance(mem_offset.value, int):
-                if mem_offset not in self._memories[self._curr_contract].keys():
-                    value = 0 # empty memory space
-                else:    
-                    value = self._memories[self._curr_contract][str(mem_offset)] # get symbolic memory location 
-            else:
-                if hex(mem_offset.value) not in self._memories[self._curr_contract].keys():
-                    value = SVT("unknown") # empty memory space
-                else:   
-                    value = self._memories[self._curr_contract][hex(mem_offset.value)] # get exact memory location
-            self._stacks[self._curr_contract].append(value)  
+            node = self.handle_MLOAD()
+            self._stacks[self._curr_contract].append(node)  
         elif opcode=="SSTORE":
             # print(instr)
             self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
             # sys.exit()
         elif opcode=="SLOAD":
-            # self.inspect("storage")
+            # self.inspect("storage") 
+            # self.inspect("stack")
             node = SVT("SLOAD")
             node.children.append(self._stacks[self._curr_contract].pop())
             self._stacks[self._curr_contract].append(node)
+            #self.inspect("stack")
         elif opcode=="PC":
             self._stacks[self._curr_contract].append(SVT(PC))
         elif opcode.startswith("PUSH"):
@@ -465,21 +694,24 @@ modifies balances;
                 node = SVT(~(2**256|val) & (2**256-1))
                 self._stacks[self._curr_contract].append(node)
                 # print(hex(node.value & f))
-                self.inspect("stack")
+                # self.inspect("stack")
                 print(hex(node.value))
             else:
                 node = SVT(opcode)
                 node.children.append(self._stacks[self._curr_contract].pop())
                 self._stacks[self._curr_contract].append(node)
-        elif opcode=="ADD" or opcode=="AND" or opcode=="OR" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
+        elif opcode=="AND":
+            node = self.handle_AND()
+            self._stacks[self._curr_contract].append(node)
+        elif opcode=="OR":
+            node = self.handle_OR()
+            self._stacks[self._curr_contract].append(node)
+            self.inspect("stack")
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
             # self.inspect("stack")
             if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
                 if opcode == "ADD":
-                    node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256)
-                elif opcode == "AND":
-                    node = SVT((self._stacks[self._curr_contract].pop().value & self._stacks[self._curr_contract].pop().value)%2**256) 
-                elif opcode == "OR":
-                    node = SVT((self._stacks[self._curr_contract].pop().value | self._stacks[self._curr_contract].pop().value)%2**256)    
+                    node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256) 
                 elif opcode == "SUB":
                     node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256) 
                 elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
@@ -508,8 +740,8 @@ modifies balances;
                 # node.children.append(self._memory[start_offset//32+1]) # map name: balances
                 # node.children.append(self._memory[start_offset//32]) # key in balances
 
-                node.children.append(self._memories[self._curr_contract][hex(start_offset+32)])
-                node.children.append(self._memories[self._curr_contract][hex(start_offset)])
+                node.children.append(self._memories[self._curr_contract][start_offset+32])
+                node.children.append(self._memories[self._curr_contract][start_offset])
 
                 self._stacks[self._curr_contract].pop() # pop 64
                 self._stacks[self._curr_contract].append(node)
@@ -517,9 +749,16 @@ modifies balances;
         else:
             print('[!]',str(instr), 'not supported yet')  
             sys.exit()
-        
         # self.inspect("stack")
-
+        if opcode=="MSTORE":
+            print("=======after======")
+            self.inspect("memory")
+            self.inspect("stack")
+        if int(PC)==829:
+            #print("=======after======")
+            #self.inspect("memory")
+            #self.inspect("stack")
+            raise Exception ("debug stop")
 
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
@@ -561,7 +800,7 @@ def set_stack(abi, solidity_fname, contract_name, function_name):
         if "name" in o and o["name"] == function_name:
             for i in o["inputs"]:
                 stack.append(SVT(i["name"]))
-
+    file.close()
     for n in file_names:
         os.remove(n)
     
@@ -574,7 +813,11 @@ def set_storage():
 
 def set_memory():
     return {
-        hex(64): SVT(128) # initial setting of the memory!!! 
+        # We need to understand why this 0x40 is needed. Perhaps need to read more thoroughly the yellow paper, 
+        # or ask other people
+        0x40: SVT(0x80),
+        # Dummy mem item
+        0x10000000000: SVT(0)
     }
 
 def read_path(filename):
@@ -633,7 +876,7 @@ def get_MAP(storage, solidity_name, contract_name):
     
     for o in json_object:
         mapIDs[o["slot"]] = o["label"]
-    
+    file.close()
     for n in file_names:
         os.remove(n)
     return mapIDs
@@ -782,7 +1025,7 @@ def main():
     RUNTIME         = "temp_solc_runtime.json"
     BOOGIE          = "TCT_out_"+THEOREM_FNAME[:-5]+".bpl"
 
-   
+    
 
     os.system('solc --storage-layout --pretty-json ' + SOLIDITY_FNAME + ' > '+ STORAGE)
     os.system('solc --abi --pretty-json ' + SOLIDITY_FNAME + ' > ' + ABI)
@@ -828,6 +1071,15 @@ def main():
     MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
     evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL], ABI_INFO)
     print('\n(pre-execution)')
+    
+    '''
+    first,last = evm.recognize_32B_mask(0xff)
+    print (first,last)
+    first,last = evm.recognize_32B_mask(0xff * (256**30))
+    print (first,last)
+    return
+    '''
+    
     evm.inspect("stack")
     print('\n(executing instructions...)')
     code_trace = read_path(ESSENTIAL)
