@@ -30,7 +30,8 @@ let result = await MVT.transferProxy(accounts[0], accounts[1 /* or any number 1-
 result
 ```
 9. Go back to Ganache and you should now see the transaction. The tx hash in your terminal should match with the tx hash in Ganache.
-# Get trace 
+# Get trace
+Follow Nanqing's guide on the demo README or run the script in ```run_demo.sh```.
 # Convert trace file
 After getting the json trace file, parse into txt with python program.
 ```shell
