@@ -416,7 +416,22 @@ modifies balances;
         
         # Because memory has dummy item 0x10000:SVT(0), the function should return before the loop ends.
         raise Exception ("In handle_mload. It should always return before the loop ends")
-            
+        
+    def handle_MSTORE(self):
+        mem_offset = (self._stacks[self._curr_contract].pop())
+        value = self._stacks[self._curr_contract].pop()
+        if not isinstance(mem_offset.value, int):
+            self._memories[self._curr_contract][mem_offset] = value
+        else:
+            ######### This part needs to be reimplemented. #########
+            if not mem_offset.value in self._memories[self._curr_contract].keys() and value.value == "OR":
+                raise Exception("in handle_MSTORE")
+                #implement here
+            else:
+                self._memories[self._curr_contract][mem_offset.value] = value
+            ######################################################
+        self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation  
+
     def handle_AND(self):
         a = self._stacks[self._curr_contract].pop()
         b = self._stacks[self._curr_contract].pop()
@@ -596,38 +611,7 @@ modifies balances;
             self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].pop()
         elif opcode=="MSTORE":
-            mem_offset = (self._stacks[self._curr_contract].pop())
-            # if not isinstance(mem_offset, int):
-            #     raise Exception("We assume mem offset to be constant.")
-            # elif mem_offset % 32 != 0:
-            #     raise Exception("We assume mem offset to be a multiple of 32.")
-            # mem_offset //= 32 #   use actually offset
-            value = self._stacks[self._curr_contract].pop()
-            if not isinstance(mem_offset.value, int):
-                self._memories[self._curr_contract][mem_offset] = value
-            else:
-                if not mem_offset.value in self._memories[self._curr_contract].keys() and value.value == "OR":
-                    rl = value.children[0]
-                    rr = value.children[1]
-                    if rl.value == "AND":
-                        rlr = rl.children[1]
-                        ffs = self.count_lower_ffs(rlr.value)
-                    print(type(rr.value))
-                    print(isinstance(rr.value, int))
-                    if rr.value == "AND":
-                        rrr = rr.children[1]
-                        OOs, a = self.count_lower_00s(rrr.value)
-                    elif isinstance(rr.value, int):
-                        OOs, a = self.count_lower_00s(rr.value)
-                    if ffs != OOs:
-                        raise Exception("MSTORE exception")
-                    print(hex(a))
-                    self._memories[self._curr_contract][mem_offset.value] = SVT(a) 
-
-                else:
-                    self._memories[self._curr_contract][mem_offset.value] = value   
-            self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation  
-            
+            self.handle_MSTORE()            
         elif opcode=="MLOAD":
             node = self.handle_MLOAD()
             self._stacks[self._curr_contract].append(node)  
