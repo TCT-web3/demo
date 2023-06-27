@@ -707,12 +707,13 @@ procedure straightline_code ()
                 calldata_len = self._stacks[self._curr_contract][-5].value
                 
                 func_selector = self._memories[self._curr_contract][calldata_pos].children[1].value
-                print(hex(func_selector))
+                func_selector//=0x100**28
+                print("func_selector="+hex(func_selector))
                 callee_stack.append(SVT(func_selector))
                 callee_stack.append(SVT("AConstantBySolc"))
                 calldata_len -=4
                 calldata_pos +=4
-                
+
                 for i in range(calldata_len//0x20):
                     callee_stack.append(self._memories[self._curr_contract][calldata_pos])
                     calldata_pos += 0x20
