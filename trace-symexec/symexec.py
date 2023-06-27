@@ -34,7 +34,7 @@ class SVT:
 
 class EVM:
 
-    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info): 
+    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, stor_info): 
         # TODO: extend EVM with dictionaries of stack/memory for different contracts. 
         #       - each should have it's own stack/memory
         #       - var_count and final vars should be shared
@@ -52,11 +52,12 @@ class EVM:
         self._curr_function = curr_function
         self._call_stack = call_stack
         self._abi_info = abi_info
+        self._stor_info = stor_info
+
 
     def write_preamble(self):
         self._output_file.write("""type address = int;
 type uint256 = int;
-var totalSupply: uint256;
 const TwoE16 : uint256;
 axiom TwoE16 == 65536; 
 const TwoE64 : uint256; 
@@ -82,18 +83,36 @@ function sum(m: [address] uint256) returns (uint256);
 axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(m) - m[a] + v);
 axiom (forall m: [address] uint256 :: ((forall a:address :: 0<=m[a]) ==> (forall a:address :: m[a]<=sum(m))));    
 
-var balances: [address] uint256;
-
 procedure straightline_code ()
-modifies balances;
 {  
-    var msg.sender: address ;
-    var _from: address ;
-    var _to: address;
-    var _value: uint256;
-    var _fee: uint256;
-       
+    var msg.sender: address ;  
 """)
+                 
+                                
+    def write_storages(self, storage_info):
+        # self._output_file.write("===========\n")
+        for elmt in storage_info[self._curr_contract]["storage"]:
+            label = (elmt["label"])
+            t_type = elmt["type"]
+            if ("string" in t_type):
+                pass
+            elif "t_mapping" in t_type:
+                t_type = t_type.replace("t_", "")
+                t_type = t_type.replace("mapping", "")[1:-1]
+                t_type = t_type.split(',')
+                self._output_file.write("\tvar " + label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
+            else:
+                self._output_file.write("\tvar " + label + ":\t" + t_type[2:] + ";\n")
+        # self._output_file.write("===========\n")    
+        # self._output_file.write(storage_info[self._curr_contract]["storage"][1]["label"])
+        # for elmt in storage_info[self._curr_contract]:
+        #     self._output_file.write(elmt)
+            # for item in elmt["storage"]:
+                # self._output_file["label"]
+            #         for input in elmt["inputs"]:
+            #             self._output_file.write("\tvar " + input["name"] + ":\t" + input["type"]+'\n')
+
+
     def write_hypothesis(self, hypothesis):
         self._output_file.write("\tassume(" + hypothesis + ");\n")
     def write_invariants(self, invariants):
@@ -107,9 +126,23 @@ modifies balances;
         MVT_invariants = invariants["MultiVulnToken"]
         for inv in MVT_invariants:
             self._output_file.write("\tassert(" + inv + ");\n")
-        self._output_file.write("}")
+        self._output_file.write('}')
+
 
     def write_vars(self):
+
+        # self._output_file.write("=============\n")
+
+        for elmt in self._abi_info[self._curr_contract]:
+            if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
+                for input in elmt["inputs"]:
+                    # if ("string" not in input["type"]):
+                    self._output_file.write("\tvar " + input["name"] + ":\t" + input["type"]+';\n')
+                    # self._output_file.write(input["name"]+"\n")
+                    # self._output_file.write(input["type"]+"\n")
+        self._output_file.write("\n")
+
+
         for var in self._final_vars:
             self._output_file.write(var+"\n")
         self._output_file.write("\n")
@@ -943,7 +976,6 @@ def get_FUNCTIONINFO(runtime, solidity_fname):
     # print(contracts_info)
     return contracts_info
 
-
 def get_FUNCTIONINFO2(abi, solidity_fname):
     ABI_file = open(abi, "r")
     tmp = ""
@@ -968,7 +1000,29 @@ def get_FUNCTIONINFO2(abi, solidity_fname):
     # print(tmp)
     INFO = json.loads(tmp)
     return INFO
-   
+
+def get_FUNCTIONINFO3(storage, solidity_fname):
+    STORAGE_file = open(storage, "r")
+    tmp = '{'
+    lines = STORAGE_file.readlines()
+    for line in lines:
+        # print("l" + line)
+        if len(line.strip()) == 0:
+            # print("},")
+            line = ",\n"    
+        elif '===' in line:
+            c_name = line.replace("======= ", "").replace(" =======", "").replace(solidity_fname+":", "").replace("\n", "")
+            line = "\"" + c_name + "\"" +":\n"
+            # print(c_name)
+        elif 'Contract Storage' in line:
+            continue    
+        tmp = tmp + line
+    tmp = tmp + '}'
+    tmp = '{' + tmp[2:] #patch
+    INFO = json.loads(tmp)
+    print(tmp)
+    # INFO = ""
+    return INFO   
 
 
 # invariant dictionary
@@ -1060,12 +1114,13 @@ def main():
     # Function_info = get_FUNCTIONINFO(RUNTIME, SOLIDITY_FNAME)
 
     ABI_INFO = get_FUNCTIONINFO2(ABI, SOLIDITY_FNAME)
+    STOR_INFO = get_FUNCTIONINFO3(STORAGE, SOLIDITY_FNAME)
 
 
     PATHS = []
     VARS  = []
     MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
-    evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL], ABI_INFO)
+    evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL], ABI_INFO, STOR_INFO)
     print('\n(pre-execution)')
     
     '''
@@ -1089,12 +1144,12 @@ def main():
     # sys.exit()
     # write to final Boogie output
     evm.write_preamble()
+    evm.write_storages(STOR_INFO)
     evm.write_vars()
     evm.write_hypothesis(THEOREM["hypothesis"])
     evm.write_invariants(INVARIANTS)
     evm.write_paths()
     evm.write_epilogue(INVARIANTS)
-
  
 if __name__ == '__main__':
     main()
