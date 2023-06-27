@@ -8,7 +8,7 @@ truffle --version
 ```shell
 truffle develop
 ```
-4. Build and compile by typing ```build <contract file>```. You should then see the builds for all the contracts in the folder ```builds/contracts```. 
+4. Build by typing ```build``` and compile by typing ```compile <contract file>```. You should then see the builds for all the contracts in the folder ```builds/contracts```. 
 5. In the ```migrations``` folder, change the JS file to run our contracts and not the MetaCoin and ConvertLib examples. This example deploys the MultiVulnToken contract:
 ```js
 const MVT = artifacts.require("MultiVulnToken");
@@ -41,7 +41,7 @@ python3 convert_trace.py <trace json>
 ```
 The resulting output file is currently ```output.txt```. As of now, our ```symexec.py``` file still requires the entry point which our file is not producing because we have directly called the ```transferProxy``` function. In the ```output.txt``` file, after the "Begin" line, create a new line and paste this line:
 ```
->>enter <tx hash>::0xcf053d9d (MultiVulnToken::transferProxy(address,address,uint256,uint256))
+>>enter <contract address>::0xcf053d9d (MultiVulnToken::transferProxy(address,address,uint256,uint256))
 ```
 # Symexec
 ```shell

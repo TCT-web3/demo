@@ -395,7 +395,10 @@ procedure straightline_code ()
         bytes_to_copy = 32
         for k,v in self._memories[self._curr_contract].items():
             if k == offset:
-                return self._memories[self._curr_contract][offset]
+                if bytes_to_copy == 32 and self.mem_item_len(self._memories[self._curr_contract][offset]) == 32:
+                    return self._memories[self._curr_contract][offset]
+                unfilled_position = offset
+                in_copy_mode = True
                 
             if k > offset and not in_copy_mode:   
             # We have found the place to insert the mem item of offset. It is between prev_k and k
@@ -424,8 +427,12 @@ procedure straightline_code ()
                 in_copy_mode = True
                 
             if in_copy_mode:
-                #We handle the bytes between unfilled_position and k
+                #We handle the bytes between unfilled_position and k                
                 len_uninitialized_bytes = k-unfilled_position
+                #print("k="+hex(k))
+                #print("unfilled_position="+hex(unfilled_position))
+                #print("len_uninitialized_bytes="+hex(len_uninitialized_bytes))
+                #print("bytes_to_copy="+hex(bytes_to_copy))
                 if len_uninitialized_bytes >= 32 and bytes_to_copy==32:                   
                     return SVT(0)
                 if len_uninitialized_bytes > 0:
@@ -436,9 +443,12 @@ procedure straightline_code ()
                     node1.children.append((0,num_zero_bytes-1))
                     node1.children.append(SVT(0))
                     node.children.append(node1)
-                    #print(node1)
+                    #print(node)
                     bytes_to_copy-=num_zero_bytes
                     unfilled_position+=num_zero_bytes
+                    if bytes_to_copy==0:
+                        return node
+                        
                 curr_len = self.mem_item_len(v)
                 if bytes_to_copy >= curr_len:
                     # copy the current mem item in entirety 
@@ -469,20 +479,93 @@ procedure straightline_code ()
         raise Exception ("In handle_mload. It should always return before the loop ends")
         
     def handle_MSTORE(self):
-        mem_offset = (self._stacks[self._curr_contract].pop())
-        value = self._stacks[self._curr_contract].pop()
-        if not isinstance(mem_offset.value, int):
-            self._memories[self._curr_contract][mem_offset] = value
+        offset = self._stacks[self._curr_contract].pop().value
+        content_to_store = self._stacks[self._curr_contract].pop()
+        content_to_store_len = 32
+        if not isinstance(offset, int):
+            raise Exception("An MSTORE offset is not int.")
+        
+        last_partial_overwritten_node=None
+        for k,v in self._memories[self._curr_contract].items():
+            curr_len=self.mem_item_len(v)
+            if k < offset and k+curr_len>offset:
+            # This means offset falls in the current mem item
+                node1=SVT("Partial32B")
+                if v.value == "Partial32B":
+                    node1_segment = (v.children[0][0], v.children[0][1]-(k+curr_len-offset))  # retract the current mem item's right end
+                    node1_value = v.children[1]
+                else:
+                    node1_segment = (0,31-(k+curr_len-offset)) # retract the current mem item's right end
+                    node1_value = v
+                node1.children.append(node1_segment)
+                node1.children.append(node1_value)
+                self._memories[self._curr_contract][k] = node1
+            if k < offset+content_to_store_len and k+curr_len>offset+content_to_store_len:
+            # This means the end of content_to_store falls in the current mem item
+                node1=SVT("Partial32B")
+                if v.value == "Partial32B":
+                    node1_segment = (v.children[0][0]+(offset+content_to_store_len-k), v.children[0][1])  # retract the current mem item's left end
+                    node1_value = v.children[1]
+                else:
+                    node1_segment = (offset+content_to_store_len-k,31) # retract the current mem item's left end
+                    node1_value = v
+                node1.children.append(node1_segment)
+                node1.children.append(node1_value)
+                last_partial_overwritten_node = node1
+                
+        if  last_partial_overwritten_node!=None:
+            self._memories[self._curr_contract][offset+content_to_store_len] = last_partial_overwritten_node
+                
+        for k,v in self._memories[self._curr_contract].items():        
+            if k > offset and k+curr_len<offset+content_to_store_len:
+            # This mem item is completely overwrittn by the MSTORE
+                del self._memories[self._curr_contract][k]
+        
+        if isinstance(content_to_store.value,int) or content_to_store.value != "concat":
+            self._memories[self._curr_contract][offset] = content_to_store
         else:
-            ######### This part needs to be reimplemented. #########
-            if not mem_offset.value in self._memories[self._curr_contract].keys() and value.value == "OR":
-                raise Exception("in handle_MSTORE")
-                #implement here
-            else:
-                self._memories[self._curr_contract][mem_offset.value] = value
-            ######################################################
-        self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation  
+            pos = offset
+            for item in content_to_store.children:
+                self._memories[self._curr_contract][pos] = item
+                pos+=self.mem_item_len(item)
 
+        self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation 
+        
+        memory_with_consolidated_items = {}
+        active_k = None
+        active_v = None
+        for k,v in self._memories[self._curr_contract].items():
+            if active_k == None:
+                active_k = k
+                active_v = v
+            elif isinstance(active_v.value,int) or isinstance(v.value,int) \
+              or active_v.value!="Partial32B" or v.value!="Partial32B" \
+              or active_v.children[1]!=v.children[1] \
+              or active_v.children[0][1]+1!=v.children[0][0]:
+                #print("active item="+hex(active_item[0])+":"+str(active_item[1]))
+                if not isinstance(active_v.value,int) and active_v.value=="Partial32B" \
+                   and active_v.children[0][0]==0 and active_v.children[0][1]==31:
+                    memory_with_consolidated_items[active_k]=active_v.children[1]
+                else:
+                    memory_with_consolidated_items[active_k]=active_v
+                active_k = k
+                active_v = v
+            else:
+                #active_item[1].children[0]=(active_item[1].children[0][0],item[1].children[0][1])
+                new_v=SVT("Partial32B")
+                new_v.children.append((active_v.children[0][0],v.children[0][1]))
+                new_v.children.append(active_v.children[1])
+                active_v = new_v
+                
+        if not isinstance(active_v.value,int) and active_v.value=="Partial32B" \
+           and active_v.children[0][0]==0 and active_v.children[0][1]==31:
+            memory_with_consolidated_items[active_k]=active_v.children[1]
+        else:
+            memory_with_consolidated_items[active_k]=active_v
+
+        self._memories[self._curr_contract] = memory_with_consolidated_items
+        
+        
     def handle_AND(self):
         a = self._stacks[self._curr_contract].pop()
         b = self._stacks[self._curr_contract].pop()
@@ -578,7 +661,7 @@ procedure straightline_code ()
             node.children.append(b)
         
     def run_instruction(self, instr, branch_taken):
-
+        shuo_count=0
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
@@ -591,7 +674,9 @@ procedure straightline_code ()
         #     print("=======before======")
         #     self.inspect("memory")
         #     self.inspect("stack")
-        if int(PC)==711 or int(PC)==712 or int(PC)==829 or int(PC) >= 1749 and int(PC) <= 1775:
+        
+        
+        if isinstance(PC,int) and int(PC)==860:
             print("=======before======")
             self.inspect("memory")
             self.inspect("stack")
@@ -771,12 +856,14 @@ procedure straightline_code ()
             print("=======after======")
             self.inspect("memory")
             self.inspect("stack")
-        if int(PC)==829:
-            #print("=======after======")
-            #self.inspect("memory")
-            #self.inspect("stack")
+        '''
+        if isinstance(PC,int) and int(PC)==860  :
+            print("=======after======")
+            self.inspect("memory")
+            self.inspect("stack")
             raise Exception ("debug stop")
-
+        '''
+        
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
 def set_stack(abi, solidity_fname, contract_name, function_name):
