@@ -312,7 +312,7 @@ procedure straightline_code ()
             print("-----Storage-----")
             for key in self._storage:
                 print('(', key, ',', self._storage[key], ')')
-
+    '''
     def set_callStack(self, offset, data):
         stack = [
             SVT("FourByteSelector"),
@@ -320,6 +320,7 @@ procedure straightline_code ()
             offset
         ]
         return stack
+    '''
     '''    
     def count_lower_ffs(self, a):
         c = 0
@@ -676,7 +677,7 @@ procedure straightline_code ()
         #     self.inspect("stack")
         
         
-        if isinstance(PC,int) and int(PC)==860:
+        if isinstance(PC,int) and int(PC)==174:
             print("=======before======")
             self.inspect("memory")
             self.inspect("stack")
@@ -699,10 +700,25 @@ procedure straightline_code ()
 
 
             if (dest_contract not in self._stacks.keys()):
-                offset = self._memories[self._curr_contract][self._stacks[self._curr_contract][-4].value]
-                length = self._stacks[self._curr_contract][-5]
-                self._stacks[dest_contract] = self.set_callStack(offset, length)  
-                self._memories[dest_contract] = self.set_memory()
+                #offset = self._memories[self._curr_contract][self._stacks[self._curr_contract][-4].value]
+                #length = self._stacks[self._curr_contract][-5]
+                callee_stack = []
+                calldata_pos = self._stacks[self._curr_contract][-4].value
+                calldata_len = self._stacks[self._curr_contract][-5].value
+                
+                func_selector = self._memories[self._curr_contract][calldata_pos].children[1].value
+                print(hex(func_selector))
+                callee_stack.append(SVT(func_selector))
+                callee_stack.append(SVT("AConstantBySolc"))
+                calldata_len -=4
+                calldata_pos +=4
+                
+                for i in range(calldata_len//0x20):
+                    callee_stack.append(self._memories[self._curr_contract][calldata_pos])
+                    calldata_pos += 0x20
+                    
+                self._stacks[dest_contract] = callee_stack  
+                self._memories[dest_contract] = set_memory()
 
              # pops out the operands for a successful CALL operation
             for i in range(7):
@@ -856,20 +872,20 @@ procedure straightline_code ()
             print("=======after======")
             self.inspect("memory")
             self.inspect("stack")
-        '''
+        
         if isinstance(PC,int) and int(PC)==860  :
             print("=======after======")
             self.inspect("memory")
             self.inspect("stack")
-            raise Exception ("debug stop")
-        '''
+            #raise Exception ("debug stop")
+        
         
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
 def set_stack(abi, solidity_fname, contract_name, function_name):
     stack = [
-        SVT("FourByteSelector"), 
-        SVT("SomethingIDontKnow"), 
+        SVT("FourByteSelector"),      # It would be good to fill in the actual value into this placeholder
+        SVT("AConstantBySolc"), 
     ]
 
     file = open(abi, 'r')
