@@ -731,9 +731,11 @@ procedure straightline_code ()
             self._curr_function = dest_function
             # self.inspect("stack")
             print(">>> switched to contract: ", self._call_stack[-1][0])
+            print("after switch:", self._call_stack)
             # self.inspect("memory")
             # self.inspect("stack")
         elif instr[0]==("<"):
+            print("before leave:", self._call_stack)
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]
@@ -1112,7 +1114,7 @@ def get_FUNCTIONINFO3(storage, solidity_fname):
     tmp = tmp + '}'
     tmp = '{' + tmp[2:] #patch
     INFO = json.loads(tmp)
-    print(tmp)
+    # print(tmp)
     # INFO = ""
     return INFO   
 
