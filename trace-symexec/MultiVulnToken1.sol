@@ -28,7 +28,6 @@ abstract contract StandardToken is Token {
 }
 
 contract MultiVulnToken is StandardToken {
-    string public name = "Demo token with reentrancy issue, integer overflow and access control issue";
     constructor (uint256 initialSupply) {
         totalSupply = initialSupply;
         balances[msg.sender] = totalSupply;
