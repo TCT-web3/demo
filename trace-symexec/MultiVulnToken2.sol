@@ -28,6 +28,7 @@ abstract contract StandardToken is Token {
 }
 
 contract MultiVulnToken is StandardToken {
+    string public name = "Demo token with reentrancy issue, integer overflow and access control issue";
     constructor (uint256 initialSupply) {
         totalSupply = initialSupply;
         balances[msg.sender] = totalSupply;
@@ -49,7 +50,8 @@ contract MultiVulnToken is StandardToken {
     //This function moves all tokens of msg.sender to the account of "_to"
     function clear(address _to) public {
         unchecked{
-            uint256 bal = balances[msg.sender];
+		    uint256 bal = balances[msg.sender];
+            // require (msg.sender!=_to); // remove line 54 and add it to the hypothesis
             balances[_to]+=bal;
             bool success;
             (success, ) = msg.sender.call(
@@ -57,7 +59,7 @@ contract MultiVulnToken is StandardToken {
             );
             require(success);
             balances[msg.sender] = 0;
-        }
+		}
     }
 }
 
