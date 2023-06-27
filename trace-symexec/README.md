@@ -8,7 +8,7 @@ truffle --version
 ```shell
 truffle develop
 ```
-4. Build and compile by typing ```build <contract file>```. You should then see the builds for all the contracts in the folder ```builds/contracts```. 
+4. Build by typing ```build``` and compile by typing ```compile <contract file>```. You should then see the builds for all the contracts in the folder ```builds/contracts```. 
 5. In the ```migrations``` folder, change the JS file to run our contracts and not the MetaCoin and ConvertLib examples. This example deploys the MultiVulnToken contract:
 ```js
 const MVT = artifacts.require("MultiVulnToken");
