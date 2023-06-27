@@ -395,7 +395,10 @@ procedure straightline_code ()
         bytes_to_copy = 32
         for k,v in self._memories[self._curr_contract].items():
             if k == offset:
-                return self._memories[self._curr_contract][offset]
+                if bytes_to_copy == 32 and self.mem_item_len(self._memories[self._curr_contract][offset]) == 32:
+                    return self._memories[self._curr_contract][offset]
+                unfilled_position = offset
+                in_copy_mode = True
                 
             if k > offset and not in_copy_mode:   
             # We have found the place to insert the mem item of offset. It is between prev_k and k
@@ -672,7 +675,8 @@ procedure straightline_code ()
         #     self.inspect("memory")
         #     self.inspect("stack")
         
-        if int(PC)==1761:
+        
+        if isinstance(PC,int) and int(PC)==860:
             print("=======before======")
             self.inspect("memory")
             self.inspect("stack")
@@ -852,16 +856,13 @@ procedure straightline_code ()
             print("=======after======")
             self.inspect("memory")
             self.inspect("stack")
-        if int(PC)==1776  :
+        '''
+        if isinstance(PC,int) and int(PC)==860  :
             print("=======after======")
             self.inspect("memory")
             self.inspect("stack")
             raise Exception ("debug stop")
-        
-        if int(PC)==1761:
-            print("=======after======")
-            self.inspect("memory")
-            self.inspect("stack")
+        '''
         
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
