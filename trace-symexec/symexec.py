@@ -424,8 +424,12 @@ procedure straightline_code ()
                 in_copy_mode = True
                 
             if in_copy_mode:
-                #We handle the bytes between unfilled_position and k
+                #We handle the bytes between unfilled_position and k                
                 len_uninitialized_bytes = k-unfilled_position
+                #print("k="+hex(k))
+                #print("unfilled_position="+hex(unfilled_position))
+                #print("len_uninitialized_bytes="+hex(len_uninitialized_bytes))
+                #print("bytes_to_copy="+hex(bytes_to_copy))
                 if len_uninitialized_bytes >= 32 and bytes_to_copy==32:                   
                     return SVT(0)
                 if len_uninitialized_bytes > 0:
@@ -436,9 +440,12 @@ procedure straightline_code ()
                     node1.children.append((0,num_zero_bytes-1))
                     node1.children.append(SVT(0))
                     node.children.append(node1)
-                    #print(node1)
+                    #print(node)
                     bytes_to_copy-=num_zero_bytes
                     unfilled_position+=num_zero_bytes
+                    if bytes_to_copy==0:
+                        return node
+                        
                 curr_len = self.mem_item_len(v)
                 if bytes_to_copy >= curr_len:
                     # copy the current mem item in entirety 
@@ -651,7 +658,7 @@ procedure straightline_code ()
             node.children.append(b)
         
     def run_instruction(self, instr, branch_taken):
-
+        shuo_count=0
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
@@ -664,7 +671,8 @@ procedure straightline_code ()
         #     print("=======before======")
         #     self.inspect("memory")
         #     self.inspect("stack")
-        if int(PC)==711 or int(PC)==712 or int(PC)==829 or int(PC) >= 1749 and int(PC) <= 1775:
+        
+        if int(PC)==1761:
             print("=======before======")
             self.inspect("memory")
             self.inspect("stack")
@@ -844,12 +852,17 @@ procedure straightline_code ()
             print("=======after======")
             self.inspect("memory")
             self.inspect("stack")
-        if int(PC)==829:
-            #print("=======after======")
-            #self.inspect("memory")
-            #self.inspect("stack")
+        if int(PC)==1776  :
+            print("=======after======")
+            self.inspect("memory")
+            self.inspect("stack")
             raise Exception ("debug stop")
-
+        
+        if int(PC)==1761:
+            print("=======after======")
+            self.inspect("memory")
+            self.inspect("stack")
+        
         
 # Note that "FourByteSelector" is at the BOTTOM of the stack     
 def set_stack(abi, solidity_fname, contract_name, function_name):
