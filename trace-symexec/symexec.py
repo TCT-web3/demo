@@ -436,18 +436,30 @@ modifies balances;
         raise Exception ("In handle_mload. It should always return before the loop ends")
         
     def handle_MSTORE(self):
-        mem_offset = (self._stacks[self._curr_contract].pop())
-        value = self._stacks[self._curr_contract].pop()
-        if not isinstance(mem_offset.value, int):
-            self._memories[self._curr_contract][mem_offset] = value
+        offset = self._stacks[self._curr_contract].pop().value
+        content_to_store = self._stacks[self._curr_contract].pop()
+        if not isinstance(offset, int):
+            raise Exception("An MSTORE offset is not int.")
+        '''
+        for k,v in self._memories[self._curr_contract].items():
+            curr_len=self.mem_item_len(v)
+            if k < offset and k+curr_len>offset:
+            # This means offset falls in the current mem item
+                node1=SVT("Partial32B")
+                if v.value == "Partial32B":
+                    node1_segment = (v.children[0][0], v.children[0][0]-(k+curr_len-offset))  # retract the current mem item's right end
+                else:
+                    node1_segment = (0,31-(k+curr_len-offset)) # retract the current mem item's right end
+                node1_value = v.children[1]
+                self._memories[self._curr_contract][k] = node1
+        '''            
+        ######### This part needs to be reimplemented. #########
+        if not offset in self._memories[self._curr_contract].keys() and content_to_store.value == "OR":
+            raise Exception("in handle_MSTORE")
+            #implement here
         else:
-            ######### This part needs to be reimplemented. #########
-            if not mem_offset.value in self._memories[self._curr_contract].keys() and value.value == "OR":
-                raise Exception("in handle_MSTORE")
-                #implement here
-            else:
-                self._memories[self._curr_contract][mem_offset.value] = value
-            ######################################################
+            self._memories[self._curr_contract][offset] = content_to_store
+        ######################################################
         self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation  
 
     def handle_AND(self):
