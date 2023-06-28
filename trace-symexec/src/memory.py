@@ -1,3 +1,4 @@
+# for operations realted to memory
 from symexec import SVT
 
 def recognize_32B_mask(self,a):
