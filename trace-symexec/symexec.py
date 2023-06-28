@@ -158,13 +158,19 @@ procedure straightline_code ()
             self.find_mapID(c)
 
     def boogie_gen_sstore(self, node0, node1):
-        map_id = self.find_key(node0.children[1])
-        path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
+        print(node0)
+        if node0.value=="MapElement":
+            map_key = self.find_key(node0.children[1])
+            path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_key)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
+        else:
+            path="\t"+self._storage_map[str(node0.value)]+":=" + str(self.postorder_traversal(node1))+";\n\n"
         self._final_path.append(path)
         # print("\n[code gen SSTORE]")
         # print(node0)
         # print(node1)
         # print(path)
+        
+            
                       
     def boogie_gen_jumpi(self, node, isNotZero):
         if (type(node.value) == int):
@@ -223,13 +229,20 @@ procedure straightline_code ()
             self._final_vars.append("\tvar " + return_string + ": bool;")
             self._final_path.append(print_string)
         elif node.value == "SLOAD":
-            map_id = self.find_mapID(node.children[0])
-            map_key = self.find_key(node.children[0].children[1])
+            if node.children[0].value=="MapElement":
+                map_id = self.find_mapID(node.children[0])
+                map_key = self.find_key(node.children[0].children[1])
+            else:
+                map_id = node.children[0].value
+            
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
             # print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
             # print(str(map_id))
-            print_string = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
+            print_string = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]
+            if node.children[0].value=="MapElement":
+                print_string +="["+str(map_key)+"]"
+            print_string +=";\n"
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)  
 
@@ -283,6 +296,8 @@ procedure straightline_code ()
         for i in range(len(code_trace)):
             if(code_trace[i][1]=="JUMPI"):
                 self.run_instruction(code_trace[i], (code_trace[i][0]+1 != code_trace[i+1][0]))
+            elif code_trace[i][1]=="EXP":
+                return
             else:
                 self.run_instruction(code_trace[i], None)
         
@@ -869,7 +884,8 @@ procedure straightline_code ()
             # self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
-            sys.exit()
+            #sys.exit()
+            return
         # self.inspect("stack")
         if opcode=="MSTORE":
             print("=======after======")
@@ -1213,7 +1229,7 @@ def main():
 
     PATHS = []
     VARS  = []
-    MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
+    MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)    # ToDo: we need the maps for all contracts.
     evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL], ABI_INFO, STOR_INFO)
     print('\n(pre-execution)')
     
