@@ -9,7 +9,9 @@ from prepare import *
 from macros import *
 from utils import *
 
-#SVT -- Symbolic value tree
+'''
+Symbolic value tree 
+'''
 class SVT:
     def __init__(self, _value):
         self.value = _value
@@ -34,57 +36,23 @@ class SVT:
         ret+=")"
         return ret
 
-
+'''
+EVM core
+'''
 class EVM:
-    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, stor_info): 
-        self._stacks = stacks  
-        self._storage = storage
-        self._memories = memories
-        self._output_file = output_file
+    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info): 
+        self._stacks        = stacks  
+        self._storage       = storage
+        self._memories      = memories
+        self._output_file   = output_file
         self._tmp_var_count = 0
-        self._final_path = final_path
-        self._final_vars = final_vars
-        self._storage_map = storage_map
+        self._final_path    = final_path
+        self._final_vars    = final_vars
+        self._storage_map   = storage_map
         self._curr_contract = curr_contract
         self._curr_function = curr_function
-        self._call_stack = call_stack
-        self._abi_info = abi_info
-        self._stor_info = stor_info
-
-
-    def write_preamble(self):
-        self._output_file.write(MACROS.PREAMBLE)
-                                
-    def write_storages(self, storage_info):
-        # self._output_file.write("===========\n")
-        for elmt in storage_info[self._curr_contract]["storage"]:
-            label = (elmt["label"])
-            t_type = elmt["type"]
-            if ("string" in t_type):
-                pass
-            elif "t_mapping" in t_type:
-                t_type = t_type.replace("t_", "")
-                t_type = t_type.replace("mapping", "")[1:-1]
-                t_type = t_type.split(',')
-                self._output_file.write("\tvar " + label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
-            else:
-                self._output_file.write("\tvar " + label + ":\t" + t_type[2:] + ";\n")
-
-    def write_hypothesis(self, hypothesis):
-        self._output_file.write("\tassume(" + hypothesis + ");\n")
-    def write_invariants(self, invariants):
-        # get from ast
-        MVT_invariants = invariants["MultiVulnToken"]
-        for inv in MVT_invariants:
-            self._output_file.write("\tassume(" + inv + ");\n")
-        self._output_file.write("\n")
-
-    def write_epilogue(self, invariants):
-        MVT_invariants = invariants["MultiVulnToken"]
-        for inv in MVT_invariants:
-            self._output_file.write("\tassert(" + inv + ");\n")
-        self._output_file.write('}')
-
+        self._call_stack    = call_stack
+        self._abi_info      = abi_info
 
     def write_vars(self):
         for elmt in self._abi_info[self._curr_contract]:
@@ -92,7 +60,6 @@ class EVM:
                 for input in elmt["inputs"]:
                     self._output_file.write("\tvar " + input["name"] + ":\t" + input["type"]+';\n')
         self._output_file.write("\n")
-
 
         for var in self._final_vars:
             self._output_file.write(var+"\n")
@@ -125,13 +92,6 @@ class EVM:
             path = "\tassume(!"+str(self.postorder_traversal(node))+");\n\n" 
         else: 
             raise Exception("wrong JUMPI value.")
-
-        # if (node.value == 1):
-        #     path = "\tassume(true);\n\n"
-        # else:
-        # # print(">>>>>", node)
-        #     path = "\tassume("+str(self.postorder_traversal(node))+");\n\n"
-        
         self._final_path.append(path)
 
     def find_key(self, node):
@@ -149,6 +109,7 @@ class EVM:
         return_string = ""
         if not node.children:
             return str(node.value)
+
         if node.value == "ISZERO":
             print(">>>", node.children[0])
             return_string += self.postorder_traversal(node.children[0]) # + "==0;\n"
@@ -163,12 +124,9 @@ class EVM:
             map_key = self.find_key(node.children[0].children[1])
             self._tmp_var_count+=1
             return_string =  "tmp" + str(self._tmp_var_count)
-            # print_string = "\ttmp"+str(self._tmp_var_count)+":=mapID"+str(map_id)+"["+str(map_key)+"];\n"
-            # print(str(map_id))
             print_string = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
             self._final_vars.append("\tvar " + return_string + ": uint256;")
             self._final_path.append(print_string)  
-
         elif node.value == "LT":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
@@ -248,29 +206,6 @@ class EVM:
             print("-----Storage-----")
             for key in self._storage:
                 print('(', key, ',', self._storage[key], ')')
-    '''
-    def set_callStack(self, offset, data):
-        stack = [
-            SVT("FourByteSelector"),
-            SVT("SomethingIDontKnow"),
-            offset
-        ]
-        return stack
-    '''
-    '''    
-    def count_lower_ffs(self, a):
-        c = 0
-        while a > 0:
-            if a % 0x100 != 0xff:
-                return -1
-            c += 1
-            a //= 0x100
-        return c
-        
-    def count_upper_ffs(self, a):
-        a = (1<<256) - 1 - a
-        return self.count_lower_ffs(a)
-    '''
 
     def recognize_32B_mask(self,a):
         separation_position = None
@@ -304,17 +239,7 @@ class EVM:
                 return 0,separation_position-1
         else:
             return -1,-1  #a is not a 32-byte mask
-    '''    
-    def count_lower_00s(self, a):
-        if a == 0:
-            return -1
-        c = 0
-        while a % 0x100 == 0x00:
-            c += 1
-            a //= 0x100
-        return c, a
-
-    '''    
+ 
     def mem_item_len(self, mem_item):
         if mem_item.value != "Partial32B":
             return 32
@@ -502,7 +427,6 @@ class EVM:
 
         self._memories[self._curr_contract] = memory_with_consolidated_items
         
-        
     def handle_AND(self):
         a = self._stacks[self._curr_contract].pop()
         b = self._stacks[self._curr_contract].pop()
@@ -613,18 +537,15 @@ class EVM:
         #     self.inspect("stack")
         
         
-        if isinstance(PC,int) and int(PC)==174:
-            print("=======before======")
-            self.inspect("memory")
-            self.inspect("stack")
+        # if isinstance(PC,int) and int(PC)==174:
+            # print("=======before======")
+            # self.inspect("memory")
+            # self.inspect("stack")
         
-        if opcode=="MSTORE":
-            print("=======before======")
-            self.inspect("memory")
-            self.inspect("stack")
-            
-        print(instr)
-        
+        # if opcode=="MSTORE":
+            # print("=======before======")
+            # self.inspect("memory")
+            # self.inspect("stack")
 
         if instr[0]==(">"):
             # self.inspect("memory")
@@ -634,7 +555,7 @@ class EVM:
             dest_contract = (info[0][1:])
             dest_function = (info[1][:-1])
 
-
+            ### calling a new contract
             if (dest_contract not in self._stacks.keys()):
                 #offset = self._memories[self._curr_contract][self._stacks[self._curr_contract][-4].value]
                 #length = self._stacks[self._curr_contract][-5]
@@ -657,23 +578,19 @@ class EVM:
                 self._stacks[dest_contract] = callee_stack  
                 self._memories[dest_contract] = set_memory()
 
-             # pops out the operands for a successful CALL operation
+            # switch to a new contract
+            # pops out the operands for a successful CALL operation
             for i in range(7):
                 self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].append(SVT(1))
-
             self._call_stack.append((dest_contract, dest_function))
             self._curr_contract = dest_contract
             self._curr_function = dest_function
-            # self.inspect("stack")
             print(">>> switched to contract: ", self._call_stack[-1][0])
-            # self.inspect("memory")
-            # self.inspect("stack")
         elif instr[0]==("<"):
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
-            self._curr_function = self._call_stack[-1][1]
-            
+            self._curr_function = self._call_stack[-1][1]        
             print(">>> switched to contract: ", self._call_stack[-1][0])
         elif opcode=="JUMPDEST":
             pass
@@ -694,18 +611,10 @@ class EVM:
         elif opcode=="JUMP":
             self._stacks[self._curr_contract].pop()
         elif opcode=="JUMPI":
-            print(self.inspect("stack"))
-            print(instr)
-            print(self._stacks[self._curr_contract][-2])
-
-            # if branch taken we assume stack [-1] is not 0 
-            # if not taken we should assume [-2] == 0
-            # thiss part is kinda 
             if(branch_taken):
                 self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], True) 
             else:
                 self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], False)
-
             self._stacks[self._curr_contract].pop()
             self._stacks[self._curr_contract].pop()
         elif opcode=="MSTORE":
@@ -714,16 +623,11 @@ class EVM:
             node = self.handle_MLOAD()
             self._stacks[self._curr_contract].append(node)  
         elif opcode=="SSTORE":
-            # print(instr)
             self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
-            # sys.exit()
         elif opcode=="SLOAD":
-            # self.inspect("storage") 
-            # self.inspect("stack")
             node = SVT("SLOAD")
             node.children.append(self._stacks[self._curr_contract].pop())
             self._stacks[self._curr_contract].append(node)
-            #self.inspect("stack")
         elif opcode=="PC":
             self._stacks[self._curr_contract].append(SVT(PC))
         elif opcode.startswith("PUSH"):
@@ -748,8 +652,6 @@ class EVM:
                 print(hex(val))
                 node = SVT(~(2**256|val) & (2**256-1))
                 self._stacks[self._curr_contract].append(node)
-                # print(hex(node.value & f))
-                # self.inspect("stack")
                 print(hex(node.value))
             else:
                 node = SVT(opcode)
@@ -762,8 +664,7 @@ class EVM:
             node = self.handle_OR()
             self._stacks[self._curr_contract].append(node)
             self.inspect("stack")
-        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
-            # self.inspect("stack")
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":            
             if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256) 
@@ -773,123 +674,72 @@ class EVM:
                     node = SVT(opcode)
                     node.children.append(self._stacks[self._curr_contract].pop())
                     node.children.append(self._stacks[self._curr_contract].pop())
-                # elif opcode == "LT":
-                #     node = SVT((self._stacks[self._curr_contract].pop().value < self._stacks[self._curr_contract].pop().value)) #True or False 
-                # elif opcode == "GT":
-                #     node = SVT((self._stacks[self._curr_contract].pop().value > self._stacks[self._curr_contract].pop().value)) #True or False
-                # elif opcode == "EQ":
-                #     node = SVT((self._stacks[self._curr_contract].pop().value == self._stacks[self._curr_contract].pop().value)) #True or False          
             else:
                 node = SVT(opcode)
                 node.children.append(self._stacks[self._curr_contract].pop())
                 node.children.append(self._stacks[self._curr_contract].pop())
             self._stacks[self._curr_contract].append(node)
         elif opcode=="SHA3":
-            # self.inspect("stack")
-            # self.inspect("memory")
             if self._stacks[self._curr_contract][-2].value == 64:
                 start_offset = self._stacks[self._curr_contract].pop().value
                 if not isinstance(start_offset, int):
                     raise Exception("start offset not constant")
                 node = SVT("MapElement")
-                # node.children.append(self._memory[start_offset//32+1]) # map name: balances
-                # node.children.append(self._memory[start_offset//32]) # key in balances
-
                 node.children.append(self._memories[self._curr_contract][start_offset+32])
                 node.children.append(self._memories[self._curr_contract][start_offset])
-
                 self._stacks[self._curr_contract].pop() # pop 64
                 self._stacks[self._curr_contract].append(node)
-            # self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
             sys.exit()
         # self.inspect("stack")
-        if opcode=="MSTORE":
-            print("=======after======")
-            self.inspect("memory")
-            self.inspect("stack")
+        # if opcode=="MSTORE":
+            # print("=======after======")
+            # self.inspect("memory")
+            # self.inspect("stack")
         
-        if isinstance(PC,int) and int(PC)==860  :
-            print("=======after======")
-            self.inspect("memory")
-            self.inspect("stack")
+        # if isinstance(PC,int) and int(PC)==860  :
+            # print("=======after======")
+            # self.inspect("memory")
+            # self.inspect("stack")
             #raise Exception ("debug stop")
         
-
-
-
+'''
+main
+'''
 def main():
+    ### read arguments
     ARGS = sys.argv # output: ['symexec.py', solidity, theorem, trace]
     MACROS.SOLIDITY_FNAME  = ARGS[1]
     MACROS.THEOREM_FNAME   = ARGS[2]
     MACROS.TRACE_FNAME     = ARGS[3]
     MACROS.BOOGIE          = "TCT_out_"+MACROS.THEOREM_FNAME[:-5]+".bpl"
 
-    # sys.exit()
+    ### initial generation of solc files and essential trace
     gen_solc()
-    # os.system('solc --storage-layout --pretty-json ' + SOLIDITY_FNAME + ' > '+ STORAGE)
-    # os.system('solc --abi --pretty-json ' + SOLIDITY_FNAME + ' > ' + ABI)
-    # os.system('solc --combined-json function-debug-runtime --pretty-json ' + SOLIDITY_FNAME + ' > ' + RUNTIME)
-    # os.system('solc --pretty-json --combined-json ast ' + SOLIDITY_FNAME + ' > ' + AST)
-
-    # get contract and function name
-    # THEOREM_file = open(MACROS.THEOREM_FNAME, )
-    # THEOREM = json.load(THEOREM_file)
-    # CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
-    # FUNCTION_NAME = (re.search("::(.*)\(", THEOREM['entry-for-test']))[0][2:-1]
-
-    CONTRACT_NAME, FUNCTION_NAME = get_contract_and_function_names()
+    CONTRACT_NAME,FUNCTION_NAME = get_contract_and_function_names()
     MACROS.CONTRACT_NAME    = CONTRACT_NAME
     MACROS.FUNCTION_NAME    = FUNCTION_NAME
-
-
     check_entrypoint(MACROS.TRACE_FNAME)
-    INVARIANTS = map_invariant(MACROS.AST, MACROS.SOLIDITY_FNAME)
-
-
-    # get essential part of the trace
-    # RUNTIME_BYTE_file = open(RUNTIME, )
-    # essential_start = find_essential_start(RUNTIME, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
-    # essential_start = find_essential_start(CONTRACT_NAME, FUNCTION_NAME)
     gen_trace_essential()
 
-    # EVM construction
-    # STACKS = {}
-    # init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
-    # STACKS[CONTRACT_NAME] = init_STACK
-    
-    # MEMORIES = {}
-    # init_MEM = set_memory()
-    # MEMORIES[CONTRACT_NAME] = init_MEM
-
-    # CALL_STACK = []
-    # init_CALL = (CONTRACT_NAME, FUNCTION_NAME)
-    # CALL_STACK.append(init_CALL)
-
+    ### setup 
     STACKS      = gen_init_STACK()
-    MEMORIES    = gen_init_MEMORY()
     STORAGE     = set_init_storage()
-    CALL_STACK  = gen_init_CALL_STACK()
-
-    
-
+    MAP         = get_MAP()
+    MEMORIES    = gen_init_MEMORY()
     BOOGIE_OUT  = open(MACROS.BOOGIE, "w")
-    # Function_info = get_FUNCTIONINFO(RUNTIME, SOLIDITY_FNAME)
-
-    ABI_INFO = get_ABI_info()
-    STOR_INFO = get_STORAGE_info()
-    HYPOTHESIS = get_hypothesis()
-
-
-
-    PATHS = []
-    VARS  = []
-    # MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
-    MAP = get_MAP()
-    evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, STOR_INFO)
+    PATHS       = []
+    VARS        = []
+    CALL_STACK  = gen_init_CALL_STACK()
+    ABI_INFO    = get_ABI_info()
+    STOR_INFO   = get_STORAGE_info()
+    HYPOTHESIS  = get_hypothesis()
+    INVARIANTS  = map_invariant(MACROS.AST, MACROS.SOLIDITY_FNAME)
+    
+    ### run EVM trace instructions
+    evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO)
     print('\n(pre-execution)')
-
     evm.inspect("stack")
     print('\n(executing instructions...)')
     code_trace = build_path()
@@ -898,14 +748,14 @@ def main():
     print('\n(post-execution)')
     evm.inspect("stack")
 
-
-    evm.write_preamble()
-    evm.write_storages(STOR_INFO)
-    evm.write_vars()
-    evm.write_hypothesis(HYPOTHESIS)
-    evm.write_invariants(INVARIANTS)
-    evm.write_paths()
-    evm.write_epilogue(INVARIANTS)
+    ### write Boogie output
+    BOOGIE_OUT.write(MACROS.PREAMBLE)
+    BOOGIE_OUT.write(write_storages(STOR_INFO))
+    evm.write_vars() # aux vars for Boogie Proofs 
+    BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS))
+    BOOGIE_OUT.write(write_invariants(INVARIANTS))
+    evm.write_paths() # codegen for Boogie proofs
+    BOOGIE_OUT.write(write_epilogue(INVARIANTS))
  
 if __name__ == '__main__':
     main()

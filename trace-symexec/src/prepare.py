@@ -17,7 +17,7 @@ def gen_solc():
     os.system('solc --abi --pretty-json ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.ABI)
     os.system('solc --pretty-json --combined-json ast ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.AST)
 
-# Functions for prearing the symbolic anaylsis of EVM trace 
+
 
 '''
 Set the inital stack of the initial Callee and add to the stack list of EVM 

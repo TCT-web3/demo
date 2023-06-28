@@ -74,7 +74,7 @@ def gen_trace_essential():
             # print("Function signature:", function_name)
             if not lines[i-1].startswith("==="):
                 TRACE_essential.write(lines[i] + '\n')
-                essential_start = find_essential_start("temp_solc_runtime.json", MACROS.SOLIDITY_FNAME, MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME)
+                essential_start = find_essential_start()
                 start = False
         elif lines[i].startswith("<<leave"):
             TRACE_essential.write(lines[i] + '\n')
@@ -249,3 +249,46 @@ def get_MAP():
     for n in file_names:
         os.remove(n)
     return mapIDs
+
+
+def write_storages(storage_info):
+    # self._output_file.write("===========\n")
+    rt = ""
+    for elmt in storage_info[MACROS.CONTRACT_NAME]["storage"]:
+        label = (elmt["label"])
+        t_type = elmt["type"]
+        if ("string" in t_type):
+            pass
+        elif "t_mapping" in t_type:
+            t_type = t_type.replace("t_", "")
+            t_type = t_type.replace("mapping", "")[1:-1]
+            t_type = t_type.split(',')
+            # self._output_file.write("\tvar " + label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
+            rt = rt + ("\tvar " + label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
+        else:
+            # self._output_file.write("\tvar " + label + ":\t" + t_type[2:] + ";\n")
+            rt = rt + ("\tvar " + label + ":\t" + t_type[2:] + ";\n")
+    return rt
+
+def write_hypothesis(hypothesis):
+        return("\tassume(" + hypothesis + ");\n")
+
+def write_invariants(invariants):
+    # get from ast
+    rt = ""
+    MVT_invariants = invariants[MACROS.CONTRACT_NAME]
+    for inv in MVT_invariants:
+        rt = rt + ("\tassume(" + inv + ");\n")
+        # self._output_file.write("\tassume(" + inv + ");\n")
+    rt = rt + ("\n")
+    return rt 
+
+def write_epilogue(invariants):
+    rt = ""
+    MVT_invariants = invariants["MultiVulnToken"]
+    for inv in MVT_invariants:
+        rt = rt + ("\tassert(" + inv + ");\n")
+        # self._output_file.write("\tassert(" + inv + ");\n")
+    # self._output_file.write('}')
+    rt = rt + ('}')
+    return rt
