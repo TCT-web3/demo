@@ -62,42 +62,43 @@ procedure straightline_code ()
 	var tmp28: bool;
 	var tmp29: bool;
 
-	var _to: address;
-	var count: uint256;
+	var RA._to: address;
+	var RA.count: uint256;
 	
-	// assume(totalSupply<TwoE256 && msg.sender!=_to );
-	assume(totalSupply<TwoE256 && msg.sender!=_to && balances[msg.sender]==0);
+	
+	// assume(totalSupply<TwoE256 && msg.sender!=RA._to );
+	assume(totalSupply<TwoE256 && msg.sender!=RA._to && balances[msg.sender]==0 );
 	
 	
 	assume(forall x:address :: 0 <= balances[x] && balances[x] <= totalSupply);
 	assume( sum(balances) == totalSupply);
 
-	tmp2:=balances[_to];
+	tmp2:=balances[RA._to];
 	tmp3:=balances[msg.sender];
 	tmp1:=evmadd(tmp2,tmp3);
-	balances[_to]:=tmp1;
+	balances[RA._to]:=tmp1;
 
 	
 //>>>>>>>>>>>>>>>>>>>>>>> reentrancy_attack
-	tmp10:=count;    // SLOAD(0x2)
+	tmp10:=RA.count;    // SLOAD(0x2)
 	tmp11:= (tmp10<1);
 	tmp12:=!tmp11;
 	assume(!tmp12);
 
-	tmp14:=count;
+	tmp14:=RA.count;
 	tmp13:=evmadd(1,tmp14);
-	count:=tmp13;
+	RA.count:=tmp13;
 
 	
 //>>>>>>>>>>>>>>>>>>>>>>> MultiVulnToken
-	tmp18:=balances[_to];     //None is _to
+	tmp18:=balances[RA._to];     
 	tmp19:=balances[msg.sender];
 	tmp17:=evmadd(tmp18,tmp19);
-	balances[_to]:=tmp17;    //None is _to
+	balances[RA._to]:=tmp17;    
 
 	
 
-	tmp26:=count;
+	tmp26:=RA.count;
 	tmp27:= (tmp26<1);
 	tmp28:=!tmp27;
 	assume(tmp28);
