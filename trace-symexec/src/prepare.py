@@ -17,8 +17,6 @@ def gen_solc():
     os.system('solc --abi --pretty-json ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.ABI)
     os.system('solc --pretty-json --combined-json ast ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.AST)
 
-
-
 '''
 Set the inital stack of the initial Callee and add to the stack list of EVM 
 Note that "FourByteSelector" is at the BOTTOM of the stack     
@@ -113,7 +111,6 @@ def gen_init_STACK():
     init_STACK = set_stack(MACROS.ABI, MACROS.SOLIDITY_FNAME, MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME)
     STACKS[MACROS.CONTRACT_NAME] = init_STACK
     return STACKS
-
 
 def gen_init_MEMORY():
     MEMORIES = {}
