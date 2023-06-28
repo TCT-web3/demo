@@ -4,7 +4,10 @@ import json
 import binascii
 import subprocess
 import sys
-import pprint
+
+from prepare import *
+from macros import *
+from utils import *
 
 #SVT -- Symbolic value tree
 class SVT:
@@ -33,15 +36,9 @@ class SVT:
 
 
 class EVM:
-
     def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, stor_info): 
-        # TODO: extend EVM with dictionaries of stack/memory for different contracts. 
-        #       - each should have it's own stack/memory
-        #       - var_count and final vars should be shared
-        # self._stacks[0] = stack 
         self._stacks = stacks  
         self._storage = storage
-        # self._memory = memory
         self._memories = memories
         self._output_file = output_file
         self._tmp_var_count = 0
@@ -56,38 +53,7 @@ class EVM:
 
 
     def write_preamble(self):
-        self._output_file.write("""type address = int;
-type uint256 = int;
-const TwoE16 : uint256;
-axiom TwoE16 == 65536; 
-const TwoE64 : uint256; 
-axiom TwoE64 == TwoE16 * TwoE16 * TwoE16 * TwoE16;
-const TwoE255 : uint256;
-axiom TwoE255 == TwoE64 * TwoE64 * TwoE64 * TwoE16 * TwoE16 * TwoE16 *32768;
-const TwoE256 : int; 
-axiom TwoE256 == TwoE64 * TwoE64 * TwoE64 * TwoE64;
-
-function evmadd(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b);
-axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b-TwoE256);
-
-function evmsub(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b>=0 ==> evmsub(a,b) == a-b);
-axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b<0 ==> evmsub(a,b) == a-b+TwoE256);
-
-function evmand(a, b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0 ==> evmand(a,b) == a+b);
-axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmand(a,b) == a+b-TwoE256);
-
-function sum(m: [address] uint256) returns (uint256);
-axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(m) - m[a] + v);
-axiom (forall m: [address] uint256 :: ((forall a:address :: 0<=m[a]) ==> (forall a:address :: m[a]<=sum(m))));    
-
-procedure straightline_code ()
-{  
-    var msg.sender: address ;  
-""")
-                 
+        self._output_file.write(MACROS.PREAMBLE)
                                 
     def write_storages(self, storage_info):
         # self._output_file.write("===========\n")
@@ -103,15 +69,6 @@ procedure straightline_code ()
                 self._output_file.write("\tvar " + label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
             else:
                 self._output_file.write("\tvar " + label + ":\t" + t_type[2:] + ";\n")
-        # self._output_file.write("===========\n")    
-        # self._output_file.write(storage_info[self._curr_contract]["storage"][1]["label"])
-        # for elmt in storage_info[self._curr_contract]:
-        #     self._output_file.write(elmt)
-            # for item in elmt["storage"]:
-                # self._output_file["label"]
-            #         for input in elmt["inputs"]:
-            #             self._output_file.write("\tvar " + input["name"] + ":\t" + input["type"]+'\n')
-
 
     def write_hypothesis(self, hypothesis):
         self._output_file.write("\tassume(" + hypothesis + ");\n")
@@ -130,16 +87,10 @@ procedure straightline_code ()
 
 
     def write_vars(self):
-
-        # self._output_file.write("=============\n")
-
         for elmt in self._abi_info[self._curr_contract]:
             if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
                 for input in elmt["inputs"]:
-                    # if ("string" not in input["type"]):
                     self._output_file.write("\tvar " + input["name"] + ":\t" + input["type"]+';\n')
-                    # self._output_file.write(input["name"]+"\n")
-                    # self._output_file.write(input["type"]+"\n")
         self._output_file.write("\n")
 
 
@@ -161,10 +112,6 @@ procedure straightline_code ()
         map_id = self.find_key(node0.children[1])
         path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
         self._final_path.append(path)
-        # print("\n[code gen SSTORE]")
-        # print(node0)
-        # print(node1)
-        # print(path)
                       
     def boogie_gen_jumpi(self, node, isNotZero):
         if (type(node.value) == int):
@@ -207,12 +154,6 @@ procedure straightline_code ()
         return_string = ""
         if not node.children:
             return str(node.value)
-        # return_string += "("
-        # for child in node.children:
-        #     return_string += self.postorder_traversal(child)
-        #     return_string += ","
-        # return_string += ")"
-        # return_string += str(node.value)
         if node.value == "ISZERO":
             print(">>>", node.children[0])
             return_string += self.postorder_traversal(node.children[0]) # + "==0;\n"
@@ -312,7 +253,7 @@ procedure straightline_code ()
             print("-----Storage-----")
             for key in self._storage:
                 print('(', key, ',', self._storage[key], ')')
-
+    '''
     def set_callStack(self, offset, data):
         stack = [
             SVT("FourByteSelector"),
@@ -320,6 +261,7 @@ procedure straightline_code ()
             offset
         ]
         return stack
+    '''
     '''    
     def count_lower_ffs(self, a):
         c = 0
@@ -395,7 +337,10 @@ procedure straightline_code ()
         bytes_to_copy = 32
         for k,v in self._memories[self._curr_contract].items():
             if k == offset:
-                return self._memories[self._curr_contract][offset]
+                if bytes_to_copy == 32 and self.mem_item_len(self._memories[self._curr_contract][offset]) == 32:
+                    return self._memories[self._curr_contract][offset]
+                unfilled_position = offset
+                in_copy_mode = True
                 
             if k > offset and not in_copy_mode:   
             # We have found the place to insert the mem item of offset. It is between prev_k and k
@@ -424,8 +369,12 @@ procedure straightline_code ()
                 in_copy_mode = True
                 
             if in_copy_mode:
-                #We handle the bytes between unfilled_position and k
+                #We handle the bytes between unfilled_position and k                
                 len_uninitialized_bytes = k-unfilled_position
+                #print("k="+hex(k))
+                #print("unfilled_position="+hex(unfilled_position))
+                #print("len_uninitialized_bytes="+hex(len_uninitialized_bytes))
+                #print("bytes_to_copy="+hex(bytes_to_copy))
                 if len_uninitialized_bytes >= 32 and bytes_to_copy==32:                   
                     return SVT(0)
                 if len_uninitialized_bytes > 0:
@@ -436,9 +385,12 @@ procedure straightline_code ()
                     node1.children.append((0,num_zero_bytes-1))
                     node1.children.append(SVT(0))
                     node.children.append(node1)
-                    #print(node1)
+                    #print(node)
                     bytes_to_copy-=num_zero_bytes
                     unfilled_position+=num_zero_bytes
+                    if bytes_to_copy==0:
+                        return node
+                        
                 curr_len = self.mem_item_len(v)
                 if bytes_to_copy >= curr_len:
                     # copy the current mem item in entirety 
@@ -469,20 +421,93 @@ procedure straightline_code ()
         raise Exception ("In handle_mload. It should always return before the loop ends")
         
     def handle_MSTORE(self):
-        mem_offset = (self._stacks[self._curr_contract].pop())
-        value = self._stacks[self._curr_contract].pop()
-        if not isinstance(mem_offset.value, int):
-            self._memories[self._curr_contract][mem_offset] = value
+        offset = self._stacks[self._curr_contract].pop().value
+        content_to_store = self._stacks[self._curr_contract].pop()
+        content_to_store_len = 32
+        if not isinstance(offset, int):
+            raise Exception("An MSTORE offset is not int.")
+        
+        last_partial_overwritten_node=None
+        for k,v in self._memories[self._curr_contract].items():
+            curr_len=self.mem_item_len(v)
+            if k < offset and k+curr_len>offset:
+            # This means offset falls in the current mem item
+                node1=SVT("Partial32B")
+                if v.value == "Partial32B":
+                    node1_segment = (v.children[0][0], v.children[0][1]-(k+curr_len-offset))  # retract the current mem item's right end
+                    node1_value = v.children[1]
+                else:
+                    node1_segment = (0,31-(k+curr_len-offset)) # retract the current mem item's right end
+                    node1_value = v
+                node1.children.append(node1_segment)
+                node1.children.append(node1_value)
+                self._memories[self._curr_contract][k] = node1
+            if k < offset+content_to_store_len and k+curr_len>offset+content_to_store_len:
+            # This means the end of content_to_store falls in the current mem item
+                node1=SVT("Partial32B")
+                if v.value == "Partial32B":
+                    node1_segment = (v.children[0][0]+(offset+content_to_store_len-k), v.children[0][1])  # retract the current mem item's left end
+                    node1_value = v.children[1]
+                else:
+                    node1_segment = (offset+content_to_store_len-k,31) # retract the current mem item's left end
+                    node1_value = v
+                node1.children.append(node1_segment)
+                node1.children.append(node1_value)
+                last_partial_overwritten_node = node1
+                
+        if  last_partial_overwritten_node!=None:
+            self._memories[self._curr_contract][offset+content_to_store_len] = last_partial_overwritten_node
+                
+        for k,v in self._memories[self._curr_contract].items():        
+            if k > offset and k+curr_len<offset+content_to_store_len:
+            # This mem item is completely overwrittn by the MSTORE
+                del self._memories[self._curr_contract][k]
+        
+        if isinstance(content_to_store.value,int) or content_to_store.value != "concat":
+            self._memories[self._curr_contract][offset] = content_to_store
         else:
-            ######### This part needs to be reimplemented. #########
-            if not mem_offset.value in self._memories[self._curr_contract].keys() and value.value == "OR":
-                raise Exception("in handle_MSTORE")
-                #implement here
-            else:
-                self._memories[self._curr_contract][mem_offset.value] = value
-            ######################################################
-        self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation  
+            pos = offset
+            for item in content_to_store.children:
+                self._memories[self._curr_contract][pos] = item
+                pos+=self.mem_item_len(item)
 
+        self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation 
+        
+        memory_with_consolidated_items = {}
+        active_k = None
+        active_v = None
+        for k,v in self._memories[self._curr_contract].items():
+            if active_k == None:
+                active_k = k
+                active_v = v
+            elif isinstance(active_v.value,int) or isinstance(v.value,int) \
+              or active_v.value!="Partial32B" or v.value!="Partial32B" \
+              or active_v.children[1]!=v.children[1] \
+              or active_v.children[0][1]+1!=v.children[0][0]:
+                #print("active item="+hex(active_item[0])+":"+str(active_item[1]))
+                if not isinstance(active_v.value,int) and active_v.value=="Partial32B" \
+                   and active_v.children[0][0]==0 and active_v.children[0][1]==31:
+                    memory_with_consolidated_items[active_k]=active_v.children[1]
+                else:
+                    memory_with_consolidated_items[active_k]=active_v
+                active_k = k
+                active_v = v
+            else:
+                #active_item[1].children[0]=(active_item[1].children[0][0],item[1].children[0][1])
+                new_v=SVT("Partial32B")
+                new_v.children.append((active_v.children[0][0],v.children[0][1]))
+                new_v.children.append(active_v.children[1])
+                active_v = new_v
+                
+        if not isinstance(active_v.value,int) and active_v.value=="Partial32B" \
+           and active_v.children[0][0]==0 and active_v.children[0][1]==31:
+            memory_with_consolidated_items[active_k]=active_v.children[1]
+        else:
+            memory_with_consolidated_items[active_k]=active_v
+
+        self._memories[self._curr_contract] = memory_with_consolidated_items
+        
+        
     def handle_AND(self):
         a = self._stacks[self._curr_contract].pop()
         b = self._stacks[self._curr_contract].pop()
@@ -578,7 +603,7 @@ procedure straightline_code ()
             node.children.append(b)
         
     def run_instruction(self, instr, branch_taken):
-
+        shuo_count=0
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
@@ -591,7 +616,9 @@ procedure straightline_code ()
         #     print("=======before======")
         #     self.inspect("memory")
         #     self.inspect("stack")
-        if int(PC)==711 or int(PC)==712 or int(PC)==829 or int(PC) >= 1749 and int(PC) <= 1775:
+        
+        
+        if isinstance(PC,int) and int(PC)==174:
             print("=======before======")
             self.inspect("memory")
             self.inspect("stack")
@@ -614,10 +641,26 @@ procedure straightline_code ()
 
 
             if (dest_contract not in self._stacks.keys()):
-                offset = self._memories[self._curr_contract][self._stacks[self._curr_contract][-4].value]
-                length = self._stacks[self._curr_contract][-5]
-                self._stacks[dest_contract] = self.set_callStack(offset, length)  
-                self._memories[dest_contract] = self.set_memory()
+                #offset = self._memories[self._curr_contract][self._stacks[self._curr_contract][-4].value]
+                #length = self._stacks[self._curr_contract][-5]
+                callee_stack = []
+                calldata_pos = self._stacks[self._curr_contract][-4].value
+                calldata_len = self._stacks[self._curr_contract][-5].value
+                
+                func_selector = self._memories[self._curr_contract][calldata_pos].children[1].value
+                func_selector//=0x100**28
+                print("func_selector="+hex(func_selector))
+                callee_stack.append(SVT(func_selector))
+                callee_stack.append(SVT("AConstantBySolc"))
+                calldata_len -=4
+                calldata_pos +=4
+
+                for i in range(calldata_len//0x20):
+                    callee_stack.append(self._memories[self._curr_contract][calldata_pos])
+                    calldata_pos += 0x20
+                    
+                self._stacks[dest_contract] = callee_stack  
+                self._memories[dest_contract] = set_memory()
 
              # pops out the operands for a successful CALL operation
             for i in range(7):
@@ -771,370 +814,100 @@ procedure straightline_code ()
             print("=======after======")
             self.inspect("memory")
             self.inspect("stack")
-        if int(PC)==829:
-            #print("=======after======")
-            #self.inspect("memory")
-            #self.inspect("stack")
-            raise Exception ("debug stop")
-
         
-# Note that "FourByteSelector" is at the BOTTOM of the stack     
-def set_stack(abi, solidity_fname, contract_name, function_name):
-    stack = [
-        SVT("FourByteSelector"), 
-        SVT("SomethingIDontKnow"), 
-    ]
-
-    file = open(abi, 'r')
-    file.readline()
-    file_names = []
-    new_file = None
-    for line in file:
-        if line.startswith("======"):
-            # get name of contract
-            if new_file:
-                new_file.close()
-            line = line.rstrip("\n")
-            line = line.strip("======")
-            line = line.replace(solidity_fname+":", '')
-            line = line.strip()
-            new_name = line+".json"
-            new_file = open(new_name, 'w')
-            file_names.append(new_name)
-        elif line.startswith("Contract"):
-            continue
-        elif line != " ":
-            new_file.write(line)
-            # print(line)
-    new_file.close()
-    file.close()
-
-    # get the map
-    file = open(contract_name+".json", 'r')
-    json_object = json.load(file)
-    
-    for o in json_object:
-        if "name" in o and o["name"] == function_name:
-            for i in o["inputs"]:
-                stack.append(SVT(i["name"]))
-    file.close()
-    for n in file_names:
-        os.remove(n)
-    
-    return stack
-
-def set_storage():
-    return {
-        0: '0x00'
-    } 
-
-def set_memory():
-    return {
-        # We need to understand why this 0x40 is needed. Perhaps need to read more thoroughly the yellow paper, 
-        # or ask other people
-        0x40: SVT(0x80),
-        # Dummy mem item
-        0x10000000000: SVT(0)
-    }
-
-def read_path(filename):
-    trace=[]
-    inputfile = open(filename, 'r')
-    while True:
-        line = inputfile.readline()
-        if not line:
-            break
-        if(line[0].isdigit()):    
-            necessary = re.search("([0-9]+)\s(.*)-", line)
-            necessary = necessary[0][:-2]
-            instr = necessary.split(" ")
-            PC=int(instr[0])
-            operator=instr[1]
-            if(len(instr)>2):
-                operand=int('0x'+ instr[2], 16)
-            else:  
-                operand = None
-            trace_node = (PC, operator, operand) 
-            trace.append(trace_node)
-        elif(">>" in line or "<<" in line):
-            trace.append(line)     
-    inputfile.close()
-    return trace
-
-# a function to get a list of JSON from a text file  
-def get_MAP(storage, solidity_name, contract_name):
-    file = open(storage, 'r')
-    new_file = None
-    file.readline()
-    file_names = []
-    for line in file:
-        if line.startswith("======"):
-            # get name of contract
-            if new_file:
-                new_file.close()
-            line = line.rstrip("\n")
-            line = line.strip("======")
-            line = line.replace(solidity_name+":", '')
-            line = line.strip()
-            new_name = line+".json"
-            new_file = open(new_name, 'w')
-            file_names.append(new_name)
-        elif line.startswith("Contract Storage Layout:"):
-            continue
-        elif line != " ":
-            new_file.write(line)
-            
-    new_file.close()
-    file.close()
-    # get the map
-    file = open(contract_name+".json", 'r')
-    json_object = json.load(file)["storage"]
-    mapIDs = {}
-    
-    for o in json_object:
-        mapIDs[o["slot"]] = o["label"]
-    file.close()
-    for n in file_names:
-        os.remove(n)
-    return mapIDs
-
-def find_essential_start(runtime, solidity_fname, contract_name, function_name):
-    RUNTIME_file = open(runtime, )
-    RUNTIME_BYTE = json.load(RUNTIME_file)
-    essential_start=0
-    function_list = (RUNTIME_BYTE["contracts"][solidity_fname+":"+contract_name]["function-debug-runtime"])
-    for func in function_list:
-        if (function_name in func):
-            essential_start = (function_list[func]["entryPoint"])
-            break 
-    if (essential_start==0):
-        raise Exception("error, cannot find function entrypoint")
-    return essential_start
-
-def write_trace_essential(complete_trace, essential_trace, essential_start, solidity_fname):
-    # TODO: use regex to accomodate digits with fix width or not
-    TRACE_file = open(complete_trace, "r")
-    TRACE_essential = open(essential_trace, "w")
-    lines = [line.rstrip() for line in TRACE_file]
-    essential_end = 9999
-    start = False
-    PRE_start = 0
-    for i in range(0, len(lines)-1):
-        if lines[i].startswith(">>"):
-            matches = re.search(r"\(([^:]+)::([^()]+)\(.*?\)\)", lines[i])
-            contract_name = matches.group(1)
-            function_name = matches.group(2)
-            # print("Class name:", contract_name)
-            # print("Function signature:", function_name)
-            if not lines[i-1].startswith("==="):
-                TRACE_essential.write(lines[i] + '\n')
-                essential_start = find_essential_start("temp_solc_runtime.json", solidity_fname, contract_name, function_name)
-                start = False
-        elif lines[i].startswith("<<leave"):
-            TRACE_essential.write(lines[i] + '\n')
-        elif not lines[i][0:1].isnumeric():
-            continue
-        else:
-            if lines[i][0:1].isnumeric() and int(lines[i][0:4]) == essential_end:
-                break
-            if start and lines[i][0:1].isnumeric():
-                TRACE_essential.write(lines[i]+'\n')
-            if (int(lines[i][0:4]) == int(essential_start)):
-                # raise Exception("input trace should include at least one pre instruction of the essential part")
-                if essential_end == 9999:
-                    essential_end = PRE_start+1
-                TRACE_essential.write(lines[i]+"\n")
-                start = True
-            else:
-                PRE_start = int(lines[i][0:4])
-
-def get_FUNCTIONINFO(runtime, solidity_fname):
-    RUNTIME_file = open(runtime, )
-    RUNTIME_BYTE = json.load(RUNTIME_file)
-    contracts_info = {}
-    for contract in RUNTIME_BYTE["contracts"].keys():
-        c_name = contract.replace(solidity_fname+":", "")
-        contracts_info[c_name] = {}
-        for function in RUNTIME_BYTE["contracts"][contract]["function-debug-runtime"].keys():
-            if '@' in function:
-                function_info = {}
-                f_name = function[1:function.rfind('_')]
-                function_info = RUNTIME_BYTE["contracts"][contract]["function-debug-runtime"][function]
-                contracts_info[c_name][f_name] = (function_info)
-    # print(contracts_info)
-    return contracts_info
-
-def get_FUNCTIONINFO2(abi, solidity_fname):
-    ABI_file = open(abi, "r")
-    tmp = ""
-    lines = ABI_file.readlines()
-    for line in lines:
-        # print("l" + line)
-        if line[0] == '{':
-            continue
-        elif len(line.strip()) == 0:
-            # print("},")
-            line = ",\n"
-        elif '===' in line:
-            c_name = line.replace("======= ", "").replace(" =======", "").replace(solidity_fname+":", "").replace("\n", "")
-            line = "\"" + c_name + "\"" +":\n"
-            # print(c_name)
-        elif 'JSON ABI' in line:
-            continue    
-        tmp = tmp + line
-        # print(line)
-    tmp = tmp + '}'
-    tmp = '{' + tmp[1:] #patch
-    # print(tmp)
-    INFO = json.loads(tmp)
-    return INFO
-
-def get_FUNCTIONINFO3(storage, solidity_fname):
-    STORAGE_file = open(storage, "r")
-    tmp = '{'
-    lines = STORAGE_file.readlines()
-    for line in lines:
-        # print("l" + line)
-        if len(line.strip()) == 0:
-            # print("},")
-            line = ",\n"    
-        elif '===' in line:
-            c_name = line.replace("======= ", "").replace(" =======", "").replace(solidity_fname+":", "").replace("\n", "")
-            line = "\"" + c_name + "\"" +":\n"
-            # print(c_name)
-        elif 'Contract Storage' in line:
-            continue    
-        tmp = tmp + line
-    tmp = tmp + '}'
-    tmp = '{' + tmp[2:] #patch
-    INFO = json.loads(tmp)
-    print(tmp)
-    # INFO = ""
-    return INFO   
+        if isinstance(PC,int) and int(PC)==860  :
+            print("=======after======")
+            self.inspect("memory")
+            self.inspect("stack")
+            #raise Exception ("debug stop")
+        
 
 
-# invariant dictionary
-def map_invariant(ast_fname, sol_fname):
-    ast_file = open(ast_fname, 'r')
-    json_file = json.load(ast_file)
-    nodes = json_file["sources"][sol_fname]["AST"]["nodes"]
-    # Sources->AST->nodes->[contracts: token, standard token, multivulntoken, reentrancy attack, demo]
-    invariants = {}
-    for node in nodes:
-        if node["nodeType"] == "ContractDefinition":
-            if node["name"] not in invariants:
-                invariants[node["name"]] = []
-            if "documentation" in node:
-                if "text" in node["documentation"]:
-                    inv_list = node["documentation"]["text"].split("\n")
-                    for i in range(len(inv_list)):
-                        inv_list[i] = inv_list[i].replace("@custom:tct invariant: ", "")
-                    invariants[node["name"]] = inv_list
-                    
-            if "baseContracts" in node:
-                for b in node["baseContracts"]:
-                    invariants[node["name"]] += invariants[b["baseName"]["name"]]
-    
-    return invariants
 
-def check_entry_thingy(trace, theorem):
-    # check theorem against trace
-    trace = open(trace, 'r')
-    line = ""
-    while not line.startswith(">>enter"):
-        line = trace.readline()
-    trace_i1, trace_i2 = line.find("(")+1, line.find(")")
-    m1 = line[trace_i1:trace_i2+1]
-
-    m2 = theorem["entry-for-test"]
-
-    if m1 != m2:
-        raise Exception("entry point wrong")
-    
 def main():
     ARGS = sys.argv # output: ['symexec.py', solidity, theorem, trace]
-    SOLIDITY_FNAME  = ARGS[1]
-    THEOREM_FNAME   = ARGS[2]
-    TRACE_FNAME     = ARGS[3]
-    STORAGE         = "temp_solc_storage.json"
-    ABI             = "temp_solc_abi.json"
-    AST             = "temp_solc_ast.json"
-    ESSENTIAL       = "temp_essential.txt"
-    RUNTIME         = "temp_solc_runtime.json"
-    BOOGIE          = "TCT_out_"+THEOREM_FNAME[:-5]+".bpl"
+    MACROS.SOLIDITY_FNAME  = ARGS[1]
+    MACROS.THEOREM_FNAME   = ARGS[2]
+    MACROS.TRACE_FNAME     = ARGS[3]
+    MACROS.BOOGIE          = "TCT_out_"+MACROS.THEOREM_FNAME[:-5]+".bpl"
 
-    
-
-    os.system('solc --storage-layout --pretty-json ' + SOLIDITY_FNAME + ' > '+ STORAGE)
-    os.system('solc --abi --pretty-json ' + SOLIDITY_FNAME + ' > ' + ABI)
-    os.system('solc --combined-json function-debug-runtime --pretty-json ' + SOLIDITY_FNAME + ' > ' + RUNTIME)
-    os.system('solc --pretty-json --combined-json ast ' + SOLIDITY_FNAME + ' > ' + AST)
+    # sys.exit()
+    gen_solc()
+    # os.system('solc --storage-layout --pretty-json ' + SOLIDITY_FNAME + ' > '+ STORAGE)
+    # os.system('solc --abi --pretty-json ' + SOLIDITY_FNAME + ' > ' + ABI)
+    # os.system('solc --combined-json function-debug-runtime --pretty-json ' + SOLIDITY_FNAME + ' > ' + RUNTIME)
+    # os.system('solc --pretty-json --combined-json ast ' + SOLIDITY_FNAME + ' > ' + AST)
 
     # get contract and function name
-    THEOREM_file = open(THEOREM_FNAME, )
-    THEOREM = json.load(THEOREM_file)
-    CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
-    FUNCTION_NAME = (re.search("::(.*)\(", THEOREM['entry-for-test']))[0][2:-1]
+    # THEOREM_file = open(MACROS.THEOREM_FNAME, )
+    # THEOREM = json.load(THEOREM_file)
+    # CONTRACT_NAME = (re.search("(.*)::", THEOREM['entry-for-test']))[0][:-2]    
+    # FUNCTION_NAME = (re.search("::(.*)\(", THEOREM['entry-for-test']))[0][2:-1]
 
-    check_entry_thingy(TRACE_FNAME, THEOREM)
-    INVARIANTS = map_invariant(AST, SOLIDITY_FNAME)
+    CONTRACT_NAME, FUNCTION_NAME = get_contract_and_function_names()
+    MACROS.CONTRACT_NAME    = CONTRACT_NAME
+    MACROS.FUNCTION_NAME    = FUNCTION_NAME
+
+
+    check_entrypoint(MACROS.TRACE_FNAME)
+    INVARIANTS = map_invariant(MACROS.AST, MACROS.SOLIDITY_FNAME)
+
 
     # get essential part of the trace
     # RUNTIME_BYTE_file = open(RUNTIME, )
-    essential_start = find_essential_start(RUNTIME, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
-    write_trace_essential(TRACE_FNAME, ESSENTIAL, essential_start, SOLIDITY_FNAME)
-
+    # essential_start = find_essential_start(RUNTIME, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+    # essential_start = find_essential_start(CONTRACT_NAME, FUNCTION_NAME)
+    gen_trace_essential()
 
     # EVM construction
-    STACKS = {}
-    init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
-    STACKS[CONTRACT_NAME] = init_STACK
+    # STACKS = {}
+    # init_STACK = set_stack(ABI, SOLIDITY_FNAME, CONTRACT_NAME, FUNCTION_NAME)
+    # STACKS[CONTRACT_NAME] = init_STACK
     
-    MEMORIES = {}
-    init_MEM = set_memory()
-    MEMORIES[CONTRACT_NAME] = init_MEM
+    # MEMORIES = {}
+    # init_MEM = set_memory()
+    # MEMORIES[CONTRACT_NAME] = init_MEM
 
-    CALL_STACK = []
-    init_CALL = (CONTRACT_NAME, FUNCTION_NAME)
-    CALL_STACK.append(init_CALL)
+    # CALL_STACK = []
+    # init_CALL = (CONTRACT_NAME, FUNCTION_NAME)
+    # CALL_STACK.append(init_CALL)
 
+    STACKS      = gen_init_STACK()
+    MEMORIES    = gen_init_MEMORY()
+    STORAGE     = set_init_storage()
+    CALL_STACK  = gen_init_CALL_STACK()
 
+    
+
+    BOOGIE_OUT  = open(MACROS.BOOGIE, "w")
     # Function_info = get_FUNCTIONINFO(RUNTIME, SOLIDITY_FNAME)
 
-    ABI_INFO = get_FUNCTIONINFO2(ABI, SOLIDITY_FNAME)
-    STOR_INFO = get_FUNCTIONINFO3(STORAGE, SOLIDITY_FNAME)
+    ABI_INFO = get_ABI_info()
+    STOR_INFO = get_STORAGE_info()
+    HYPOTHESIS = get_hypothesis()
+
 
 
     PATHS = []
     VARS  = []
-    MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
-    evm = EVM(STACKS, set_storage(), MAP, MEMORIES, open(BOOGIE, "w"), PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, [init_CALL], ABI_INFO, STOR_INFO)
+    # MAP = get_MAP(STORAGE, SOLIDITY_FNAME, CONTRACT_NAME)
+    MAP = get_MAP()
+    evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, STOR_INFO)
     print('\n(pre-execution)')
-    
-    '''
-    first,last = evm.recognize_32B_mask(0xff)
-    print (first,last)
-    first,last = evm.recognize_32B_mask(0xff * (256**30))
-    print (first,last)
-    return
-    '''
-    
+
     evm.inspect("stack")
     print('\n(executing instructions...)')
-    code_trace = read_path(ESSENTIAL)
+    code_trace = build_path()
     evm.sym_exec(code_trace)
     print('\n(end)')
     print('\n(post-execution)')
     evm.inspect("stack")
-    # evm.inspect("memory")
-    # evm.inspect("storage")
 
-    # sys.exit()
-    # write to final Boogie output
+
     evm.write_preamble()
     evm.write_storages(STOR_INFO)
     evm.write_vars()
-    evm.write_hypothesis(THEOREM["hypothesis"])
+    evm.write_hypothesis(HYPOTHESIS)
     evm.write_invariants(INVARIANTS)
     evm.write_paths()
     evm.write_epilogue(INVARIANTS)
