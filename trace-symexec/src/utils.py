@@ -207,6 +207,12 @@ def get_contract_and_function_names():
     FUNCTION_NAME = (re.search("::(.*)\(", THEOREM['entry-for-test']))[0][2:-1]
     return CONTRACT_NAME, FUNCTION_NAME
 
+def get_dest_contraction_and_function(instr):
+    info = re.search("\((.*)\)", instr)[0]
+    info = info.split("::")
+    dest_contract = (info[0][1:])
+    dest_function = (info[1][:-1])
+    return dest_contract, dest_function
 
 def get_hypothesis():
     theorem_file = open(MACROS.THEOREM_FNAME, )
@@ -292,3 +298,4 @@ def write_epilogue(invariants):
     # self._output_file.write('}')
     rt = rt + ('}')
     return rt
+

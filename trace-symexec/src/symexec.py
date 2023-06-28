@@ -4,7 +4,6 @@ import json
 import binascii
 import subprocess
 import sys
-
 from prepare    import *
 from macros     import *
 from utils      import *
@@ -41,7 +40,6 @@ EVM core
 class EVM:
     from memory import recognize_32B_mask, mem_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR
 
-
     def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info): 
         self._stacks        = stacks  
         self._storage       = storage
@@ -63,8 +61,9 @@ class EVM:
                     self._output_file.write("\tvar " + input["name"] + ":\t" + input["type"]+';\n')
         self._output_file.write("\n")
 
-        for var in self._final_vars:
-            self._output_file.write(var+"\n")
+        for var in self._final_vars.keys():
+            # self._output_file.write(var+"\n")
+            self._output_file.write("\tvar " + var + ":  " + self._final_vars[var] + ";\n")
         self._output_file.write("\n")
 
     def write_paths(self):
@@ -83,17 +82,30 @@ class EVM:
         self._final_path.append(path)
                       
     def boogie_gen_jumpi(self, node, isNotZero):
-        if (type(node.value) == int):
+        var = self.postorder_traversal(node)
+        if(self._final_vars[var] == 'bool'):
             if (isNotZero):
-                path =  "\tassume("+str(self.postorder_traversal(node))+"!=0);\n\n"
+                path =  "\tassume("+ var +");\n\n"
+            else:
+                path = "\tassume(!"+ var +");\n\n" 
+        elif(self._final_vars[var] == 'uint256'):
+            if (isNotZero):
+                path =  "\tassume("+ var +"!=0);\n\n"
             else:    
-                path =  "\tassume("+str(self.postorder_traversal(node))+"==0);\n\n"
-        elif (isNotZero):
-            path =  "\tassume("+str(self.postorder_traversal(node))+");\n\n"
-        elif (not isNotZero):
-            path = "\tassume(!"+str(self.postorder_traversal(node))+");\n\n" 
-        else: 
-            raise Exception("wrong JUMPI value.")
+                path =  "\tassume("+ var +"==0);\n\n"
+        else:
+            raise Exception("JUMPI stack[-1] is_not_zero error")
+        # if (type(node.value) == int):
+        #     if (isNotZero):
+        #         path =  "\tassume("+str(self.postorder_traversal(node))+"!=0);\n\n"
+        #     else:    
+        #         path =  "\tassume("+str(self.postorder_traversal(node))+"==0);\n\n"
+        # elif (isNotZero):
+        #     path =  "\tassume("+str(self.postorder_traversal(node))+");\n\n"
+        # elif (not isNotZero):
+        #     path = "\tassume(!"+str(self.postorder_traversal(node))+");\n\n" 
+        # else: 
+        #     raise Exception("wrong JUMPI value.")
         self._final_path.append(path)
 
     def find_key(self, node):
@@ -106,77 +118,62 @@ class EVM:
                 if return_val:
                     return return_val
 
+    # recursively traverse an SVT node
     def postorder_traversal(self, node):
-        # children then parent
-        return_string = ""
+        to_return = ""
         if not node.children:
             return str(node.value)
 
         if node.value == "ISZERO":
-            print(">>>", node.children[0])
-            return_string += self.postorder_traversal(node.children[0]) # + "==0;\n"
+            to_return += self.postorder_traversal(node.children[0]) # + "==0;\n"
             val1=self._tmp_var_count
             self._tmp_var_count+=1
-            return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
-            self._final_vars.append("\tvar " + return_string + ": bool;")
-            self._final_path.append(print_string)
+            to_return =  "tmp" + str(self._tmp_var_count)
+            to_write = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
+            # self._final_vars.append("\tvar " + to_return + ": bool;")
+            self._final_vars[to_return] = 'bool'
+            self._final_path.append(to_write)
         elif node.value == "SLOAD":
             map_id = self.find_mapID(node.children[0])
             map_key = self.find_key(node.children[0].children[1])
             self._tmp_var_count+=1
-            return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
-            self._final_vars.append("\tvar " + return_string + ": uint256;")
-            self._final_path.append(print_string)  
-        elif node.value == "LT":
+            to_return =  "tmp" + str(self._tmp_var_count)
+            to_write = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
+            # self._final_vars.append("\tvar " + to_return + ": uint256;")
+            self._final_vars[to_return] = 'uint256'
+            self._final_path.append(to_write)  
+        elif node.value == "LT" or node.value == "GT" or node.value == "EQ":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
             self._tmp_var_count+=1
-            return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
-            self._final_vars.append("\tvar " + return_string + ": bool;")
-            self._final_path.append(print_string)
-        elif node.value == "GT":
-            val1 = self.postorder_traversal(node.children[0])
-            val2 = self.postorder_traversal(node.children[1])
+            to_return =  "tmp" + str(self._tmp_var_count)
+            if node.value == "LT":
+                to_write = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
+            elif node.value == "GT":
+                to_write = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
+            elif node.value == "EQ":
+                to_write = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
+            # self._final_vars.append("\tvar " + to_return + ": bool;")
+            self._final_vars[to_return] = 'bool'
+            self._final_path.append(to_write) 
+        elif node.value == "ADD" or node.value == "SUB" or node.value == "AND":
             self._tmp_var_count+=1
-            return_string =  "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
-            self._final_vars.append("\tvar " + return_string + ": bool;")
-            self._final_path.append(print_string)  
-        elif node.value == "EQ":
-            val1 = self.postorder_traversal(node.children[0])
-            val2 = self.postorder_traversal(node.children[1])
-            self._tmp_var_count+=1
-            return_string = "tmp" + str(self._tmp_var_count)
-            print_string = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
-            self._final_vars.append("\tvar " + return_string + ": bool;")
-            self._final_path.append(print_string)    
-        elif node.value == "ADD":
-            self._tmp_var_count+=1
-            return_string =  "tmp" + str(self._tmp_var_count)
-            print_string ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
-            self._final_vars.append("\tvar " + return_string + ": uint256;")
-            self._final_path.append(print_string)
-        elif node.value == "SUB":
-            self._tmp_var_count+=1
-            return_string =  "tmp" + str(self._tmp_var_count)
-            print_string ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
-            self._final_vars.append("\tvar " + return_string + ": uint256;")
-            self._final_path.append(print_string) 
-        elif node.value == "AND":    
-            self._tmp_var_count+=1
-            return_string =  "tmp" + str(self._tmp_var_count)
-            print_string ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
-            self._final_vars.append("\tvar " + return_string + ": uint256;")
-            self._final_path.append(print_string)
+            to_return =  "tmp" + str(self._tmp_var_count)
+            if node.value == "ADD":
+                to_write ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
+            elif node.value == "SUB":
+                to_write ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
+            elif node.value == "AND":
+                to_write ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
+            # self._final_vars.append("\tvar " + to_return + ": uint256;")
+            self._final_vars[to_return] = 'uint256'
+            self._final_path.append(to_write)
         elif node.value == "Partial32B":
-            return_string = str(self.postorder_traversal(node.children[1]))
+            to_return = str(self.postorder_traversal(node.children[1]))
         else:
             return str(node)
 
-        return return_string
+        return to_return
     
     def sym_exec(self, code_trace):
         for i in range(len(code_trace)):
@@ -212,31 +209,21 @@ class EVM:
             for key in self._storage:
                 print('(', key, ',', self._storage[key], ')')
 
-   
     def run_instruction(self, instr, branch_taken):
-        shuo_count=0
-        PC=instr[0]
-        opcode=instr[1]
-        operand=instr[2]
+        PC      = instr[0]
+        opcode  = instr[1]
+        operand = instr[2]
 
         if instr[0]==(">"):
+            dest_contract, dest_function = get_dest_contraction_and_function(instr)
 
-            info = re.search("\((.*)\)", instr)[0]
-            info = info.split("::")
-            dest_contract = (info[0][1:])
-            dest_function = (info[1][:-1])
-
-            ### calling a new contract
+            ### calling a new contract, set up calle stack
             if (dest_contract not in self._stacks.keys()):
-                #offset = self._memories[self._curr_contract][self._stacks[self._curr_contract][-4].value]
-                #length = self._stacks[self._curr_contract][-5]
-                callee_stack = []
-                calldata_pos = self._stacks[self._curr_contract][-4].value
-                calldata_len = self._stacks[self._curr_contract][-5].value
-                
-                func_selector = self._memories[self._curr_contract][calldata_pos].children[1].value
+                callee_stack    = []
+                calldata_pos    = self._stacks[self._curr_contract][-4].value
+                calldata_len    = self._stacks[self._curr_contract][-5].value
+                func_selector   = self._memories[self._curr_contract][calldata_pos].children[1].value
                 func_selector//=0x100**28
-                print("func_selector="+hex(func_selector))
                 callee_stack.append(SVT(func_selector))
                 callee_stack.append(SVT("AConstantBySolc"))
                 calldata_len -=4
@@ -246,14 +233,13 @@ class EVM:
                     callee_stack.append(self._memories[self._curr_contract][calldata_pos])
                     calldata_pos += 0x20
                     
-                self._stacks[dest_contract] = callee_stack  
-                self._memories[dest_contract] = set_memory()
+                self._stacks[dest_contract]     = callee_stack  
+                self._memories[dest_contract]   = set_memory()
 
-            # switch to a new contract
-            # pops out the operands for a successful CALL operation
+            ### switch to a new contract and pops out the operands for a successful CALL operation
             for i in range(7):
                 self._stacks[self._curr_contract].pop()
-            self._stacks[self._curr_contract].append(SVT(1))
+            self._stacks[self._curr_contract].append(SVT(1)) # CALL successed
             self._call_stack.append((dest_contract, dest_function))
             self._curr_contract = dest_contract
             self._curr_function = dest_function
@@ -363,17 +349,6 @@ class EVM:
         else:
             print('[!]',str(instr), 'not supported yet')  
             sys.exit()
-        # self.inspect("stack")
-        # if opcode=="MSTORE":
-            # print("=======after======")
-            # self.inspect("memory")
-            # self.inspect("stack")
-        
-        # if isinstance(PC,int) and int(PC)==860  :
-            # print("=======after======")
-            # self.inspect("memory")
-            # self.inspect("stack")
-            #raise Exception ("debug stop")
         
 '''
 main
@@ -401,7 +376,7 @@ def main():
     MEMORIES    = gen_init_MEMORY()
     BOOGIE_OUT  = open(MACROS.BOOGIE, "w")
     PATHS       = []
-    VARS        = []
+    VARS        = {}
     CALL_STACK  = gen_init_CALL_STACK()
     ABI_INFO    = get_ABI_info()
     STOR_INFO   = get_STORAGE_info()
