@@ -296,8 +296,8 @@ procedure straightline_code ()
         for i in range(len(code_trace)):
             if(code_trace[i][1]=="JUMPI"):
                 self.run_instruction(code_trace[i], (code_trace[i][0]+1 != code_trace[i+1][0]))
-            elif code_trace[i][1]=="EXP":
-                return
+            #elif code_trace[i][1]=="EXP":
+            #    return
             else:
                 self.run_instruction(code_trace[i], None)
         
@@ -702,6 +702,11 @@ procedure straightline_code ()
             self.inspect("memory")
             self.inspect("stack")
             
+        if opcode=="EXP":
+            print("=======before======")
+            self.inspect("memory")
+            self.inspect("stack")
+            
         print(instr)
         
 
@@ -843,13 +848,19 @@ procedure straightline_code ()
             node = self.handle_OR()
             self._stacks[self._curr_contract].append(node)
             self.inspect("stack")
-        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL":
             # self.inspect("stack")
             if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256) 
                 elif opcode == "SUB":
-                    node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256) 
+                    node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256)
+                elif opcode == "DIV":
+                    node = SVT((self._stacks[self._curr_contract].pop().value // self._stacks[self._curr_contract].pop().value)%2**256)
+                elif opcode == "EXP":
+                    node = SVT((self._stacks[self._curr_contract].pop().value ** self._stacks[self._curr_contract].pop().value)%2**256)
+                elif opcode == "SHL":
+                    node = SVT((self._stacks[self._curr_contract].pop().value << self._stacks[self._curr_contract].pop().value)%2**256)
                 elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
                     node = SVT(opcode)
                     node.children.append(self._stacks[self._curr_contract].pop())
