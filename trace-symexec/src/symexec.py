@@ -126,7 +126,6 @@ class EVM:
         else: 
             raise Exception("wrong JUMPI value.")
 
-
         # if (node.value == 1):
         #     path = "\tassume(true);\n\n"
         # else:
@@ -134,10 +133,6 @@ class EVM:
         #     path = "\tassume("+str(self.postorder_traversal(node))+");\n\n"
         
         self._final_path.append(path)
-        # print("\n[code gen JUMPI]") 
-        # print(node)
-        # print(path)
-
 
     def find_key(self, node):
         if not node.children:
