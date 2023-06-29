@@ -41,9 +41,8 @@ def upload_file():
         return jsonify({'message': 'An error occurred while saving the file.'}), 500
 
 def get_trace(theorem_fname, tx_hash):
-    command = '''
-curl -H 'Content-Type: application/json' --data '{"jsonrpc":"2.0", "id": 1, "method": "debug_traceTransaction", "params": ["''' + tx_hash + '''",{} ] }' http://localhost:9545 | json_pp > client_trace.json
-'''
+    command = 'curl -H "Content-Type: application/json" --data "{\\"jsonrpc\\":\\"2.0\\", \\"id\\": 1, \\"method\\": \\"debug_traceTransaction\\", \\"params\\": [\\"' + tx_hash + '\\",{} ] }" http://localhost:9545 -o client_trace.json'
+    print(command)
     os.system(command)
     output_trace("client_trace.json", tx_hash, "deployment_info.json")
 
