@@ -1,14 +1,25 @@
 input[type=text] {
     display: flex;
-    padding: 8px 20px;
+    padding: 12px 20px;
     margin: 8px 0;
     border: 1px solid #ccc;
     width: 90%;
 }
 
+button, input::file-selector-button {
+    background-color: #102489;
+    color: white;
+    font-family: 'Montserrat', sans-serif;
+    padding: 12px 20px;
+    margin-right: 8px;
+    margin-top: 8px;
+    border: none;
+    cursor: pointer;
+}
+
 .form-container {
     align-items: left;
-    background-color: #c0c1ff80;
+    background-color: #c0d0ff80;
     border-radius: 20px;
     box-shadow: inset 0px 0px 5px 6px #ffffff40;
     /*display: flex;*/
@@ -17,4 +28,3 @@ input[type=text] {
     /* min-height: 380px; */
     padding: 60px;
 }
-
