@@ -1,10 +1,10 @@
-# Helper functions
+###############################
+#  Other utility functions    # 
+###############################
 import re
 import os
 import json
-
 from macros import *
-
 
 # TODO: we need the maps for all contracts.
 def get_MAP(storage, solidity_name, contract_name):
@@ -262,7 +262,6 @@ def write_storages(storage_info):
     for elmt in storage_info[MACROS.CONTRACT_NAME]["storage"]:
         label = (elmt["label"])
         t_type = elmt["type"]
-        print(elmt)
         if ("string" in t_type):
             pass
         elif "t_mapping" in t_type:

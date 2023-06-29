@@ -1,3 +1,6 @@
+########################################################
+#   Main driver for symbolic execution of EVM trace    # 
+########################################################
 import re
 import os
 import json
@@ -35,7 +38,7 @@ class SVT:
         return ret
 
 '''
-EVM core
+EVM core trace analysis
 '''
 class EVM:
     from memory import recognize_32B_mask, mem_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR
@@ -371,7 +374,7 @@ def main():
 
     ''' parameters setup ''' 
     STACKS      = gen_init_STACK()
-    STORAGE     = set_init_storage()
+    STORAGE     = gen_init_STORAGE()
     MAP         = get_MAP()
     MEMORIES    = gen_init_MEMORY()
     BOOGIE_OUT  = open(MACROS.BOOGIE, "w")
@@ -382,14 +385,14 @@ def main():
     STOR_INFO   = get_STORAGE_info()
     HYPOTHESIS  = get_hypothesis()
     INVARIANTS  = map_invariant(MACROS.AST, MACROS.SOLIDITY_FNAME)
-    
+    TRACE       = gen_path()
+
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO)
     print('\n(pre-execution)')
     evm.inspect("stack")
     print('\n(executing instructions...)')
-    code_trace = build_path()
-    evm.sym_exec(code_trace)
+    evm.sym_exec(TRACE)
     print('\n(end)')
     print('\n(post-execution)')
     evm.inspect("stack")

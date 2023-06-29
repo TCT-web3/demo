@@ -1,3 +1,7 @@
+#########################
+#  MACRO definitions    # 
+#########################
+
 class MACROS:
     SOLIDITY_FNAME  = ""
     THEOREM_FNAME   = ""
