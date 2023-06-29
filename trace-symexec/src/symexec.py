@@ -77,7 +77,6 @@ class EVM:
             self.find_mapID(c)
 
     def boogie_gen_sstore(self, node0, node1):
-        #  print(node0)
         if node0.value=="MapElement":
             map_key = self.find_key(node0.children[1])
             path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_key)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
@@ -99,17 +98,6 @@ class EVM:
                 path =  "\tassume("+ var +"==0);\n\n"
         else:
             raise Exception("JUMPI stack[-1] is_not_zero error")
-        # if (type(node.value) == int):
-        #     if (isNotZero):
-        #         path =  "\tassume("+str(self.postorder_traversal(node))+"!=0);\n\n"
-        #     else:    
-        #         path =  "\tassume("+str(self.postorder_traversal(node))+"==0);\n\n"
-        # elif (isNotZero):
-        #     path =  "\tassume("+str(self.postorder_traversal(node))+");\n\n"
-        # elif (not isNotZero):
-        #     path = "\tassume(!"+str(self.postorder_traversal(node))+");\n\n" 
-        # else: 
-        #     raise Exception("wrong JUMPI value.")
         self._final_path.append(path)
 
     def find_key(self, node):
@@ -143,15 +131,16 @@ class EVM:
                 map_key = self.find_key(node.children[0].children[1])
             else:
                 map_id = node.children[0].value
+            
             self._tmp_var_count+=1
             to_return =  "tmp" + str(self._tmp_var_count)
-            to_write = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
+            to_print = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]
             if node.children[0].value=="MapElement":
-                to_write +="["+str(map_key)+"]"
-            to_write +=";\n"
+                to_print +="["+str(map_key)+"]"
+            to_print +=";\n"
             # self._final_vars.append("\tvar " + to_return + ": uint256;")
             self._final_vars[to_return] = 'uint256'
-            self._final_path.append(to_write)  
+            self._final_path.append(to_print) 
         elif node.value == "LT" or node.value == "GT" or node.value == "EQ":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])

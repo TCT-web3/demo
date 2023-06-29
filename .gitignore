@@ -12,3 +12,5 @@ typechain-types
 cache
 artifacts
 
+temp*
+TCT*
