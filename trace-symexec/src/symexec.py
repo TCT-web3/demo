@@ -71,12 +71,14 @@ class EVM:
             PC      = instr[0]
             opcode  = instr[1]
             operand = instr[2]
+            print(instr)
 
             if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
                 pass # no-op
             elif instr[0]==(">"):
+                print(instr)
                 dest_contract, dest_function = get_dest_contract_and_function(instr)
-                self.inspect("stack")
+                # self.inspect("stack")
                 ### calling a new contract, set up calle stack
                 if (dest_contract not in self._stacks.keys()):
                     callee_stack    = []
@@ -96,6 +98,7 @@ class EVM:
                     self._memories[dest_contract]   = {0x40: SVT(0x80),0x10000000000: SVT(0)}
 
                 ### switch to a new contract and pops out the operands for a successful CALL operation
+                print(instr)
                 for i in range(7):
                     print(self._stacks[self._curr_contract].pop())
                 self._stacks[self._curr_contract].append(SVT(1)) # CALL successed
@@ -103,11 +106,12 @@ class EVM:
                 self._curr_contract = dest_contract
                 self._curr_function = dest_function
                 print(">>> switched to contract: ", self._call_stack[-1][0])
+                print(instr)
             elif instr[0]==("<"):
                 self._call_stack.pop()
                 self._curr_contract = self._call_stack[-1][0]
                 self._curr_function = self._call_stack[-1][1]        
-                print(">>> switched to contract: ", self._call_stack[-1][0])
+                print("<<< switched to contract: ", self._call_stack[-1][0])
             elif opcode=="GAS":
                 self._stacks[self._curr_contract].append(SVT("GAS"))  # what is the GAS amount? 
             elif opcode=="RETURNDATASIZE":
@@ -277,7 +281,12 @@ class EVM:
     '''generate boogie code when JUMPI happens'''         
     def boogie_gen_jumpi(self, node, isNotZero):
         var = self.postorder_traversal(node)
-        if(self._final_vars[var]=='bool'):
+        if(str(var).isdigit()):
+            if (isNotZero):
+                path = "\tassume("+ var +"!=0);\n\n"
+            else:    
+                path = "\tassume("+ var +"==0);\n\n"
+        elif(self._final_vars[var]=='bool'):
             if (isNotZero):
                 path = "\tassume("+ var +");\n\n"
             else:
