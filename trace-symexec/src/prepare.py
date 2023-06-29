@@ -1,3 +1,6 @@
+##########################################################
+#   Helper functions for preparing EVM trace analysis    # 
+##########################################################
 import json
 import os
 import re
@@ -5,11 +8,7 @@ from macros import *
 from symexec import SVT
 
 '''
-Generate the auxiliary files using solc
-    - storage layout
-    - function debug runtime
-    - ABI
-    - AST
+Generate the auxiliary files using solc: storage layout, function debug runtime, ABI, and AST
 '''
 def gen_solc():
     os.system('solc --storage-layout --pretty-json ' + MACROS.SOLIDITY_FNAME + ' > '+ MACROS.STORAGE)
@@ -18,16 +17,16 @@ def gen_solc():
     os.system('solc --pretty-json --combined-json ast ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.AST)
 
 '''
-Set the inital stack of the initial Callee and add to the stack list of EVM 
-Note that "FourByteSelector" is at the BOTTOM of the stack     
+generate the inital stack dictionary {<contract_name> : <contract_stack>}
+    Note that "FourByteSelector" is at the BOTTOM of the stack     
 '''
-def set_stack(abi, solidity_fname, contract_name, function_name):
+def gen_init_STACK():
+    STACKS = {}
     stack = [
         SVT("FourByteSelector"),      # It would be good to fill in the actual value into this placeholder
         SVT("AConstantBySolc"), 
     ]
-
-    file = open(abi, 'r')
+    file = open(MACROS.ABI, 'r')
     file.readline()
     file_names = []
     new_file = None
@@ -38,7 +37,7 @@ def set_stack(abi, solidity_fname, contract_name, function_name):
                 new_file.close()
             line = line.rstrip("\n")
             line = line.strip("======")
-            line = line.replace(solidity_fname+":", '')
+            line = line.replace(MACROS.SOLIDITY_FNAME+":", '')
             line = line.strip()
             new_name = line+".json"
             new_file = open(new_name, 'w')
@@ -52,37 +51,56 @@ def set_stack(abi, solidity_fname, contract_name, function_name):
     file.close()
 
     # get the map
-    file = open(contract_name+".json", 'r')
+    file = open(MACROS.CONTRACT_NAME+".json", 'r')
     json_object = json.load(file)
-    
     for o in json_object:
-        if "name" in o and o["name"] == function_name:
+        if "name" in o and o["name"] == MACROS.FUNCTION_NAME:
             for i in o["inputs"]:
                 stack.append(SVT(i["name"]))
     file.close()
     for n in file_names:
         os.remove(n)
     
-    return stack
+    STACKS[MACROS.CONTRACT_NAME] = stack
+    return STACKS
 
-def set_init_storage():
-    return {
-        0: '0x00'
-    } 
-
-def set_memory():
-    return {
+'''
+generate initial memory dictionary {<contract_name> : <contract_memory>}
+'''
+def gen_init_MEMORY():
+    MEMORIES = {}
+    init_MEM = {
         # We need to understand why this 0x40 is needed. Perhaps need to read more thoroughly the yellow paper, 
         # or ask other people
         0x40: SVT(0x80),
         # Dummy mem item
         0x10000000000: SVT(0)
     }
+    MEMORIES[MACROS.CONTRACT_NAME] = init_MEM
+    return MEMORIES
+
 
 '''
-Build the concrete path with (PC, oprator, oprand) format from the essentai trace 
+generate initial storage dictionary
 '''
-def build_path():
+def gen_init_STORAGE():
+    return {
+        0: '0x00'
+    } 
+
+'''
+generate initial callstack array
+'''
+def gen_init_CALL_STACK():
+    CALL_STACK = []
+    init_CALL = (MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME)
+    CALL_STACK.append(init_CALL)
+    return CALL_STACK
+
+'''
+generate the concrete path with (PC, oprator, oprand) format from TRACE_ESSENTIAL 
+'''
+def gen_path():
     trace=[]
     inputfile = open(MACROS.ESSENTIAL, 'r')
     while True:
@@ -106,20 +124,5 @@ def build_path():
     inputfile.close()
     return trace
 
-def gen_init_STACK():
-    STACKS = {}
-    init_STACK = set_stack(MACROS.ABI, MACROS.SOLIDITY_FNAME, MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME)
-    STACKS[MACROS.CONTRACT_NAME] = init_STACK
-    return STACKS
 
-def gen_init_MEMORY():
-    MEMORIES = {}
-    init_MEM = set_memory()
-    MEMORIES[MACROS.CONTRACT_NAME] = init_MEM
-    return MEMORIES
 
-def gen_init_CALL_STACK():
-    CALL_STACK = []
-    init_CALL = (MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME)
-    CALL_STACK.append(init_CALL)
-    return CALL_STACK

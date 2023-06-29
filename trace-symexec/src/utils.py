@@ -1,14 +1,17 @@
-# Helper functions
+###############################
+#  Other utility functions    # 
+###############################
 import re
 import os
 import json
+from macros     import *
 
-from macros import *
-
-
+'''
+get a list of JSON from a text file  
+'''
 # TODO: we need the maps for all contracts.
-def get_MAP(storage, solidity_name, contract_name):
-    file = open(storage, 'r')
+def get_MAP():
+    file = open(MACROS.STORAGE, 'r')
     new_file = None
     file.readline()
     file_names = []
@@ -19,7 +22,7 @@ def get_MAP(storage, solidity_name, contract_name):
                 new_file.close()
             line = line.rstrip("\n")
             line = line.strip("======")
-            line = line.replace(solidity_name+":", '')
+            line = line.replace(MACROS.SOLIDITY_FNAME+":", '')
             line = line.strip()
             new_name = line+".json"
             new_file = open(new_name, 'w')
@@ -28,11 +31,10 @@ def get_MAP(storage, solidity_name, contract_name):
             continue
         elif line != " ":
             new_file.write(line)
-            
     new_file.close()
     file.close()
     # get the map
-    file = open(contract_name+".json", 'r')
+    file = open(MACROS.CONTRACT_NAME+".json", 'r')
     json_object = json.load(file)["storage"]
     mapIDs = {}
     
@@ -43,7 +45,9 @@ def get_MAP(storage, solidity_name, contract_name):
         os.remove(n)
     return mapIDs
 
-
+'''
+find where the essential part starts in a contract call
+'''
 def find_essential_start():
     RUNTIME_file = open(MACROS.RUNTIME, )
     RUNTIME_BYTE = json.load(RUNTIME_file)
@@ -57,7 +61,9 @@ def find_essential_start():
         raise Exception("error, cannot find function entrypoint")
     return essential_start
 
-
+'''
+output the essential part of a trace to file TRACE_ESSENTIAL
+'''
 def gen_trace_essential():
     # TODO: use regex to accomodate digits with fix width or not
     TRACE_file = open(MACROS.TRACE_FNAME, "r")
@@ -88,7 +94,6 @@ def gen_trace_essential():
             if start and lines[i][0:1].isnumeric():
                 TRACE_essential.write(lines[i]+'\n')
             if (int(lines[i][0:4]) == int(essential_start)):
-                # raise Exception("input trace should include at least one pre instruction of the essential part")
                 if essential_end == 9999:
                     essential_end = PRE_start+1
                 TRACE_essential.write(lines[i]+"\n")
@@ -96,23 +101,9 @@ def gen_trace_essential():
             else:
                 PRE_start = int(lines[i][0:4])
 
-
-def get_FUNCTIONINFO(runtime, solidity_fname):
-    RUNTIME_file = open(runtime, )
-    RUNTIME_BYTE = json.load(RUNTIME_file)
-    contracts_info = {}
-    for contract in RUNTIME_BYTE["contracts"].keys():
-        c_name = contract.replace(solidity_fname+":", "")
-        contracts_info[c_name] = {}
-        for function in RUNTIME_BYTE["contracts"][contract]["function-debug-runtime"].keys():
-            if '@' in function:
-                function_info = {}
-                f_name = function[1:function.rfind('_')]
-                function_info = RUNTIME_BYTE["contracts"][contract]["function-debug-runtime"][function]
-                contracts_info[c_name][f_name] = (function_info)
-    # print(contracts_info)
-    return contracts_info
-
+'''
+get ABI information as a JSON
+'''
 def get_ABI_info():
     ABI_file = open(MACROS.ABI, "r")
     tmp = ""
@@ -138,6 +129,9 @@ def get_ABI_info():
     INFO = json.loads(tmp)
     return INFO
 
+'''
+get storage information as a python
+'''
 def get_STORAGE_info():
     STORAGE_file = open(MACROS.STORAGE, "r")
     tmp = '{'
@@ -157,15 +151,15 @@ def get_STORAGE_info():
     tmp = tmp + '}'
     tmp = '{' + tmp[2:] #patch
     INFO = json.loads(tmp)
-    # print(tmp)
-    # INFO = ""
     return INFO   
 
-# invariant dictionary
-def map_invariant(ast_fname, sol_fname):
-    ast_file = open(ast_fname, 'r')
+'''
+get proof invariant from AST file
+'''
+def get_invariant():
+    ast_file = open(MACROS.AST, 'r')
     json_file = json.load(ast_file)
-    nodes = json_file["sources"][sol_fname]["AST"]["nodes"]
+    nodes = json_file["sources"][MACROS.SOLIDITY_FNAME]["AST"]["nodes"]
     # Sources->AST->nodes->[contracts: token, standard token, multivulntoken, reentrancy attack, demo]
     invariants = {}
     for node in nodes:
@@ -185,23 +179,34 @@ def map_invariant(ast_fname, sol_fname):
     
     return invariants
 
-def check_entrypoint(trace):
+'''
+get proof hypothesis from the the theorem file
+'''
+def get_hypothesis():
+    theorem_file = open(MACROS.THEOREM_FNAME, )
+    theorem = json.load(theorem_file)
+    return theorem["hypothesis"]
+
+'''
+check if given trace has correct starting entry point
+'''
+def check_entrypoint():
     THEOREM_file = open(MACROS.THEOREM_FNAME, )
     theorem = json.load(THEOREM_file)
     # check theorem against trace
-    trace = open(trace, 'r')
+    trace = open(MACROS.TRACE_FNAME, 'r')
     line = ""
     while not line.startswith(">>enter"):
         line = trace.readline()
     trace_i1, trace_i2 = line.find("(")+1, line.find(")")
     m1 = line[trace_i1:trace_i2+1]
-
     m2 = theorem["entry-for-test"]
-
     if m1 != m2:
         raise Exception("entry point wrong")
     
-
+'''
+get the beginning contraction and function names 
+'''    
 def get_contract_and_function_names():
     THEOREM_file = open(MACROS.THEOREM_FNAME, )
     THEOREM = json.load(THEOREM_file)
@@ -209,58 +214,20 @@ def get_contract_and_function_names():
     FUNCTION_NAME = (re.search("::(.*)\(", THEOREM['entry-for-test']))[0][2:-1]
     return CONTRACT_NAME, FUNCTION_NAME
 
-def get_dest_contraction_and_function(instr):
+'''
+get the contract and function name when a CALL happens
+'''
+def get_dest_contract_and_function(instr):
     info = re.search("\((.*)\)", instr)[0]
     info = info.split("::")
     dest_contract = (info[0][1:])
     dest_function = (info[1][:-1])
     return dest_contract, dest_function
 
-def get_hypothesis():
-    theorem_file = open(MACROS.THEOREM_FNAME, )
-    theorem = json.load(theorem_file)
-    return theorem["hypothesis"]
-
-# a function to get a list of JSON from a text file  
-def get_MAP():
-    file = open(MACROS.STORAGE, 'r')
-    new_file = None
-    file.readline()
-    file_names = []
-    for line in file:
-        if line.startswith("======"):
-            # get name of contract
-            if new_file:
-                new_file.close()
-            line = line.rstrip("\n")
-            line = line.strip("======")
-            line = line.replace(MACROS.SOLIDITY_FNAME+":", '')
-            line = line.strip()
-            new_name = line+".json"
-            new_file = open(new_name, 'w')
-            file_names.append(new_name)
-        elif line.startswith("Contract Storage Layout:"):
-            continue
-        elif line != " ":
-            new_file.write(line)
-            
-    new_file.close()
-    file.close()
-    # get the map
-    file = open(MACROS.CONTRACT_NAME+".json", 'r')
-    json_object = json.load(file)["storage"]
-    mapIDs = {}
-    
-    for o in json_object:
-        mapIDs[o["slot"]] = o["label"]
-    file.close()
-    for n in file_names:
-        os.remove(n)
-    return mapIDs
-
-
-def write_storages(storage_info):
-    # self._output_file.write("===========\n")
+'''
+write local variables from storage file to Boogie
+'''
+def write_locals(storage_info):
     rt = ""
     for elmt in storage_info[MACROS.CONTRACT_NAME]["storage"]:
         label = (elmt["label"])
@@ -271,26 +238,33 @@ def write_storages(storage_info):
             t_type = t_type.replace("t_", "")
             t_type = t_type.replace("mapping", "")[1:-1]
             t_type = t_type.split(',')
-            # self._output_file.write("\tvar " + label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
             rt = rt + ("\tvar " + label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
         else:
-            # self._output_file.write("\tvar " + label + ":\t" + t_type[2:] + ";\n")
             rt = rt + ("\tvar " + label + ":\t" + t_type[2:] + ";\n")
+
     return rt
 
+'''
+write hypothesis to Boogie
+'''
 def write_hypothesis(hypothesis):
         return("\tassume(" + hypothesis + ");\n")
 
+'''
+write invariant to Boogie
+'''
 def write_invariants(invariants):
     # get from ast
     rt = ""
     MVT_invariants = invariants[MACROS.CONTRACT_NAME]
     for inv in MVT_invariants:
         rt = rt + ("\tassume(" + inv + ");\n")
-        # self._output_file.write("\tassume(" + inv + ");\n")
     rt = rt + ("\n")
     return rt 
 
+'''
+write epilogue to Boogie
+'''
 def write_epilogue(invariants):
     rt = ""
     MVT_invariants = invariants["MultiVulnToken"]
@@ -300,4 +274,3 @@ def write_epilogue(invariants):
     # self._output_file.write('}')
     rt = rt + ('}')
     return rt
-
