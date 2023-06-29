@@ -6,10 +6,10 @@ SYMEXEC=src/symexec.py
 # python3 ${SYMEXEC} MultiVulnToken1.sol theorem1.json sampleAutoGenTrace1.txt
 
 ### DEMO 2
-# python3 ${SYMEXEC} MultiVulnToken2.sol theorem2.json sampleAutoGenTrace2.txt
+python3 ${SYMEXEC} MultiVulnToken2.sol theorem2.json sampleAutoGenTrace2.txt
 
 ### DEMO3
-# python3 ${SYMEXEC} MultiVulnToken.sol theorem2.json sampleAutoGenTrace3.txt
+#python3 ${SYMEXEC} MultiVulnToken.sol theorem2.json sampleAutoGenTrace3.txt
 
 
 
