@@ -75,7 +75,7 @@ class EVM:
             if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
                 pass # no-op
             elif instr[0]==(">"):
-                dest_contract, dest_function = get_dest_contraction_and_function(instr)
+                dest_contract, dest_function = get_dest_contract_and_function(instr)
                 ### calling a new contract, set up calle stack
                 if (dest_contract not in self._stacks.keys()):
                     callee_stack    = []
@@ -369,7 +369,7 @@ def main():
     CONTRACT_NAME,FUNCTION_NAME = get_contract_and_function_names()
     MACROS.CONTRACT_NAME    = CONTRACT_NAME
     MACROS.FUNCTION_NAME    = FUNCTION_NAME
-    check_entrypoint(MACROS.TRACE_FNAME)
+    check_entrypoint()
     gen_trace_essential()
 
     ''' parameters setup ''' 
@@ -384,7 +384,7 @@ def main():
     ABI_INFO    = get_ABI_info()
     STOR_INFO   = get_STORAGE_info()
     HYPOTHESIS  = get_hypothesis()
-    INVARIANTS  = map_invariant(MACROS.AST, MACROS.SOLIDITY_FNAME)
+    INVARIANTS  = get_invariant()
     TRACE       = gen_path()
 
     ''' run EVM trace instructions '''
@@ -399,7 +399,7 @@ def main():
 
     ''' write Boogie output '''
     BOOGIE_OUT.write(MACROS.PREAMBLE)
-    BOOGIE_OUT.write(write_storages(STOR_INFO))
+    BOOGIE_OUT.write(write_locals(STOR_INFO))
     evm.write_vars() # aux vars for Boogie Proofs 
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS))
     BOOGIE_OUT.write(write_invariants(INVARIANTS))
