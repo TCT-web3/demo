@@ -1,0 +1,20 @@
+input[type=text] {
+    display: flex;
+    padding: 8px 20px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    width: 90%;
+}
+
+.form-container {
+    align-items: left;
+    background-color: #c0c1ff80;
+    border-radius: 20px;
+    box-shadow: inset 0px 0px 5px 6px #ffffff40;
+    display: flex;
+    flex-direction: column;
+    margin: 60px;
+    /* min-height: 380px; */
+    padding: 60px;
+}
+

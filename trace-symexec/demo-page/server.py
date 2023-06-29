@@ -1,0 +1,59 @@
+from flask import Flask, request, jsonify, send_from_directory
+import os
+import json
+import codecs
+from convert_trace import *
+
+app = Flask(__name__)
+
+# Uploads folder
+UPLOAD_FOLDER = './uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+# Home page
+@app.route("/")
+def index():
+    return send_from_directory("static", "index.html")
+
+# Get trace
+@app.route('/trace', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'message': 'No file part in the request'}), 400
+    file = request.files['file']
+    tx_hash = request.form['tx-hash']
+    # if no file is selected
+    if file.filename == '':
+        return jsonify({'message': 'No file selected for uploading'}), 400
+
+    # check if the file is a json file
+    if not file.filename.endswith('.json'):
+        return jsonify({'message': 'Uploaded file is not a json file'}), 400
+
+    # save the file
+    try:
+        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(filepath)
+        get_trace(file.filename, tx_hash)
+        return jsonify({'message': 'File successfully uploaded'}), 200
+    except Exception as e:
+        return jsonify({'message': 'An error occurred while saving the file.'}), 500
+
+def get_trace(theorem_fname, tx_hash):
+    command = '''
+curl -H 'Content-Type: application/json' --data '{"jsonrpc":"2.0", "id": 1, "method": "debug_traceTransaction", "params": ["''' + tx_hash + '''",{} ] }' http://localhost:9545 | json_pp > client_trace.json
+'''
+    os.system(command)
+    output_trace("client_trace.json", tx_hash, "deployment_info.json")
+
+# Display contents of trace
+@app.route('/display')
+def display_file():
+    filename = request.args.get('file', default = "default.txt", type = str)
+    with codecs.open(filename, 'r', encoding='utf-8') as f:
+        file_content = f.read()
+    return file_content
+
+if __name__ == '__main__':
+    app.run(debug=True)
