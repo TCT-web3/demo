@@ -10,14 +10,17 @@
             var input = document.getElementById('upload');
             var upload = input.files[0]
             var theorem = upload.name;
-            xhttp.onreadystatechange = function() {
+            xhttp.onreadystatechange = function () {
                 if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("content").innerHTML = this.responseText;
+                    var fileContent = this.responseText;
+                    localStorage.setItem('fileContent', fileContent);
+                    var url = "/display?file=uploads/" + theorem;
+                    window.open(url, "_blank");
                 }
             }
             xhttp.open("GET", "/display?file=uploads/" + theorem, true);
             xhttp.send();
-            window.location.href = "/display?file=uploads/" + theorem;
+
         }
         function loadTrace() {
             var xhttp = new XMLHttpRequest();
@@ -29,11 +32,27 @@
                     document.getElementById("content").innerHTML = this.responseText;
                 }
             };
-            xhttp.open("GET", "/display?file=" + fileName, true);
-            xhttp.send();
-            window.location.href = "/display?file=" + fileName;
+
+            url = "/display?file=" + encodeURIComponent(fileName);
+            var newWindow = window.open(url, '_blank');
+            newWindow.focus();
         }
 
+        function boogieOutput() {
+            var xhttp = new XMLHttpRequest();
+            var txHash = document.getElementById('tx-hash').value;
+            var fileName = 'trace-' + txHash + '.bpl';
+            var tx_hash = document.getElementById('tx-hash');
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("content").innerHTML = this.responseText;
+                }
+            };
+
+            url = "/display?file=" + encodeURIComponent(fileName);
+            var newWindow = window.open(url, '_blank');
+            newWindow.focus();
+        }
     </script>
 </head>
 
@@ -55,6 +74,11 @@
     <div class="form-container">
         <button onclick="viewTheorem()">View Theorem</button>
         <button onclick="loadTrace()">Load Trace</button>
+        <button onclick="boogieOutput()">Boogie Output</button>
+    </div>
+
+    <div class="form-container">
+        <div id="boogie-result"></div>
     </div>
 
     <script>
@@ -79,13 +103,24 @@
                     body: formData
                 })
                     .then(response => response.json())
-                    .then(data => console.log(data))
+                    .then(data => {
+                        getBoogieResult(data);
+                    })
                     .catch((error) => {
                         console.error('Error:', error);
                     });
             } else {
                 console.log("No file selected or text field empty!");
             }
+        }
+
+        function getBoogieResult(data) {
+            var boogie_result = document.getElementById("boogie-result");
+            // var response = JSON.parse(data);
+            console.log(data);
+            var text = document.createElement("p");
+            text.innerHTML = data["boogie-output"];
+            boogie_result.appendChild(text);
         }
     </script>
 </body>

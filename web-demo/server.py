@@ -1,3 +1,4 @@
+import subprocess
 from flask import Flask, request, jsonify, render_template
 import os
 import json
@@ -36,7 +37,10 @@ def upload_file():
         filepath = os.path.join(UPLOAD_FOLDER, file.filename)
         file.save(filepath)
         get_trace(file.filename, tx_hash)
-        return jsonify({'message': 'File successfully uploaded'}), 200
+        with open("result.txt", "r") as result_file:
+            boogie_output = result_file.read()
+        print(boogie_output)
+        return jsonify({'message': 'File successfully uploaded', 'boogie-output': boogie_output}), 200
     except Exception as e:
         return jsonify({'message': 'An error occurred while saving the file.'}), 500
 
@@ -44,9 +48,13 @@ def get_trace(theorem_fname, tx_hash):
     command = 'curl -H "Content-Type: application/json" --data "{\\"jsonrpc\\":\\"2.0\\", \\"id\\": 1, \\"method\\": \\"debug_traceTransaction\\", \\"params\\": [\\"' + tx_hash + '\\",{} ] }" http://localhost:9545 -o client_trace.json'
     print(command)
     os.system(command)
-    output_trace("client_trace.json", tx_hash, "deployment_info.json")
+    # Get trace
+    output_trace("client_trace.json", tx_hash, "deployment_info.json", theorem_fname)
+    # Get boogie output
+    os.system("python3 symexec.py MultiVulnToken.sol uploads/" + theorem_fname + " trace-" + tx_hash + ".txt")
+    os.system("boogie trace-" + tx_hash + ".bpl > result.txt")
 
-# Display contents of trace
+# Display contents of any file
 @app.route('/display')
 def display_file():
     filename = request.args.get('file', default="default.txt", type=str)

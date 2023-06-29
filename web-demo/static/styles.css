@@ -17,6 +17,10 @@ button, input::file-selector-button {
     cursor: pointer;
 }
 
+p {
+    font-family: 'Montserrat', sans-serif;
+}
+
 .form-container {
     align-items: left;
     background-color: #c0d0ff80;
