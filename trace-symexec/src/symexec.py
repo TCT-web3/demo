@@ -77,8 +77,12 @@ class EVM:
             self.find_mapID(c)
 
     def boogie_gen_sstore(self, node0, node1):
-        map_id = self.find_key(node0.children[1])
-        path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_id)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
+        #  print(node0)
+        if node0.value=="MapElement":
+            map_key = self.find_key(node0.children[1])
+            path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_key)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
+        else:
+            path="\t"+self._storage_map[str(node0.value)]+":=" + str(self.postorder_traversal(node1))+";\n\n"
         self._final_path.append(path)
                       
     def boogie_gen_jumpi(self, node, isNotZero):
@@ -134,11 +138,17 @@ class EVM:
             self._final_vars[to_return] = 'bool'
             self._final_path.append(to_write)
         elif node.value == "SLOAD":
-            map_id = self.find_mapID(node.children[0])
-            map_key = self.find_key(node.children[0].children[1])
+            if node.children[0].value=="MapElement":
+                map_id = self.find_mapID(node.children[0])
+                map_key = self.find_key(node.children[0].children[1])
+            else:
+                map_id = node.children[0].value
             self._tmp_var_count+=1
             to_return =  "tmp" + str(self._tmp_var_count)
             to_write = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]+"["+str(map_key)+"];\n"
+            if node.children[0].value=="MapElement":
+                to_write +="["+str(map_key)+"]"
+            to_write +=";\n"
             # self._final_vars.append("\tvar " + to_return + ": uint256;")
             self._final_vars[to_return] = 'uint256'
             self._final_path.append(to_write)  
@@ -321,12 +331,18 @@ class EVM:
             node = self.handle_OR()
             self._stacks[self._curr_contract].append(node)
             self.inspect("stack")
-        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB":            
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL":            
             if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256) 
                 elif opcode == "SUB":
-                    node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256) 
+                    node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256)
+                elif opcode == "DIV":
+                    node = SVT((self._stacks[self._curr_contract].pop().value // self._stacks[self._curr_contract].pop().value)%2**256)
+                elif opcode == "EXP":
+                    node = SVT((self._stacks[self._curr_contract].pop().value ** self._stacks[self._curr_contract].pop().value)%2**256)
+                elif opcode == "SHL":
+                    node = SVT((self._stacks[self._curr_contract].pop().value << self._stacks[self._curr_contract].pop().value)%2**256) 
                 elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
                     node = SVT(opcode)
                     node.children.append(self._stacks[self._curr_contract].pop())

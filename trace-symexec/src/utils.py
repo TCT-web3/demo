@@ -5,6 +5,8 @@ import json
 
 from macros import *
 
+
+# TODO: we need the maps for all contracts.
 def get_MAP(storage, solidity_name, contract_name):
     file = open(storage, 'r')
     new_file = None
