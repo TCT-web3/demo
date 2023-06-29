@@ -1,6 +1,6 @@
 {
 	"compiler": {
-		"version": "0.8.18+commit.87f61d96"
+		"version": "0.8.6+commit.11564f7e"
 	},
 	"language": "Solidity",
 	"output": {
@@ -46,19 +46,6 @@
 				"name": "clear",
 				"outputs": [],
 				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [],
-				"name": "name",
-				"outputs": [
-					{
-						"internalType": "string",
-						"name": "",
-						"type": "string"
-					}
-				],
-				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -135,9 +122,9 @@
 	},
 	"settings": {
 		"compilationTarget": {
-			"trace-symexec/MultiVulnToken1.sol": "MultiVulnToken"
+			"MultiVulnToken.sol": "MultiVulnToken"
 		},
-		"evmVersion": "paris",
+		"evmVersion": "berlin",
 		"libraries": {},
 		"metadata": {
 			"bytecodeHash": "ipfs"
@@ -149,12 +136,12 @@
 		"remappings": []
 	},
 	"sources": {
-		"trace-symexec/MultiVulnToken1.sol": {
-			"keccak256": "0xf32db93f6734deb55e6fafb24e1a668acfd5daa5ae93342b750ab9e4fccb9e2b",
+		"MultiVulnToken.sol": {
+			"keccak256": "0xd73b8a8c5758d657aec5f379c0ca56d5e2eebbe25158fa25cf112357583b6274",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://4462d002f5445763f36a1999f4b7a1a02eaee2f0e48efd343a15b6188cdc4af5",
-				"dweb:/ipfs/QmVaqkeNDeFMgUJav5K6ZrabG3wB916DRZbRZb7K45JgPF"
+				"bzz-raw://a130ac5c6ca755f7ebaaa161ccaac157bef59f743daee62c7af46ed944bb0b74",
+				"dweb:/ipfs/QmZvQXhhJ3RXb5vWcuhcVqE5hZuiAQU29YwrwqBfye5X7Q"
 			]
 		}
 	},

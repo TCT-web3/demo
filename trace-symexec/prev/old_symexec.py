@@ -677,35 +677,9 @@ procedure straightline_code ()
             node.children.append(b)
         
     def run_instruction(self, instr, branch_taken):
-        shuo_count=0
         PC=instr[0]
         opcode=instr[1]
         operand=instr[2]
-        
-        # if int(PC) == 757 or int(PC) == 786:
-        #     print("=======before======")
-        #     self.inspect("memory")
-        #     self.inspect("stack")
-        # if int(PC) >= 787 and int(PC) <= 825:
-        #     print("=======before======")
-        #     self.inspect("memory")
-        #     self.inspect("stack")
-        
-        
-        if isinstance(PC,int) and int(PC)==174:
-            print("=======before======")
-            self.inspect("memory")
-            self.inspect("stack")
-        
-        if opcode=="MSTORE":
-            print("=======before======")
-            self.inspect("memory")
-            self.inspect("stack")
-            
-        if opcode=="EXP":
-            print("=======before======")
-            self.inspect("memory")
-            self.inspect("stack")
             
         print(instr)
         
@@ -718,6 +692,7 @@ procedure straightline_code ()
             dest_contract = (info[0][1:])
             dest_function = (info[1][:-1])
 
+            self.inspect("stack")
 
             if (dest_contract not in self._stacks.keys()):
                 #offset = self._memories[self._curr_contract][self._stacks[self._curr_contract][-4].value]
@@ -751,6 +726,7 @@ procedure straightline_code ()
             self._curr_function = dest_function
             # self.inspect("stack")
             print(">>> switched to contract: ", self._call_stack[-1][0])
+            # sys.exit()
             print("after switch:", self._call_stack)
             # self.inspect("memory")
             # self.inspect("stack")
