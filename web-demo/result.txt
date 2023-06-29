@@ -1,8 +1,0 @@
-trace-0x1757c38e4cfd422adc7c00a38a877254792b712da8e41863efe4f75e53507bb6.bpl(98,2): Error: this assertion could not be proved
-Execution trace:
-    trace-0x1757c38e4cfd422adc7c00a38a877254792b712da8e41863efe4f75e53507bb6.bpl(61,2): anon0
-trace-0x1757c38e4cfd422adc7c00a38a877254792b712da8e41863efe4f75e53507bb6.bpl(99,2): Error: this assertion could not be proved
-Execution trace:
-    trace-0x1757c38e4cfd422adc7c00a38a877254792b712da8e41863efe4f75e53507bb6.bpl(61,2): anon0
-
-Boogie program verifier finished with 0 verified, 2 errors
