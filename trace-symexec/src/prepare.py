@@ -18,7 +18,7 @@ def gen_solc():
 
 '''
 generate the inital stack dictionary {<contract_name> : <contract_stack>}
-Note that "FourByteSelector" is at the BOTTOM of the stack     
+    Note that "FourByteSelector" is at the BOTTOM of the stack     
 '''
 def gen_init_STACK():
     STACKS = {}
@@ -88,6 +88,9 @@ def gen_init_STORAGE():
         0: '0x00'
     } 
 
+'''
+generate initial callstack array
+'''
 def gen_init_CALL_STACK():
     CALL_STACK = []
     init_CALL = (MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME)
