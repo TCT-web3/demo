@@ -17,8 +17,8 @@ button, input::file-selector-button {
     cursor: pointer;
 }
 
-p {
-    font-family: 'Montserrat', sans-serif;
+pre {
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .form-container {

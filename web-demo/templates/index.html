@@ -118,7 +118,7 @@
             var boogie_result = document.getElementById("boogie-result");
             // var response = JSON.parse(data);
             console.log(data);
-            var text = document.createElement("p");
+            var text = document.createElement("pre");
             text.innerHTML = data["boogie-output"];
             boogie_result.appendChild(text);
         }
