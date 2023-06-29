@@ -4,8 +4,7 @@
 import re
 import os
 import json
-from macros import *
-
+from macros     import *
 
 '''
 get a list of JSON from a text file  
@@ -275,4 +274,3 @@ def write_epilogue(invariants):
     # self._output_file.write('}')
     rt = rt + ('}')
     return rt
-

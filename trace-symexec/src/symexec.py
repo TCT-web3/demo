@@ -92,7 +92,7 @@ class EVM:
                         callee_stack.append(self._memories[self._curr_contract][calldata_pos])
                         calldata_pos += 0x20
                     self._stacks[dest_contract]     = callee_stack  
-                    self._memories[dest_contract]   = set_memory()
+                    self._memories[dest_contract]   = {0x40: SVT(0x80),0x10000000000: SVT(0)}
 
                 ### switch to a new contract and pops out the operands for a successful CALL operation
                 for i in range(7):
