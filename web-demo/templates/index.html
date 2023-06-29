@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+
+<head>
+    <title>TCT Demo</title>
+    <link href="/static/styles.css" rel="stylesheet" />
+
+    <script>
+        function viewTheorem() {
+            var xhttp = new XMLHttpRequest();
+            var input = document.getElementById('upload');
+            var upload = input.files[0]
+            var theorem = upload.name;
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("content").innerHTML = this.responseText;
+                }
+            }
+            xhttp.open("GET", "/display?file=uploads/" + theorem, true);
+            xhttp.send();
+            window.location.href = "/display?file=uploads/" + theorem;
+        }
+        function loadTrace() {
+            var xhttp = new XMLHttpRequest();
+            var txHash = document.getElementById('tx-hash').value;
+            var fileName = 'trace-' + txHash + '.txt';
+            var tx_hash = document.getElementById('tx-hash');
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("content").innerHTML = this.responseText;
+                }
+            };
+            xhttp.open("GET", "/display?file=" + fileName, true);
+            xhttp.send();
+            window.location.href = "/display?file=" + fileName;
+        }
+
+    </script>
+</head>
+
+<body>
+    <div class="entry-fields">
+        <div class="form-container">
+            <div class="input-box">
+                <input type="text" id="tx-hash" name="tx-hash" placeholder="Transaction hash...">
+            </div>
+            <div class="file-input">
+                <input id="upload" type="file" accept=".json" />
+            </div>
+            <div class="button-submit">
+                <button type="button" onclick="uploadFile()">Trace</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-container">
+        <button onclick="viewTheorem()">View Theorem</button>
+        <button onclick="loadTrace()">Load Trace</button>
+    </div>
+
+    <script>
+        function uploadFile() {
+            var input = document.getElementById("upload");
+            var file = input.files[0];
+
+            var txHash = document.getElementById("tx-hash").value;
+
+            if (file && txHash) {
+                if (file.type != "application/json") {
+                    console.log("File is not a JSON file.");
+                    return;
+                }
+
+                var formData = new FormData();
+                formData.append('file', file);
+                formData.append('tx-hash', txHash);
+
+                fetch('/trace', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => console.log(data))
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+            } else {
+                console.log("No file selected or text field empty!");
+            }
+        }
+    </script>
+</body>

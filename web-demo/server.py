@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template
 import os
 import json
 import codecs
@@ -14,7 +14,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Home page
 @app.route("/")
 def index():
-    return send_from_directory("static", "index.html")
+    return render_template("index.html")
 
 # Get trace
 @app.route('/trace', methods=['POST'])
@@ -49,10 +49,10 @@ def get_trace(theorem_fname, tx_hash):
 # Display contents of trace
 @app.route('/display')
 def display_file():
-    filename = request.args.get('file', default = "default.txt", type = str)
+    filename = request.args.get('file', default="default.txt", type=str)
     with codecs.open(filename, 'r', encoding='utf-8') as f:
         file_content = f.read()
-    return file_content
+    return render_template('display.html', file_content=file_content)
 
 if __name__ == '__main__':
     app.run(debug=True)

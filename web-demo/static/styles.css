@@ -11,8 +11,8 @@ input[type=text] {
     background-color: #c0c1ff80;
     border-radius: 20px;
     box-shadow: inset 0px 0px 5px 6px #ffffff40;
-    display: flex;
-    flex-direction: column;
+    /*display: flex;*/
+    /*flex-direction: column;*/
     margin: 60px;
     /* min-height: 380px; */
     padding: 60px;
