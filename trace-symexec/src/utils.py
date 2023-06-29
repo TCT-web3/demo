@@ -48,13 +48,13 @@ def get_MAP():
 '''
 find where the essential part starts in a contract call
 '''
-def find_essential_start():
+def find_essential_start(contract_name, function_name):
     RUNTIME_file = open(MACROS.RUNTIME, )
     RUNTIME_BYTE = json.load(RUNTIME_file)
     essential_start=0
-    function_list = (RUNTIME_BYTE["contracts"][MACROS.SOLIDITY_FNAME+":"+MACROS.CONTRACT_NAME]["function-debug-runtime"])
+    function_list = (RUNTIME_BYTE["contracts"][MACROS.SOLIDITY_FNAME+":"+contract_name]["function-debug-runtime"])
     for func in function_list:
-        if (MACROS.FUNCTION_NAME in func):
+        if (function_name in func):
             essential_start = (function_list[func]["entryPoint"])
             break 
     if (essential_start==0):
@@ -68,7 +68,7 @@ def gen_trace_essential():
     # TODO: use regex to accomodate digits with fix width or not
     TRACE_file = open(MACROS.TRACE_FNAME, "r")
     TRACE_essential = open(MACROS.ESSENTIAL, "w")
-    essential_start = find_essential_start()
+    essential_start = find_essential_start(MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME)
     lines = [line.rstrip() for line in TRACE_file]
     essential_end = 9999
     start = False
@@ -82,7 +82,7 @@ def gen_trace_essential():
             # print("Function signature:", function_name)
             if not lines[i-1].startswith("==="):
                 TRACE_essential.write(lines[i] + '\n')
-                essential_start = find_essential_start()
+                essential_start = find_essential_start(contract_name, function_name)
                 start = False
         elif lines[i].startswith("<<leave"):
             TRACE_essential.write(lines[i] + '\n')
