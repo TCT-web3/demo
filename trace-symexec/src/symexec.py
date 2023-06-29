@@ -117,10 +117,7 @@ class EVM:
             elif opcode=="JUMP":
                 self._stacks[self._curr_contract].pop()
             elif opcode=="JUMPI":
-                if(branch_taken):
-                    self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], True) 
-                else:
-                    self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], False)
+                self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], branch_taken)
                 self._stacks[self._curr_contract].pop()
                 self._stacks[self._curr_contract].pop()
             elif opcode=="MSTORE":
