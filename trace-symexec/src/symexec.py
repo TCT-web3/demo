@@ -76,6 +76,7 @@ class EVM:
                 pass # no-op
             elif instr[0]==(">"):
                 dest_contract, dest_function = get_dest_contract_and_function(instr)
+                self.inspect("stack")
                 ### calling a new contract, set up calle stack
                 if (dest_contract not in self._stacks.keys()):
                     callee_stack    = []
@@ -96,7 +97,7 @@ class EVM:
 
                 ### switch to a new contract and pops out the operands for a successful CALL operation
                 for i in range(7):
-                    self._stacks[self._curr_contract].pop()
+                    print(self._stacks[self._curr_contract].pop())
                 self._stacks[self._curr_contract].append(SVT(1)) # CALL successed
                 self._call_stack.append((dest_contract, dest_function))
                 self._curr_contract = dest_contract
