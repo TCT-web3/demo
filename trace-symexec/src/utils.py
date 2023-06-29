@@ -43,6 +43,44 @@ def get_MAP(storage, solidity_name, contract_name):
         os.remove(n)
     return mapIDs
 
+# a function to get a list of JSON from a text file  
+def get_MAP():
+    file = open(MACROS.STORAGE, 'r')
+    new_file = None
+    file.readline()
+    file_names = []
+    for line in file:
+        if line.startswith("======"):
+            # get name of contract
+            if new_file:
+                new_file.close()
+            line = line.rstrip("\n")
+            line = line.strip("======")
+            line = line.replace(MACROS.SOLIDITY_FNAME+":", '')
+            line = line.strip()
+            new_name = line+".json"
+            new_file = open(new_name, 'w')
+            file_names.append(new_name)
+        elif line.startswith("Contract Storage Layout:"):
+            continue
+        elif line != " ":
+            new_file.write(line)
+            
+    new_file.close()
+    file.close()
+    # get the map
+    file = open(MACROS.CONTRACT_NAME+".json", 'r')
+    json_object = json.load(file)["storage"]
+    mapIDs = {}
+    
+    for o in json_object:
+        mapIDs[o["slot"]] = o["label"]
+    file.close()
+    for n in file_names:
+        os.remove(n)
+    return mapIDs
+
+
 
 def find_essential_start():
     RUNTIME_file = open(MACROS.RUNTIME, )
@@ -56,7 +94,6 @@ def find_essential_start():
     if (essential_start==0):
         raise Exception("error, cannot find function entrypoint")
     return essential_start
-
 
 def gen_trace_essential():
     # TODO: use regex to accomodate digits with fix width or not
@@ -95,7 +132,6 @@ def gen_trace_essential():
                 start = True
             else:
                 PRE_start = int(lines[i][0:4])
-
 
 def get_FUNCTIONINFO(runtime, solidity_fname):
     RUNTIME_file = open(runtime, )
@@ -201,7 +237,6 @@ def check_entrypoint(trace):
     if m1 != m2:
         raise Exception("entry point wrong")
     
-
 def get_contract_and_function_names():
     THEOREM_file = open(MACROS.THEOREM_FNAME, )
     THEOREM = json.load(THEOREM_file)
@@ -221,50 +256,13 @@ def get_hypothesis():
     theorem = json.load(theorem_file)
     return theorem["hypothesis"]
 
-# a function to get a list of JSON from a text file  
-def get_MAP():
-    file = open(MACROS.STORAGE, 'r')
-    new_file = None
-    file.readline()
-    file_names = []
-    for line in file:
-        if line.startswith("======"):
-            # get name of contract
-            if new_file:
-                new_file.close()
-            line = line.rstrip("\n")
-            line = line.strip("======")
-            line = line.replace(MACROS.SOLIDITY_FNAME+":", '')
-            line = line.strip()
-            new_name = line+".json"
-            new_file = open(new_name, 'w')
-            file_names.append(new_name)
-        elif line.startswith("Contract Storage Layout:"):
-            continue
-        elif line != " ":
-            new_file.write(line)
-            
-    new_file.close()
-    file.close()
-    # get the map
-    file = open(MACROS.CONTRACT_NAME+".json", 'r')
-    json_object = json.load(file)["storage"]
-    mapIDs = {}
-    
-    for o in json_object:
-        mapIDs[o["slot"]] = o["label"]
-    file.close()
-    for n in file_names:
-        os.remove(n)
-    return mapIDs
-
 
 def write_storages(storage_info):
-    # self._output_file.write("===========\n")
     rt = ""
     for elmt in storage_info[MACROS.CONTRACT_NAME]["storage"]:
         label = (elmt["label"])
         t_type = elmt["type"]
+        print(elmt)
         if ("string" in t_type):
             pass
         elif "t_mapping" in t_type:
