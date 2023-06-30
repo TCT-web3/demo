@@ -71,14 +71,11 @@ class EVM:
             PC      = instr[0]
             opcode  = instr[1]
             operand = instr[2]
-            print(instr)
 
             if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
                 pass # no-op
             elif instr[0]==(">"):
-                print(instr)
                 dest_contract, dest_function = get_dest_contract_and_function(instr)
-                # self.inspect("stack")
                 ### calling a new contract, set up calle stack
                 if (dest_contract not in self._stacks.keys()):
                     callee_stack    = []
@@ -98,15 +95,13 @@ class EVM:
                     self._memories[dest_contract]   = {0x40: SVT(0x80),0x10000000000: SVT(0)}
 
                 ### switch to a new contract and pops out the operands for a successful CALL operation
-                print(instr)
                 for i in range(7):
-                    print(self._stacks[self._curr_contract].pop())
+                    self._stacks[self._curr_contract].pop()
                 self._stacks[self._curr_contract].append(SVT(1)) # CALL successed
                 self._call_stack.append((dest_contract, dest_function))
                 self._curr_contract = dest_contract
                 self._curr_function = dest_function
                 print(">>> switched to contract: ", self._call_stack[-1][0])
-                print(instr)
             elif instr[0]==("<"):
                 self._call_stack.pop()
                 self._curr_contract = self._call_stack[-1][0]
@@ -122,6 +117,8 @@ class EVM:
                             self._stacks[self._curr_contract].append(SVT(0))
                         else:
                             raise Exception("return data SIZE to be implemented. ")    
+            elif opcode=="EXTCODESIZE":
+                self._stacks[self._curr_contract].append(SVT("CODESIZE"))                
             elif opcode=="JUMP":
                 self._stacks[self._curr_contract].pop()
             elif opcode=="JUMPI":
@@ -172,7 +169,6 @@ class EVM:
             elif opcode=="OR":
                 node = self.handle_OR()
                 self._stacks[self._curr_contract].append(node)
-                self.inspect("stack")
             elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL":            
                 if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
                     if opcode == "ADD":

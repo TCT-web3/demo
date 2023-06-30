@@ -228,20 +228,29 @@ def get_dest_contract_and_function(instr):
 write local variables from storage file to Boogie
 '''
 def write_locals(storage_info):
+    locals = []
     rt = ""
-    for elmt in storage_info[MACROS.CONTRACT_NAME]["storage"]:
-        label = (elmt["label"])
-        t_type = elmt["type"]
-        if ("string" in t_type):
-            pass
-        elif "t_mapping" in t_type:
-            t_type = t_type.replace("t_", "")
-            t_type = t_type.replace("mapping", "")[1:-1]
-            t_type = t_type.split(',')
-            rt = rt + ("\tvar " + label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
-        else:
-            rt = rt + ("\tvar " + label + ":\t" + t_type[2:] + ";\n")
-
+    for contract in storage_info.keys():
+        for elmt in storage_info[contract]["storage"]:
+            label =  elmt["label"]
+            t_type = elmt["type"]
+            
+            if (label in locals):
+                pass
+            else:
+                locals.append(label)
+                if ("string" in t_type):
+                    pass
+                elif ("contract" in t_type):
+                    pass # TODO: contract address as a type
+                elif "t_mapping" in t_type:
+                    t_type = t_type.replace("t_", "")
+                    t_type = t_type.replace("mapping", "")[1:-1]
+                    t_type = t_type.split(',')
+                    rt = rt + ("\tvar " + label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
+                else:
+                    rt = rt + ("\tvar " + label + ":\t" + t_type[2:] + ";\n")  
+    
     return rt
 
 '''
