@@ -17,6 +17,11 @@ button, input::file-selector-button {
     cursor: pointer;
 }
 
+#confetti-gif {
+    height: 20%;
+    width: 20%;
+}
+
 pre {
     font-family: 'Courier New', Courier, monospace;
 }
