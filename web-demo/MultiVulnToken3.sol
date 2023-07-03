@@ -81,7 +81,7 @@ contract reentrancy_attack {
     }
     function receiveNotification(uint256) public {
         unchecked {	
-		    if (count < 1) {
+		    if (count < 5) {
 		        count++;
 		        multiVulnToken.clear(_to);
 		    }
