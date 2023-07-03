@@ -53,14 +53,13 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
             row = offset // 32
             col = (offset % 32)*2
             func_selector = trace[i]["memory"][row][col:col+8]
-
+            print(contract_address, func_selector)
             if not enter and func_selector == function_hash:
                 output.close()
                 output = open("trace-" + tx_hash + ".txt", "w")
                 output.write("======================================Begin==========================================\n")
                 line = ">>enter 0x" + contract_hash + "::0x" + function_hash + " (" + deploy_info[contract_hash] + "::" + deploy_info[function_hash] + ") "
                 enter = True
-
             else:
                 line += "-\n>>enter " + '0x' + contract_address
                 line += "::0x" + func_selector
