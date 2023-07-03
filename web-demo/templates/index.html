@@ -57,17 +57,16 @@
 </head>
 
 <body>
-    <div class="entry-fields">
-        <div class="form-container">
-            <div class="input-box">
-                <input type="text" id="tx-hash" name="tx-hash" placeholder="Transaction hash...">
-            </div>
-            <div class="file-input">
-                <input id="upload" type="file" accept=".json" />
-            </div>
-            <div class="button-submit">
-                <button type="button" onclick="uploadFile()">Trace</button>
-            </div>
+    
+    <div class="form-container">
+        <div class="input-box">
+            <input type="text" id="tx-hash" name="tx-hash" placeholder="Transaction hash...">
+        </div>
+        <div class="file-input">
+            <input id="upload" type="file" accept=".json" />
+        </div>
+        <div class="button-submit">
+            <button type="button" onclick="uploadFile()">Trace</button>
         </div>
     </div>
 
@@ -79,6 +78,7 @@
 
     <div class="form-container">
         <div id="boogie-result"></div>
+        <img id="confetti-gif">
     </div>
 
     <script>
@@ -117,10 +117,14 @@
         function getBoogieResult(data) {
             var boogie_result = document.getElementById("boogie-result");
             // var response = JSON.parse(data);
-            console.log(data);
+            // console.log(data);
             var text = document.createElement("pre");
             text.innerHTML = data["boogie-output"];
             boogie_result.appendChild(text);
+            if (data["boogie-output"].indexOf("0 errors") != -1) {
+                var gif = document.getElementById("confetti-gif");
+                gif.src = 'static/confetti.gif';
+            }
         }
     </script>
 </body>
