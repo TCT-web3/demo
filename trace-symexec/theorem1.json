@@ -1,7 +1,7 @@
 {
 	"entry-for-test":"MultiVulnToken::transferProxy(address,address,uint256,uint256)",
 	"entry-for-real":"0x633dbfb62c1bd3d5fff4d7d94e8c2f6f5b479ca1::0xcf053d9d",
-	"hypothesis":"0<=_value && _value<TwoE255 && 0<=_fee && _fee<TwoE255 && totalSupply<TwoE255",
+	"hypothesis":"0<=MultiVulnToken._value && MultiVulnToken._value<TwoE255 && 0<=MultiVulnToken._fee && MultiVulnToken._fee<TwoE255 && MultiVulnToken.totalSupply<TwoE255",
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)"
 }

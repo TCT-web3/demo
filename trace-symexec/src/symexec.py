@@ -72,6 +72,9 @@ class EVM:
             opcode  = instr[1]
             operand = instr[2]
 
+            # print(instr)
+            # self.inspect("currstack")
+
             if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
                 pass # no-op
             elif instr[0]==(">"):
@@ -131,6 +134,7 @@ class EVM:
                 node = self.handle_MLOAD()
                 self._stacks[self._curr_contract].append(node)  
             elif opcode=="SSTORE":
+                print(instr)
                 self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
             elif opcode=="SLOAD":
                 node = SVT("SLOAD")
@@ -197,19 +201,23 @@ class EVM:
                         raise Exception("start offset not constant")
                     node = SVT("MapElement")
                     node.children.append(self._memories[self._curr_contract][start_offset+32])
+                    # node.children.append(self._memories[self._curr_contract][start_offset])
+
                     node.children.append(self._memories[self._curr_contract][start_offset])
+
+                    # node.children.append({self._curr_contract : self._memories[self._curr_contract][start_offset]})
                     self._stacks[self._curr_contract].pop() # pop 64
                     self._stacks[self._curr_contract].append(node)
             else:
                 print('[!]',str(instr), 'not supported yet')  
                 sys.exit()
 
-
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
         to_return = ""
         if not node.children:
             return str(node.value)
+            # return self._curr_contract+'.'+str(node.value)
 
         if node.value == "ISZERO":
             to_return += self.postorder_traversal(node.children[0]) # + "==0;\n"
@@ -217,10 +225,10 @@ class EVM:
             self._tmp_var_count+=1
             to_return = "tmp" + str(self._tmp_var_count)
             to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
-            # self._final_vars.append("\tvar " + to_return + ": bool;")
             self._final_vars[to_return] = 'bool'
             self._final_path.append(to_boogie)
         elif node.value == "SLOAD":
+            # print(node)
             if node.children[0].value=="MapElement":
                 map_id  = self.find_mapID(node.children[0])
                 map_key = self.find_key(node.children[0].children[1])
@@ -228,7 +236,8 @@ class EVM:
                 map_id = node.children[0].value
             self._tmp_var_count+=1
             to_return = "tmp" + str(self._tmp_var_count)
-            to_boogie = "\ttmp"+str(self._tmp_var_count)+":="+self._storage_map[str(map_id)]
+            to_boogie = "\ttmp"+str(self._tmp_var_count)+":="+self._curr_contract+'.'+self._storage_map[self._curr_contract][str(map_id)]
+
             if node.children[0].value=="MapElement":
                 to_boogie +="["+str(map_key)+"]"
             to_boogie +=";\n"
@@ -245,7 +254,6 @@ class EVM:
                 to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
             elif node.value == "EQ":
                 to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
-            # self._final_vars.append("\tvar " + to_return + ": bool;")
             self._final_vars[to_return] = 'bool'
             self._final_path.append(to_boogie) 
         elif node.value == "ADD" or node.value == "SUB" or node.value == "AND":
@@ -267,11 +275,15 @@ class EVM:
     
     '''generate boogie code when SSTORE happens'''
     def boogie_gen_sstore(self, node0, node1):
+        # print("====")
+        # print(node0)
+        # print(node1)
+        # print("====")
         if node0.value=="MapElement":
             map_key = self.find_key(node0.children[1])
-            path="\t"+self._storage_map[str(self.find_mapID(node0))]+"["+str(map_key)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
+            path="\t"+self._curr_contract+'.'+self._storage_map[self._curr_contract][str(self.find_mapID(node0))]+"["+str(map_key)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
         else:
-            path="\t"+self._storage_map[str(node0.value)]+":=" + str(self.postorder_traversal(node1))+";\n\n"
+            path="\t"+self._curr_contract+'.'+self._storage_map[self._curr_contract][str(node0.value)]+":=" + str(self.postorder_traversal(node1))+";\n\n"
         self._final_path.append(path)
                       
     '''generate boogie code when JUMPI happens'''         
@@ -298,11 +310,6 @@ class EVM:
 
     '''wrote aux vars to Boogie'''
     def write_vars(self):
-        for elmt in self._abi_info[self._curr_contract]:
-            if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
-                for input in elmt["inputs"]:
-                    self._output_file.write("\tvar " + input["name"] + ":\t" + input["type"]+';\n')
-        self._output_file.write("\n")
         for var in self._final_vars.keys():
             # self._output_file.write(var+"\n")
             self._output_file.write("\tvar " + var + ":  " + self._final_vars[var] + ";\n")
@@ -318,11 +325,18 @@ class EVM:
         if not node.children:
             if isinstance(node.value, str): # and not (node.value == 0xffffffffffffffffffffffffffffffffffffffff):
                 return node.value # or self.postorder_traversal(node)
+        # if isintance(node, dict):
+        #     return node
         for c in node.children:
             if not isinstance(c, tuple):
                 return_val = self.find_key(c)
                 if return_val:
                     return return_val
+        # for c in node.children:
+        #     if not isinstance(c, tuple):
+        #         return_val = self.find_key(c)
+        #         if return_val:
+        #             return return_val
 
     '''helper to find the map ID'''
     def find_mapID(self, node):
@@ -344,6 +358,17 @@ class EVM:
                         s = elem
                     print('stack['+str(c)+'] ', s)
                     c=c+1
+        elif what == "currstack":
+            # for stack_name in self._stacks:
+            print("-----Stack: "+self._curr_contract+"-----")
+            c=0
+            for elem in self._stacks[self._curr_contract][::-1]:
+                if isinstance(elem.value, int):
+                    s = hex(elem.value)
+                else:
+                    s = elem
+                print('stack['+str(c)+'] ', s)
+                c=c+1
         elif what == "memory":
             for memory_name in self._memories.keys():
                 print("-----Memory: "+memory_name+"-----")
@@ -381,7 +406,6 @@ def main():
     ''' parameters setup ''' 
     STACKS      = gen_init_STACK()
     STORAGE     = gen_init_STORAGE()
-    MAP         = get_MAP()
     MEMORIES    = gen_init_MEMORY()
     BOOGIE_OUT  = open(MACROS.BOOGIE, "w")
     PATHS       = []
@@ -392,19 +416,22 @@ def main():
     HYPOTHESIS  = get_hypothesis()
     INVARIANTS  = get_invariant()
     TRACE       = gen_path()
+    MAP         = get_MAPS(STOR_INFO)
+    # MAP         = get_MAP()
 
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO)
     print('\n(pre-execution)')
-    evm.inspect("stack")
+    # evm.inspect("stack")
     print('\n(executing instructions...)')
     evm.sym_exec(TRACE)
     print('\n(end)')
     print('\n(post-execution)')
-    evm.inspect("stack")
+    # evm.inspect("stack")
 
     ''' write Boogie output '''
     BOOGIE_OUT.write(MACROS.PREAMBLE)
+    BOOGIE_OUT.write(write_params(ABI_INFO))
     BOOGIE_OUT.write(write_locals(STOR_INFO))
     evm.write_vars() # aux vars for Boogie Proofs 
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS))

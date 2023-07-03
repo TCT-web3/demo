@@ -209,12 +209,11 @@ def handle_MSTORE(self):
             active_k = k
             active_v = v
         else:
-            #active_item[1].children[0]=(active_item[1].children[0][0],item[1].children[0][1])
             new_v=SVT("Partial32B")
             new_v.children.append((active_v.children[0][0],v.children[0][1]))
             new_v.children.append(active_v.children[1])
             active_v = new_v
-            
+        # print(">>>>>>>>>", active_k, active_v, )
     if not isinstance(active_v.value,int) and active_v.value=="Partial32B" \
         and active_v.children[0][0]==0 and active_v.children[0][1]==31:
         memory_with_consolidated_items[active_k]=active_v.children[1]

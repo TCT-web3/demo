@@ -12,7 +12,6 @@ class MACROS:
     ESSENTIAL       = "../temp_essential.txt"
     RUNTIME         = "../temp_solc_runtime.json"
     BOOGIE          = ""  
-
     CONTRACT_NAME   = ""
     FUNCTION_NAME   = ""
 

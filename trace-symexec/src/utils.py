@@ -10,40 +10,56 @@ from macros     import *
 get a list of JSON from a text file  
 '''
 # TODO: we need the maps for all contracts.
-def get_MAP():
-    file = open(MACROS.STORAGE, 'r')
-    new_file = None
-    file.readline()
-    file_names = []
-    for line in file:
-        if line.startswith("======"):
-            # get name of contract
-            if new_file:
-                new_file.close()
-            line = line.rstrip("\n")
-            line = line.strip("======")
-            line = line.replace(MACROS.SOLIDITY_FNAME+":", '')
-            line = line.strip()
-            new_name = line+".json"
-            new_file = open(new_name, 'w')
-            file_names.append(new_name)
-        elif line.startswith("Contract Storage Layout:"):
-            continue
-        elif line != " ":
-            new_file.write(line)
-    new_file.close()
-    file.close()
-    # get the map
-    file = open(MACROS.CONTRACT_NAME+".json", 'r')
-    json_object = json.load(file)["storage"]
-    mapIDs = {}
+# def get_MAP():
+#     file = open(MACROS.STORAGE, 'r')
+#     new_file = None
+#     file.readline()
+#     file_names = []
+#     for line in file:
+#         if line.startswith("======"):
+#             # get name of contract
+#             if new_file:
+#                 new_file.close()
+#             line = line.rstrip("\n")
+#             line = line.strip("======")
+#             line = line.replace(MACROS.SOLIDITY_FNAME+":", '')
+#             line = line.strip()
+#             new_name = line+".json"
+#             new_file = open(new_name, 'w')
+#             file_names.append(new_name)
+#         elif line.startswith("Contract Storage Layout:"):
+#             continue
+#         elif line != " ":
+#             new_file.write(line)
+#     new_file.close()
+#     file.close()
+#     # get the map
+#     file = open(MACROS.CONTRACT_NAME+".json", 'r')
+#     json_object = json.load(file)["storage"]
+#     mapIDs = {}
     
-    for o in json_object:
-        mapIDs[o["slot"]] = o["label"]
-    file.close()
-    for n in file_names:
-        os.remove(n)
-    return mapIDs
+#     for o in json_object:
+#         mapIDs[o["slot"]] = o["label"]
+#     file.close()
+#     for n in file_names:
+#         os.remove(n)
+#     print(mapIDs)
+#     return mapIDs
+
+
+# TODO: Tzu-Han finish this part 
+def get_MAPS(storage_info):
+    MAPS = {}
+    for contract in storage_info.keys():
+        MapIDs = {}
+        for elmt in storage_info[contract]["storage"]:
+            slot =  elmt["slot"]
+            label = elmt["label"]          
+            MapIDs[slot] = label  
+        MAPS[contract] = MapIDs
+        print(contract)
+        print(MapIDs)
+    return MAPS
 
 '''
 find where the essential part starts in a contract call
@@ -224,6 +240,17 @@ def get_dest_contract_and_function(instr):
     dest_function = (info[1][:-1])
     return dest_contract, dest_function
 
+def write_params(abi_info):
+    rt = ""
+    for elmt in abi_info[MACROS.CONTRACT_NAME]:
+        if ("name" in elmt.keys() and elmt["name"] == MACROS.FUNCTION_NAME):
+            for input in elmt["inputs"]:
+                # print('?', input["name"], input["type"])
+                rt = rt + "\tvar " + MACROS.CONTRACT_NAME+'.'+input["name"] + ":\t" + input["type"]+';\n'
+                # self._output_file.write("\tvar " + self._curr_contract+'.'+input["name"] + ":\t" + input["type"]+';\n')
+    return rt + '\n'
+            
+
 '''
 write local variables from storage file to Boogie
 '''
@@ -238,7 +265,6 @@ def write_locals(storage_info):
             if (label in locals):
                 pass
             else:
-                locals.append(label)
                 if ("string" in t_type):
                     pass
                 elif ("contract" in t_type):
@@ -247,11 +273,12 @@ def write_locals(storage_info):
                     t_type = t_type.replace("t_", "")
                     t_type = t_type.replace("mapping", "")[1:-1]
                     t_type = t_type.split(',')
-                    rt = rt + ("\tvar " + label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
+                    rt = rt + ("\tvar " + contract+'.'+label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
                 else:
-                    rt = rt + ("\tvar " + label + ":\t" + t_type[2:] + ";\n")  
+                    rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n")  
+                locals.append(contract+'.'+label)
     
-    return rt
+    return rt + '\n'
 
 '''
 write hypothesis to Boogie

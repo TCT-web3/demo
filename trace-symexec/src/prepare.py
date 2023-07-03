@@ -56,7 +56,7 @@ def gen_init_STACK():
     for o in json_object:
         if "name" in o and o["name"] == MACROS.FUNCTION_NAME:
             for i in o["inputs"]:
-                stack.append(SVT(i["name"]))
+                stack.append(SVT(MACROS.CONTRACT_NAME+'.'+i["name"]))
     file.close()
     for n in file_names:
         os.remove(n)
@@ -78,7 +78,6 @@ def gen_init_MEMORY():
     }
     MEMORIES[MACROS.CONTRACT_NAME] = init_MEM
     return MEMORIES
-
 
 '''
 generate initial storage dictionary
