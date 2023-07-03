@@ -104,12 +104,12 @@ class EVM:
                 self._call_stack.append((dest_contract, dest_function))
                 self._curr_contract = dest_contract
                 self._curr_function = dest_function
-                print(">>> switched to contract: ", self._call_stack[-1][0])
+                print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
             elif instr[0]==("<"):
                 self._call_stack.pop()
                 self._curr_contract = self._call_stack[-1][0]
                 self._curr_function = self._call_stack[-1][1]        
-                print("<<< switched to contract: ", self._call_stack[-1][0])
+                print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
             elif opcode=="GAS":
                 self._stacks[self._curr_contract].append(SVT("GAS"))  # what is the GAS amount? 
             elif opcode=="RETURNDATASIZE":
@@ -137,9 +137,24 @@ class EVM:
                 print(instr)
                 self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
             elif opcode=="SLOAD":
-                node = SVT("SLOAD")
-                node.children.append(self._stacks[self._curr_contract].pop())
-                self._stacks[self._curr_contract].append(node)
+                # node = SVT("SLOAD")
+                # node.children.append(self._stacks[self._curr_contract].pop())
+                # self._stacks[self._curr_contract].append(node)
+
+                to_load = self._stacks[self._curr_contract].pop()
+                print('load: ', to_load.value)
+                if to_load.value == "MapElement": 
+                    node = SVT("SLOAD")
+                    node.children.append(to_load)
+                    self._stacks[self._curr_contract].append(node)
+                else:
+                    # node.children.append(to_load)
+                    # print("actual!!!")
+                    print(self._curr_contract)
+                    print(to_load.value)
+                    stored_value = self._curr_contract+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
+                    self._stacks[self._curr_contract].append(SVT(stored_value))
+
             elif opcode=="PC":
                 self._stacks[self._curr_contract].append(SVT(PC))
             elif opcode.startswith("PUSH"):
@@ -190,9 +205,13 @@ class EVM:
                         node.children.append(self._stacks[self._curr_contract].pop())
                         node.children.append(self._stacks[self._curr_contract].pop())
                 else:
-                    node = SVT(opcode)
-                    node.children.append(self._stacks[self._curr_contract].pop())
-                    node.children.append(self._stacks[self._curr_contract].pop())
+                    if opcode == "DIV":
+                        print(instr)
+                        node = self._stacks[self._curr_contract].pop() # patch
+                    else:
+                        node = SVT(opcode)
+                        node.children.append(self._stacks[self._curr_contract].pop())
+                        node.children.append(self._stacks[self._curr_contract].pop())
                 self._stacks[self._curr_contract].append(node)
             elif opcode=="SHA3":
                 if self._stacks[self._curr_contract][-2].value == 64:
@@ -202,8 +221,11 @@ class EVM:
                     node = SVT("MapElement")
                     node.children.append(self._memories[self._curr_contract][start_offset+32])
                     # node.children.append(self._memories[self._curr_contract][start_offset])
-
                     node.children.append(self._memories[self._curr_contract][start_offset])
+                    # print(instr)
+                    # print('\n+++', node)
+                    # print('+++', node.children[0])
+                    # print('+++', node.children[1])
 
                     # node.children.append({self._curr_contract : self._memories[self._curr_contract][start_offset]})
                     self._stacks[self._curr_contract].pop() # pop 64

@@ -75,6 +75,8 @@ def handle_MLOAD(self):
                     original_segment = prev_v.children[0]
                     node1_segment = (original_segment[0]+ignored_len, original_segment[1])
                     node1_value = prev_v.children[1]
+                    
+                # print("//////////", node1_segment, node1_value)
                 node1.children.append(node1_segment)
                 node1.children.append(node1_value)
                 node.children.append(node1)
@@ -101,7 +103,8 @@ def handle_MLOAD(self):
                 node1.children.append((0,num_zero_bytes-1))
                 node1.children.append(SVT(0))
                 node.children.append(node1)
-                #print(node)
+                # print("///////", node)
+                # print("///////", node1)
                 bytes_to_copy-=num_zero_bytes
                 unfilled_position+=num_zero_bytes
                 if bytes_to_copy==0:
@@ -126,7 +129,7 @@ def handle_MLOAD(self):
                     node1_value = v.children[1]
                 node1.children.append(node1_segment)
                 node1.children.append(node1_value)
-                #print(node1)
+
                 node.children.append(node1)
                 bytes_to_copy = 0
                 return node
@@ -154,9 +157,10 @@ def handle_MSTORE(self):
                 node1_value = v.children[1]
             else:
                 node1_segment = (0,31-(k+curr_len-offset)) # retract the current mem item's right end
-                node1_value = v
+                node1_value = v   
             node1.children.append(node1_segment)
             node1.children.append(node1_value)
+            # print("///////", node1)    
             self._memories[self._curr_contract][k] = node1
         if k < offset+content_to_store_len and k+curr_len>offset+content_to_store_len:
         # This means the end of content_to_store falls in the current mem item
@@ -169,6 +173,7 @@ def handle_MSTORE(self):
                 node1_value = v
             node1.children.append(node1_segment)
             node1.children.append(node1_value)
+            # print("///////", node1) 
             last_partial_overwritten_node = node1
             
     if  last_partial_overwritten_node!=None:
@@ -181,6 +186,8 @@ def handle_MSTORE(self):
     
     if isinstance(content_to_store.value,int) or content_to_store.value != "concat":
         self._memories[self._curr_contract][offset] = content_to_store
+        print("\n///////", offset)
+        print("///////", content_to_store)
     else:
         pos = offset
         for item in content_to_store.children:
@@ -192,6 +199,7 @@ def handle_MSTORE(self):
     memory_with_consolidated_items = {}
     active_k = None
     active_v = None
+    # check all key,value in memories
     for k,v in self._memories[self._curr_contract].items():
         if active_k == None:
             active_k = k
@@ -208,12 +216,14 @@ def handle_MSTORE(self):
                 memory_with_consolidated_items[active_k]=active_v
             active_k = k
             active_v = v
+            # print(">>>>>>>>>", active_k, active_v)
         else:
             new_v=SVT("Partial32B")
             new_v.children.append((active_v.children[0][0],v.children[0][1]))
             new_v.children.append(active_v.children[1])
             active_v = new_v
-        # print(">>>>>>>>>", active_k, active_v, )
+            print(">>>>>>>", active_k, active_v)
+            
     if not isinstance(active_v.value,int) and active_v.value=="Partial32B" \
         and active_v.children[0][0]==0 and active_v.children[0][1]==31:
         memory_with_consolidated_items[active_k]=active_v.children[1]
@@ -251,7 +261,7 @@ def handle_AND(self):
                 new_concat_node.children.append(left_zero_node)
                 pos = 0
                 for child in num.children:
-                    print(child)
+                    # print(child)
                     if pos>=first:
                         new_concat_node.children.append(child)
                     elif pos+child.children[0][1]-child.children[0][0]+1 > first:
@@ -263,7 +273,7 @@ def handle_AND(self):
                 return new_concat_node
         node = SVT("Partial32B")
         node.children.append((segment))
-        node.children.append(num)
+        node.children.append(num) 
     else:
         if isinstance(a.value, int) and isinstance(b.value, int):
             node = SVT((a.value & b.value)%2**256)
@@ -306,6 +316,7 @@ def handle_OR(self):
             else:
                 node.children.append(child)
             pos+= child.children[0][1]-child.children[0][0]+1
+        # print("//////////", node)
         return node
         
         
