@@ -60,6 +60,7 @@ class EVM:
     '''perfprm symbolic execution'''
     def sym_exec(self, code_trace):
             for i in range(len(code_trace)):
+                # self._final_path.append(code_trace[i][1])
                 if(code_trace[i][1]=="JUMPI"):
                     self.run_instruction(code_trace[i], (code_trace[i][0]+1 != code_trace[i+1][0]))
                 else:
@@ -72,14 +73,18 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-            # print(instr)
-            # self.inspect("currstack")
-            # self.inspect("currmemory")
+        # print(instr)
+        # self._final_path.append(str(instr)+"\n")
+        # self.inspect("currstack")
+        # self.inspect("currmemory")
 
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
             pass # no-op
         elif instr[0]==(">"):
             dest_contract, dest_function = get_dest_contract_and_function(instr)
+
+            print(dest_contract)
+            print(dest_function)
 
             get_contract_name(instr)
             ### calling a new contract, set up calle stack
@@ -124,7 +129,9 @@ class EVM:
 
 
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
+            self._final_path.append(">>CALL,  switched to contract: "+ self._call_stack[-1][0] + '\n')
         elif instr[0]==("<"):
+            
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]     
@@ -133,16 +140,20 @@ class EVM:
             self._memories.pop()
 
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
+            self._final_path.append(">>LEAVE, switched to contract: "+ self._call_stack[-1][0] + '\n')
         elif opcode=="GAS":
             # self._stacks[-1].append(SVT("GAS"))
             self._stacks[-1].append(SVT("GAS"))  
         elif opcode=="RETURNDATASIZE":
+            # self._stacks[-1].append(SVT("0"))
+            print(self._curr_function)
             for elmt in self._abi_info[self._curr_contract]:
                 if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
                     return_count = len(elmt["outputs"])
                     if(return_count == 0):
-                        # self._stacks[-1].append(SVT(0))
-                        self._stacks[-1].append(SVT(0))
+                        self._stacks[-1].append(SVT("0"))
+                        # self._stacks[-1].append(SVT(int(0)))
+                        # self._stacks[-1].append(SVT('false'))
                     else:
                         raise Exception("return data SIZE to be implemented. ")    
         elif opcode=="EXTCODESIZE":
@@ -297,34 +308,34 @@ class EVM:
         elif node.value == "LT" or node.value == "GT" or node.value == "EQ":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
-            if val1.isnumeric() and val2.isnumeric():
-                to_return = ""
-                if node.value == "LT":
-                    if val1 < val2:
-                        to_return = "true"
-                    else:
-                        to_return = "false"
-                elif node.value == "GT":
-                    if val1 > val2:
-                        to_return = "true"
-                    else:
-                        to_return = "false"
-                elif node.value == "EQ":
-                    if val1 == val2:
-                        to_return = "true"
-                    else:
-                        to_return = "false"
-            else:
-                self._tmp_var_count+=1
-                to_return = "tmp" + str(self._tmp_var_count)
-                if node.value == "LT":
-                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
-                elif node.value == "GT":
-                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
-                elif node.value == "EQ":
-                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
-                self._final_vars[to_return] = 'bool'
-                self._final_path.append(to_boogie) 
+            # if val1.isnumeric() and val2.isnumeric():
+            #     to_return = ""
+            #     if node.value == "LT":
+            #         if val1 < val2:
+            #             to_return = "true"
+            #         else:
+            #             to_return = "false"
+            #     elif node.value == "GT":
+            #         if val1 > val2:
+            #             to_return = "true"
+            #         else:
+            #             to_return = "false"
+            #     elif node.value == "EQ":
+            #         if val1 == val2:
+            #             to_return = "true"
+            #         else:
+            #             to_return = "false"
+            # else:
+            self._tmp_var_count+=1
+            to_return = "tmp" + str(self._tmp_var_count)
+            if node.value == "LT":
+                to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
+            elif node.value == "GT":
+                to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
+            elif node.value == "EQ":
+                to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
+            self._final_vars[to_return] = 'bool'
+            self._final_path.append(to_boogie) 
         elif node.value == "ADD" or node.value == "SUB" or node.value == "AND":
             val1=self.postorder_traversal(node.children[0])
             val2=self.postorder_traversal(node.children[1])
@@ -367,6 +378,7 @@ class EVM:
                       
     '''generate boogie code when JUMPI happens'''         
     def boogie_gen_jumpi(self, node, isNotZero):
+        # self._final_path.append(str(node)+'\n')
         var = self.postorder_traversal(node)
         if var == "true":
             if isNotZero:

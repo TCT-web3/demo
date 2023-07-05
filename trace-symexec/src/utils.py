@@ -203,6 +203,7 @@ def get_dest_contract_and_function(instr):
     info = info.split("::")
     dest_contract = (info[0][1:])
     dest_function = (info[1][:-1])
+    dest_function = dest_function[:dest_function.find('(')]
     return dest_contract, dest_function
 
 def write_params(abi_info):
