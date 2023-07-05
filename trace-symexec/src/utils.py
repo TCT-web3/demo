@@ -6,48 +6,13 @@ import os
 import json
 from macros     import *
 
-'''
-get a list of JSON from a text file  
-'''
-# TODO: we need the maps for all contracts.
-# def get_MAP():
-#     file = open(MACROS.STORAGE, 'r')
-#     new_file = None
-#     file.readline()
-#     file_names = []
-#     for line in file:
-#         if line.startswith("======"):
-#             # get name of contract
-#             if new_file:
-#                 new_file.close()
-#             line = line.rstrip("\n")
-#             line = line.strip("======")
-#             line = line.replace(MACROS.SOLIDITY_FNAME+":", '')
-#             line = line.strip()
-#             new_name = line+".json"
-#             new_file = open(new_name, 'w')
-#             file_names.append(new_name)
-#         elif line.startswith("Contract Storage Layout:"):
-#             continue
-#         elif line != " ":
-#             new_file.write(line)
-#     new_file.close()
-#     file.close()
-#     # get the map
-#     file = open(MACROS.CONTRACT_NAME+".json", 'r')
-#     json_object = json.load(file)["storage"]
-#     mapIDs = {}
-    
-#     for o in json_object:
-#         mapIDs[o["slot"]] = o["label"]
-#     file.close()
-#     for n in file_names:
-#         os.remove(n)
-#     print(mapIDs)
-#     return mapIDs
 
-
-# TODO: Tzu-Han finish this part 
+def get_contract_name(instr):
+    L = instr.find(" ")
+    R = instr.find("::")
+    name = instr[L+27:R] 
+    return 'c_' + name[0:5]
+ 
 def get_MAPS(storage_info):
     MAPS = {}
     for contract in storage_info.keys():
@@ -57,8 +22,8 @@ def get_MAPS(storage_info):
             label = elmt["label"]          
             MapIDs[slot] = label  
         MAPS[contract] = MapIDs
-        print(contract)
-        print(MapIDs)
+        # print(contract)
+        # print(MapIDs)
     return MAPS
 
 '''
@@ -238,6 +203,7 @@ def get_dest_contract_and_function(instr):
     info = info.split("::")
     dest_contract = (info[0][1:])
     dest_function = (info[1][:-1])
+    dest_function = dest_function[:dest_function.find('(')]
     return dest_contract, dest_function
 
 def write_params(abi_info):

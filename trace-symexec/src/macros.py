@@ -6,14 +6,15 @@ class MACROS:
     SOLIDITY_FNAME  = ""
     THEOREM_FNAME   = ""
     TRACE_FNAME     = ""
-    STORAGE         = "../temp_solc_storage.json"
-    ABI             = "../temp_solc_abi.json"
-    AST             = "../temp_solc_ast.json"
-    ESSENTIAL       = "../temp_essential.txt"
-    RUNTIME         = "../temp_solc_runtime.json"
+    STORAGE         = "./temp_solc_storage.json"
+    ABI             = "./temp_solc_abi.json"
+    AST             = "./temp_solc_ast.json"
+    ESSENTIAL       = "./temp_essential.txt"
+    RUNTIME         = "./temp_solc_runtime.json"
     BOOGIE          = ""  
     CONTRACT_NAME   = ""
     FUNCTION_NAME   = ""
+
 
     PREAMBLE    =   """type address = int;
 type uint256 = int;
