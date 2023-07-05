@@ -43,7 +43,7 @@ def mem_item_len(self, mem_item):
         return segment[1]-segment[0]+1
         
 def handle_MLOAD(self):
-    offset = self._stacks[self._curr_contract].pop().value
+    offset = self._stacks[-1].pop().value
     if not isinstance(offset, int):
                 raise Exception("Memory offset is not a concrete value. CodeGen is needed here!")
         
@@ -51,10 +51,10 @@ def handle_MLOAD(self):
     in_copy_mode = False
     node = SVT("concat")
     bytes_to_copy = 32
-    for k,v in self._memories[self._curr_contract].items():
+    for k,v in self._memories[-1].items():
         if k == offset:
-            if bytes_to_copy == 32 and self.mem_item_len(self._memories[self._curr_contract][offset]) == 32:
-                return self._memories[self._curr_contract][offset]
+            if bytes_to_copy == 32 and self.mem_item_len(self._memories[-1][offset]) == 32:
+                return self._memories[-1][offset]
             unfilled_position = offset
             in_copy_mode = True
             
@@ -140,14 +140,14 @@ def handle_MLOAD(self):
     raise Exception ("In handle_mload. It should always return before the loop ends")
     
 def handle_MSTORE(self):
-    offset = self._stacks[self._curr_contract].pop().value
-    content_to_store = self._stacks[self._curr_contract].pop()
+    offset = self._stacks[-1].pop().value
+    content_to_store = self._stacks[-1].pop()
     content_to_store_len = 32
     if not isinstance(offset, int):
         raise Exception("An MSTORE offset is not int.")
     
     last_partial_overwritten_node=None
-    for k,v in self._memories[self._curr_contract].items():
+    for k,v in self._memories[-1].items():
         curr_len=self.mem_item_len(v)
         if k < offset and k+curr_len>offset:
         # This means offset falls in the current mem item
@@ -161,7 +161,7 @@ def handle_MSTORE(self):
             node1.children.append(node1_segment)
             node1.children.append(node1_value)
             # print("///////", node1)    
-            self._memories[self._curr_contract][k] = node1
+            self._memories[-1][k] = node1
         if k < offset+content_to_store_len and k+curr_len>offset+content_to_store_len:
         # This means the end of content_to_store falls in the current mem item
             node1=SVT("Partial32B")
@@ -177,30 +177,30 @@ def handle_MSTORE(self):
             last_partial_overwritten_node = node1
             
     if  last_partial_overwritten_node!=None:
-        self._memories[self._curr_contract][offset+content_to_store_len] = last_partial_overwritten_node
+        self._memories[-1][offset+content_to_store_len] = last_partial_overwritten_node
             
-    for k,v in self._memories[self._curr_contract].items():        
+    for k,v in self._memories[-1].items():        
         if k > offset and k+curr_len<offset+content_to_store_len:
         # This mem item is completely overwrittn by the MSTORE
-            del self._memories[self._curr_contract][k]
+            del self._memories[-1][k]
     
     if isinstance(content_to_store.value,int) or content_to_store.value != "concat":
-        self._memories[self._curr_contract][offset] = content_to_store
-        print("\n///////", offset)
-        print("///////", content_to_store)
+        self._memories[-1][offset] = content_to_store
+        
+        
     else:
         pos = offset
         for item in content_to_store.children:
-            self._memories[self._curr_contract][pos] = item
+            self._memories[-1][pos] = item
             pos+=self.mem_item_len(item)
 
-    self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation 
+    self._memories[-1] = dict(sorted(self._memories[-1].items()))  # use sorted dictionary to mimic memory allocation 
     
     memory_with_consolidated_items = {}
     active_k = None
     active_v = None
     # check all key,value in memories
-    for k,v in self._memories[self._curr_contract].items():
+    for k,v in self._memories[-1].items():
         if active_k == None:
             active_k = k
             active_v = v
@@ -222,7 +222,7 @@ def handle_MSTORE(self):
             new_v.children.append((active_v.children[0][0],v.children[0][1]))
             new_v.children.append(active_v.children[1])
             active_v = new_v
-            print(">>>>>>>", active_k, active_v)
+            # print(">>>>>>>", active_k, active_v)
             
     if not isinstance(active_v.value,int) and active_v.value=="Partial32B" \
         and active_v.children[0][0]==0 and active_v.children[0][1]==31:
@@ -230,11 +230,11 @@ def handle_MSTORE(self):
     else:
         memory_with_consolidated_items[active_k]=active_v
 
-    self._memories[self._curr_contract] = memory_with_consolidated_items
+    self._memories[-1] = memory_with_consolidated_items
         
 def handle_AND(self):
-    a = self._stacks[self._curr_contract].pop()
-    b = self._stacks[self._curr_contract].pop()
+    a = self._stacks[-1].pop()
+    b = self._stacks[-1].pop()
     segment = None
     if isinstance(a.value, int):
         first,last = self.recognize_32B_mask(a.value)
@@ -284,8 +284,8 @@ def handle_AND(self):
     return node
         
 def handle_OR(self):
-    a = self._stacks[self._curr_contract].pop()
-    b = self._stacks[self._curr_contract].pop()
+    a = self._stacks[-1].pop()
+    b = self._stacks[-1].pop()
     if a.value == "Partial32B" and b.value == "Partial32B":
         if b.children[0][0]==0:
             tmp=a

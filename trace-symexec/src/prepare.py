@@ -21,7 +21,8 @@ generate the inital stack dictionary {<contract_name> : <contract_stack>}
     Note that "FourByteSelector" is at the BOTTOM of the stack     
 '''
 def gen_init_STACK():
-    STACKS = {}
+    # STACKS = {}
+    STACKS = []
     stack = [
         SVT("FourByteSelector"),      # It would be good to fill in the actual value into this placeholder
         SVT("AConstantBySolc"), 
@@ -61,14 +62,16 @@ def gen_init_STACK():
     for n in file_names:
         os.remove(n)
     
-    STACKS[MACROS.CONTRACT_NAME] = stack
+    STACKS.append(stack)
+    # STACKS[MACROS.CONTRACT_NAME] = stack
     return STACKS
 
 '''
 generate initial memory dictionary {<contract_name> : <contract_memory>}
 '''
 def gen_init_MEMORY():
-    MEMORIES = {}
+    # MEMORIES = {}
+    MEMORIES = []
     init_MEM = {
         # We need to understand why this 0x40 is needed. Perhaps need to read more thoroughly the yellow paper, 
         # or ask other people
@@ -76,7 +79,8 @@ def gen_init_MEMORY():
         # Dummy mem item
         0x10000000000: SVT(0)
     }
-    MEMORIES[MACROS.CONTRACT_NAME] = init_MEM
+    # MEMORIES[MACROS.CONTRACT_NAME] = init_MEM
+    MEMORIES.append(init_MEM)
     return MEMORIES
 
 '''

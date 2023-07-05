@@ -15,6 +15,7 @@ class MACROS:
     CONTRACT_NAME   = ""
     FUNCTION_NAME   = ""
 
+
     PREAMBLE    =   """type address = int;
 type uint256 = int;
 const TwoE16 : uint256;

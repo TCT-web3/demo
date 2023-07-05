@@ -57,8 +57,8 @@ def get_MAPS(storage_info):
             label = elmt["label"]          
             MapIDs[slot] = label  
         MAPS[contract] = MapIDs
-        print(contract)
-        print(MapIDs)
+        # print(contract)
+        # print(MapIDs)
     return MAPS
 
 '''
