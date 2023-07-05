@@ -76,180 +76,180 @@ class EVM:
             # self.inspect("currstack")
             # self.inspect("currmemory")
 
-            if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
-                pass # no-op
-            elif instr[0]==(">"):
-                dest_contract, dest_function = get_dest_contract_and_function(instr)
+        if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
+            pass # no-op
+        elif instr[0]==(">"):
+            dest_contract, dest_function = get_dest_contract_and_function(instr)
 
-                get_contract_name(instr)
-                ### calling a new contract, set up calle stack
-                # if (dest_contract not in self._stacks.keys()):
-                callee_stack    = []
-                # calldata_pos    = self._stacks[-1][-4].value
-                # calldata_len    = self._stacks[-1][-5].value
-                calldata_pos    = self._stacks[-1][-4].value
-                calldata_len    = self._stacks[-1][-5].value
-                func_selector   = self._memories[-1][calldata_pos].children[1].value
-
-
-                if(isinstance(func_selector, int)):
-                    func_selector//=0x100**28
-                else:
-                    func_selector = (self.find_key(self._memories[-1][calldata_pos].children[1].children[1]))
-
-                callee_stack.append(SVT(func_selector))
-                callee_stack.append(SVT("AConstantBySolc"))
-                calldata_len -=4
-                calldata_pos +=4
-
-                for i in range(calldata_len//0x20):
-                    callee_stack.append(self._memories[-1][calldata_pos])
-                    calldata_pos += 0x20
-
-                ### switch to a new contract and pops out the operands for a successful CALL operation
-                # for i in range(7):
-                #     self._stacks[-1].pop()
-                # self._stacks[-1].append(SVT(1)) # CALL successed
-                for i in range(7):
-                    self._stacks[-1].pop()
-                self._stacks[-1].append(SVT(1)) # CALL successed
-                self._call_stack.append((dest_contract, dest_function))
-                self._curr_contract = dest_contract
-                self._curr_function = dest_function
-
-                # self._stacks[dest_contract]     = callee_stack  
-                # self._memories[dest_contract]   = {0x40: SVT(0x80),0x10000000000: SVT(0)} # temp
-                self._stacks.append(callee_stack)
-                self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
+            get_contract_name(instr)
+            ### calling a new contract, set up calle stack
+            # if (dest_contract not in self._stacks.keys()):
+            callee_stack    = []
+            # calldata_pos    = self._stacks[-1][-4].value
+            # calldata_len    = self._stacks[-1][-5].value
+            calldata_pos    = self._stacks[-1][-4].value
+            calldata_len    = self._stacks[-1][-5].value
+            func_selector   = self._memories[-1][calldata_pos].children[1].value
 
 
-                print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
-            elif instr[0]==("<"):
-                self._call_stack.pop()
-                self._curr_contract = self._call_stack[-1][0]
-                self._curr_function = self._call_stack[-1][1]     
+            if(isinstance(func_selector, int)):
+                func_selector//=0x100**28
+            else:
+                func_selector = (self.find_key(self._memories[-1][calldata_pos].children[1].children[1]))
 
-                self._stacks.pop()
-                self._memories.pop()
+            callee_stack.append(SVT(func_selector))
+            callee_stack.append(SVT("AConstantBySolc"))
+            calldata_len -=4
+            calldata_pos +=4
 
-                print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
-            elif opcode=="GAS":
-                # self._stacks[-1].append(SVT("GAS"))
-                self._stacks[-1].append(SVT("GAS"))  
-            elif opcode=="RETURNDATASIZE":
-                for elmt in self._abi_info[self._curr_contract]:
-                    if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
-                        return_count = len(elmt["outputs"])
-                        if(return_count == 0):
-                            # self._stacks[-1].append(SVT(0))
-                            self._stacks[-1].append(SVT(0))
-                        else:
-                            raise Exception("return data SIZE to be implemented. ")    
-            elif opcode=="EXTCODESIZE":
-                node=SVT("ACCOUNT_CODESIZE")
-                node.children.append(self._stacks[-1].pop()) 
-                self._stacks[-1].append(node)                
-            elif opcode=="JUMP":
+            for i in range(calldata_len//0x20):
+                callee_stack.append(self._memories[-1][calldata_pos])
+                calldata_pos += 0x20
+
+            ### switch to a new contract and pops out the operands for a successful CALL operation
+            # for i in range(7):
+            #     self._stacks[-1].pop()
+            # self._stacks[-1].append(SVT(1)) # CALL successed
+            for i in range(7):
                 self._stacks[-1].pop()
-            elif opcode=="JUMPI":
-                self.boogie_gen_jumpi(self._stacks[-1][-2], branch_taken)
-                self._stacks[-1].pop()
-                self._stacks[-1].pop()
-            elif opcode=="MSTORE":
-                self.handle_MSTORE()            
-            elif opcode=="MLOAD":
-                node = self.handle_MLOAD()
-                self._stacks[-1].append(node)  
-            elif opcode=="SSTORE":
-                # print(instr)
-                self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop())
-            elif opcode=="SLOAD":
-                # node = SVT("SLOAD")
-                # node.children.append(self._stacks[-1].pop())
-                # self._stacks[-1].append(node)
-                to_load = self._stacks[-1].pop()
-                if to_load.value == "MapElement": 
-                    node = SVT("SLOAD")
-                    node.children.append(to_load)
-                    self._stacks[-1].append(node)
-                else:
-                    stored_value = self._curr_contract+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
-                    self._stacks[-1].append(SVT(stored_value))
+            self._stacks[-1].append(SVT(1)) # CALL successed
+            self._call_stack.append((dest_contract, dest_function))
+            self._curr_contract = dest_contract
+            self._curr_function = dest_function
 
-            elif opcode=="PC":
-                self._stacks[-1].append(SVT(PC))
-            elif opcode.startswith("PUSH"):
-                self._stacks[-1].append(SVT(operand))
-            elif opcode.startswith("POP"):
-                self._stacks[-1].pop()
-            elif opcode.startswith("CALLER"):
-                self._stacks[-1].append(SVT("msg.sender")) # symbolic
-            elif opcode.startswith("ORIGIN"):
-                self._stacks[-1].append(SVT("tx.origin")) # symbolic
-            elif opcode.startswith("DUP"):
-                position=int(re.search('[0-9]+', opcode)[0])
-                self._stacks[-1].append(self._stacks[-1][len(self._stacks[-1])-position]) 
-            elif opcode.startswith("SWAP"):
-                position=int(re.search('[0-9]+', opcode)[0])
-                dest = self._stacks[-1][len(self._stacks[-1])-position-1] 
-                self._stacks[-1][len(self._stacks[-1])-position] = self._stacks[-1].pop()
-                self._stacks[-1].append(dest)
-            elif opcode=="ISZERO" or opcode=="NOT":
-                if type(self._stacks[-1][-1].value) == int:
-                    val = self._stacks[-1].pop().value
-                    node = SVT(~(2**256|val) & (2**256-1))
-                    self._stacks[-1].append(node)
+            # self._stacks[dest_contract]     = callee_stack  
+            # self._memories[dest_contract]   = {0x40: SVT(0x80),0x10000000000: SVT(0)} # temp
+            self._stacks.append(callee_stack)
+            self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
+
+
+            print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
+        elif instr[0]==("<"):
+            self._call_stack.pop()
+            self._curr_contract = self._call_stack[-1][0]
+            self._curr_function = self._call_stack[-1][1]     
+
+            self._stacks.pop()
+            self._memories.pop()
+
+            print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
+        elif opcode=="GAS":
+            # self._stacks[-1].append(SVT("GAS"))
+            self._stacks[-1].append(SVT("GAS"))  
+        elif opcode=="RETURNDATASIZE":
+            for elmt in self._abi_info[self._curr_contract]:
+                if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
+                    return_count = len(elmt["outputs"])
+                    if(return_count == 0):
+                        # self._stacks[-1].append(SVT(0))
+                        self._stacks[-1].append(SVT(0))
+                    else:
+                        raise Exception("return data SIZE to be implemented. ")    
+        elif opcode=="EXTCODESIZE":
+            node=SVT("ACCOUNT_CODESIZE")
+            node.children.append(self._stacks[-1].pop()) 
+            self._stacks[-1].append(node)                
+        elif opcode=="JUMP":
+            self._stacks[-1].pop()
+        elif opcode=="JUMPI":
+            self.boogie_gen_jumpi(self._stacks[-1][-2], branch_taken)
+            self._stacks[-1].pop()
+            self._stacks[-1].pop()
+        elif opcode=="MSTORE":
+            self.handle_MSTORE()            
+        elif opcode=="MLOAD":
+            node = self.handle_MLOAD()
+            self._stacks[-1].append(node)  
+        elif opcode=="SSTORE":
+            # print(instr)
+            self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop())
+        elif opcode=="SLOAD":
+            # node = SVT("SLOAD")
+            # node.children.append(self._stacks[-1].pop())
+            # self._stacks[-1].append(node)
+            to_load = self._stacks[-1].pop()
+            if to_load.value == "MapElement": 
+                node = SVT("SLOAD")
+                node.children.append(to_load)
+                self._stacks[-1].append(node)
+            else:
+                stored_value = self._curr_contract+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
+                self._stacks[-1].append(SVT(stored_value))
+
+        elif opcode=="PC":
+            self._stacks[-1].append(SVT(PC))
+        elif opcode.startswith("PUSH"):
+            self._stacks[-1].append(SVT(operand))
+        elif opcode.startswith("POP"):
+            self._stacks[-1].pop()
+        elif opcode.startswith("CALLER"):
+            self._stacks[-1].append(SVT("msg.sender")) # symbolic
+        elif opcode.startswith("ORIGIN"):
+            self._stacks[-1].append(SVT("tx.origin")) # symbolic
+        elif opcode.startswith("DUP"):
+            position=int(re.search('[0-9]+', opcode)[0])
+            self._stacks[-1].append(self._stacks[-1][len(self._stacks[-1])-position]) 
+        elif opcode.startswith("SWAP"):
+            position=int(re.search('[0-9]+', opcode)[0])
+            dest = self._stacks[-1][len(self._stacks[-1])-position-1] 
+            self._stacks[-1][len(self._stacks[-1])-position] = self._stacks[-1].pop()
+            self._stacks[-1].append(dest)
+        elif opcode=="ISZERO" or opcode=="NOT":
+            if type(self._stacks[-1][-1].value) == int:
+                val = self._stacks[-1].pop().value
+                node = SVT(~(2**256|val) & (2**256-1))
+                self._stacks[-1].append(node)
+            else:
+                node = SVT(opcode)
+                node.children.append(self._stacks[-1].pop())
+                self._stacks[-1].append(node)
+        elif opcode=="AND":
+            node = self.handle_AND()
+            self._stacks[-1].append(node)
+        elif opcode=="OR":
+            node = self.handle_OR()
+            self._stacks[-1].append(node)
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL":            
+            if isinstance(self._stacks[-1][-1].value, int) and isinstance(self._stacks[-1][-2].value, int):
+                if opcode == "ADD":
+                    node = SVT((self._stacks[-1].pop().value + self._stacks[-1].pop().value)%2**256) 
+                elif opcode == "SUB":
+                    node = SVT((self._stacks[-1].pop().value - self._stacks[-1].pop().value)%2**256)
+                elif opcode == "DIV":
+                    node = SVT((self._stacks[-1].pop().value // self._stacks[-1].pop().value)%2**256)
+                elif opcode == "EXP":
+                    node = SVT((self._stacks[-1].pop().value ** self._stacks[-1].pop().value)%2**256)
+                elif opcode == "SHL":
+                    node = SVT((self._stacks[-1].pop().value << self._stacks[-1].pop().value)%2**256) 
+                elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
+                    node = SVT(opcode)
+                    node.children.append(self._stacks[-1].pop())
+                    node.children.append(self._stacks[-1].pop())
+            else:
+                if opcode == "DIV":
+                    # print(instr)
+                    node = self._stacks[-1].pop() # actual address
+                    self._stacks[-1].pop() # dummy 0x1
                 else:
                     node = SVT(opcode)
                     node.children.append(self._stacks[-1].pop())
-                    self._stacks[-1].append(node)
-            elif opcode=="AND":
-                node = self.handle_AND()
+                    node.children.append(self._stacks[-1].pop())
+            self._stacks[-1].append(node)
+        elif opcode=="SHA3":
+            if self._stacks[-1][-2].value == 64:
+                start_offset = self._stacks[-1].pop().value
+                if not isinstance(start_offset, int):
+                    raise Exception("start offset not constant")
+                node = SVT("MapElement")
+                node.children.append(self._memories[-1][start_offset+32])
+                # node.children.append(self._memories[-1][start_offset])
+                node.children.append(self._memories[-1][start_offset])
+                # node.children.append({self._curr_contract : self._memories[-1][start_offset]})
+                self._stacks[-1].pop() # pop 64
                 self._stacks[-1].append(node)
-            elif opcode=="OR":
-                node = self.handle_OR()
-                self._stacks[-1].append(node)
-            elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL":            
-                if isinstance(self._stacks[-1][-1].value, int) and isinstance(self._stacks[-1][-2].value, int):
-                    if opcode == "ADD":
-                        node = SVT((self._stacks[-1].pop().value + self._stacks[-1].pop().value)%2**256) 
-                    elif opcode == "SUB":
-                        node = SVT((self._stacks[-1].pop().value - self._stacks[-1].pop().value)%2**256)
-                    elif opcode == "DIV":
-                        node = SVT((self._stacks[-1].pop().value // self._stacks[-1].pop().value)%2**256)
-                    elif opcode == "EXP":
-                        node = SVT((self._stacks[-1].pop().value ** self._stacks[-1].pop().value)%2**256)
-                    elif opcode == "SHL":
-                        node = SVT((self._stacks[-1].pop().value << self._stacks[-1].pop().value)%2**256) 
-                    elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
-                        node = SVT(opcode)
-                        node.children.append(self._stacks[-1].pop())
-                        node.children.append(self._stacks[-1].pop())
-                else:
-                    if opcode == "DIV":
-                        # print(instr)
-                        node = self._stacks[-1].pop() # actual address
-                        self._stacks[-1].pop() # dummy 0x1
-                    else:
-                        node = SVT(opcode)
-                        node.children.append(self._stacks[-1].pop())
-                        node.children.append(self._stacks[-1].pop())
-                self._stacks[-1].append(node)
-            elif opcode=="SHA3":
-                if self._stacks[-1][-2].value == 64:
-                    start_offset = self._stacks[-1].pop().value
-                    if not isinstance(start_offset, int):
-                        raise Exception("start offset not constant")
-                    node = SVT("MapElement")
-                    node.children.append(self._memories[-1][start_offset+32])
-                    # node.children.append(self._memories[-1][start_offset])
-                    node.children.append(self._memories[-1][start_offset])
-                    # node.children.append({self._curr_contract : self._memories[-1][start_offset]})
-                    self._stacks[-1].pop() # pop 64
-                    self._stacks[-1].append(node)
-            else:
-                print('[!]',str(instr), 'not supported yet')  
-                sys.exit()
+        else:
+            print('[!]',str(instr), 'not supported yet')  
+            sys.exit()
 
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
@@ -277,8 +277,8 @@ class EVM:
                 elif (self._final_vars["tmp"+str(val1)] == 'uint256'):
                     to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==0;\n"
             
-            self._final_vars[to_return] = 'bool'
-            self._final_path.append(to_boogie)
+                self._final_vars[to_return] = 'bool'
+                self._final_path.append(to_boogie)
         elif node.value == "SLOAD":
             if node.children[0].value=="MapElement":
                 map_id  = self.find_mapID(node.children[0])
