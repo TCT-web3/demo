@@ -153,7 +153,7 @@ class EVM:
                 if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
                     return_count = len(elmt["outputs"])
                     if(return_count == 0):
-                        self._stacks[-1].append(SVT("0"))
+                        self._stacks[-1].append(SVT(0))
                         # self._stacks[-1].append(SVT(int(0)))
                         # self._stacks[-1].append(SVT('false'))
                     else:
@@ -268,7 +268,7 @@ class EVM:
     def postorder_traversal(self, node):
         to_return = ""
         if not node.children:
-            return str(node.value)
+            return node.value
 
         if node.value == "ISZERO":
             to_return += self.postorder_traversal(node.children[0]) # + "==0;\n"
@@ -312,7 +312,7 @@ class EVM:
         elif node.value == "LT" or node.value == "GT" or node.value == "EQ":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
-            if val1.isnumeric() and val2.isnumeric():
+            if isinstance(val1, int) and isinstance(val2, int):
                 to_return = ""
                 if node.value == "LT":
                     if val1 < val2:
@@ -343,7 +343,7 @@ class EVM:
         elif node.value == "ADD" or node.value == "SUB" or node.value == "AND":
             val1=self.postorder_traversal(node.children[0])
             val2=self.postorder_traversal(node.children[1])
-            if val1.isnumeric() and val2.isnumeric():
+            if isinstance(val1, int) and isinstance(val2, int):
                 if node.value == "ADD":
                     to_return = val1 + val2
                 elif node.value == "SUB":
@@ -394,11 +394,11 @@ class EVM:
                 path = "\tassume(false);\n\n"
             else:
                 return
-        elif(str(var).isdigit()):
-            if (isNotZero):
-                path = "\tassume("+ var +"!=0);\n\n"
-            else:    
-                path = "\tassume("+ var +"==0);\n\n"
+        elif(isinstance(var, int)):
+            if (isNotZero and var==0) or (not isNotZero and var!=0):
+                raise Exception("JUMPI condition exception")
+            else:
+                return
         elif(self._final_vars[var]=='bool'):
             if (isNotZero):
                 path = "\tassume("+ var +");\n\n"
