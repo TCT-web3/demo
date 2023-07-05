@@ -80,6 +80,8 @@ class EVM:
                 pass # no-op
             elif instr[0]==(">"):
                 dest_contract, dest_function = get_dest_contract_and_function(instr)
+
+                get_contract_name(instr)
                 ### calling a new contract, set up calle stack
                 # if (dest_contract not in self._stacks.keys()):
                 callee_stack    = []
@@ -94,8 +96,6 @@ class EVM:
                     func_selector//=0x100**28
                 else:
                     func_selector = (self.find_key(self._memories[-1][calldata_pos].children[1].children[1]))
-
-                # print("selector", func_selector)    
 
                 callee_stack.append(SVT(func_selector))
                 callee_stack.append(SVT("AConstantBySolc"))
@@ -173,8 +173,6 @@ class EVM:
                     node.children.append(to_load)
                     self._stacks[-1].append(node)
                 else:
-                    # print(self._curr_contract)
-                    # print(to_load.value)
                     stored_value = self._curr_contract+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
                     self._stacks[-1].append(SVT(stored_value))
 
