@@ -43,7 +43,7 @@ EVM core trace analysis
 class EVM:
     from memory import recognize_32B_mask, mem_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR
 
-    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info): 
+    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, var_prefix): 
         self._stacks        = stacks  
         self._storage       = storage
         self._memories      = memories
@@ -56,6 +56,7 @@ class EVM:
         self._curr_function = curr_function
         self._call_stack    = call_stack
         self._abi_info      = abi_info
+        self._var_prefix    = var_prefix
 
     '''perfprm symbolic execution'''
     def sym_exec(self, code_trace):
@@ -86,7 +87,9 @@ class EVM:
             print(dest_contract)
             print(dest_function)
 
-            get_contract_name(instr)
+            # get_contract_prefix(instr)
+            # print(get_contract_prefix(instr))
+            self._var_prefix = get_var_prefix(instr)
             ### calling a new contract, set up calle stack
             # if (dest_contract not in self._stacks.keys()):
             callee_stack    = []
@@ -183,7 +186,7 @@ class EVM:
                 node.children.append(to_load)
                 self._stacks[-1].append(node)
             else:
-                stored_value = self._curr_contract+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
+                stored_value = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
                 self._stacks[-1].append(SVT(stored_value))
 
         elif opcode=="PC":
@@ -297,7 +300,9 @@ class EVM:
                 map_id = node.children[0].value
             self._tmp_var_count+=1
             to_return = "tmp" + str(self._tmp_var_count)
-            to_boogie = "\ttmp"+str(self._tmp_var_count)+":="+self._curr_contract+'.'+self._storage_map[self._curr_contract][str(map_id)]
+            var_name  = self._storage_map[self._curr_contract][str(map_id)]
+            self.add_new_vars(var_name)
+            to_boogie = "\ttmp"+str(self._tmp_var_count)+":="+ self._var_prefix+'.'+var_name
 
             if node.children[0].value=="MapElement":
                 to_boogie +="["+str(map_key)+"]"
@@ -364,15 +369,15 @@ class EVM:
     
     '''generate boogie code when SSTORE happens'''
     def boogie_gen_sstore(self, node0, node1):
-        # print("====")
-        # print(node0)
-        # print(node1)
-        # print("====")
         if node0.value=="MapElement":
             map_key = self.find_key(node0.children[1])
-            path="\t"+self._curr_contract+'.'+self._storage_map[self._curr_contract][str(self.find_mapID(node0))]+"["+str(map_key)+"]:=" + str(self.postorder_traversal(node1))+";\n\n"
+            var_name = self._storage_map[self._curr_contract][str(self.find_mapID(node0))]+"["+str(map_key)+"]"
+            # self.add_new_vars(var_name)
+            path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         else:
-            path="\t"+self._curr_contract+'.'+self._storage_map[self._curr_contract][str(node0.value)]+":=" + str(self.postorder_traversal(node1))+";\n\n"
+            var_name = self._storage_map[self._curr_contract][str(node0.value)]
+            self.add_new_vars(var_name)
+            path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         self._final_path.append(path)
                       
     '''generate boogie code when JUMPI happens'''         
@@ -426,6 +431,10 @@ class EVM:
             return True
         except ValueError:
             return False
+
+    def add_new_vars(self, var_name):
+        self._final_vars[self._var_prefix+'.'+var_name] = MACROS.VAR_TYPES[self._curr_contract][var_name]
+
 
     '''helper to find the key of a node'''
     def find_key(self, node):
@@ -534,22 +543,19 @@ def main():
     INVARIANTS  = get_invariant()
     TRACE       = gen_path()
     MAP         = get_MAPS(STOR_INFO)
-    # MAP         = get_MAP()
+    VAR_PREFIX  = get_init_var_prefix() 
+    MACROS.VAR_TYPES = get_types(STOR_INFO)
 
     ''' run EVM trace instructions '''
-    evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO)
-    # print('\n(pre-execution)')
-    # evm.inspect("stack")
+    evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX)
     print('\n\ninputs: ', MACROS.SOLIDITY_FNAME, MACROS.THEOREM_FNAME, MACROS.TRACE_FNAME)
     print('\n(executing instructions...)')
     evm.sym_exec(TRACE)
-    # print('\n(post-execution)')
-    # evm.inspect("stack")
 
     ''' write Boogie output '''
     BOOGIE_OUT.write(MACROS.PREAMBLE)
-    BOOGIE_OUT.write(write_params(ABI_INFO))
-    BOOGIE_OUT.write(write_locals(STOR_INFO))
+    BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
+    # BOOGIE_OUT.write(write_locals(STOR_INFO))
     evm.write_vars() # aux vars for Boogie Proofs 
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS))
     BOOGIE_OUT.write(write_invariants(INVARIANTS))

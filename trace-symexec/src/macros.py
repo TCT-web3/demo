@@ -14,6 +14,7 @@ class MACROS:
     BOOGIE          = ""  
     CONTRACT_NAME   = ""
     FUNCTION_NAME   = ""
+    VAR_TYPES       = {}
 
 
     PREAMBLE    =   """type address = int;
