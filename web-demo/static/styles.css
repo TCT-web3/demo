@@ -22,6 +22,12 @@ button, input::file-selector-button {
     width: 20%;
 }
 
+h1 {
+    padding: 60px 60px 0;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: bold;
+}
+
 pre {
     font-family: 'Courier New', Courier, monospace;
 }
