@@ -129,7 +129,7 @@ class EVM:
 
 
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
-            self._final_path.append(">>CALL,  switched to contract: "+ self._call_stack[-1][0] + '\n')
+            # self._final_path.append(">>CALL,  switched to contract: "+ self._call_stack[-1][0] + '\n')
         elif instr[0]==("<"):
             
             self._call_stack.pop()
@@ -140,13 +140,12 @@ class EVM:
             self._memories.pop()
 
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
-            self._final_path.append(">>LEAVE, switched to contract: "+ self._call_stack[-1][0] + '\n')
+            # self._final_path.append(">>LEAVE, switched to contract: "+ self._call_stack[-1][0] + '\n')
         elif opcode=="GAS":
             # self._stacks[-1].append(SVT("GAS"))
             self._stacks[-1].append(SVT("GAS"))  
         elif opcode=="RETURNDATASIZE":
-            # self._stacks[-1].append(SVT("0"))
-            print(self._curr_function)
+            # print(self._curr_function)
             for elmt in self._abi_info[self._curr_contract]:
                 if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
                     return_count = len(elmt["outputs"])
