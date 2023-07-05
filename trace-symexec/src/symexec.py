@@ -68,165 +68,174 @@ class EVM:
 
     '''run each EVM instruction with PC, operator, and operand'''        
     def run_instruction(self, instr, branch_taken):
-            PC      = instr[0]
-            opcode  = instr[1]
-            operand = instr[2]
+        PC      = instr[0]
+        opcode  = instr[1]
+        operand = instr[2]
 
-            # print(instr)
-            # self.inspect("currstack")
+        # print(instr)
+        # self.inspect("currstack")
 
-            if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
-                pass # no-op
-            elif instr[0]==(">"):
-                dest_contract, dest_function = get_dest_contract_and_function(instr)
-                ### calling a new contract, set up calle stack
-                if (dest_contract not in self._stacks.keys()):
-                    callee_stack    = []
-                    calldata_pos    = self._stacks[self._curr_contract][-4].value
-                    calldata_len    = self._stacks[self._curr_contract][-5].value
-                    func_selector   = self._memories[self._curr_contract][calldata_pos].children[1].value
-                    func_selector//=0x100**28
-                    callee_stack.append(SVT(func_selector))
-                    callee_stack.append(SVT("AConstantBySolc"))
-                    calldata_len -=4
-                    calldata_pos +=4
+        if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
+            pass # no-op
+        elif instr[0]==(">"):
+            dest_contract, dest_function = get_dest_contract_and_function(instr)
+            ### calling a new contract, set up calle stack
+            if (dest_contract not in self._stacks.keys()):
+                callee_stack    = []
+                calldata_pos    = self._stacks[self._curr_contract][-4].value
+                calldata_len    = self._stacks[self._curr_contract][-5].value
+                func_selector   = self._memories[self._curr_contract][calldata_pos].children[1].value
+                func_selector//=0x100**28
+                callee_stack.append(SVT(func_selector))
+                callee_stack.append(SVT("AConstantBySolc"))
+                calldata_len -=4
+                calldata_pos +=4
 
-                    for i in range(calldata_len//0x20):
-                        callee_stack.append(self._memories[self._curr_contract][calldata_pos])
-                        calldata_pos += 0x20
-                    self._stacks[dest_contract]     = callee_stack  
-                    self._memories[dest_contract]   = {0x40: SVT(0x80),0x10000000000: SVT(0)}
+                for i in range(calldata_len//0x20):
+                    callee_stack.append(self._memories[self._curr_contract][calldata_pos])
+                    calldata_pos += 0x20
+                self._stacks[dest_contract]     = callee_stack  
+                self._memories[dest_contract]   = {0x40: SVT(0x80),0x10000000000: SVT(0)}
 
-                ### switch to a new contract and pops out the operands for a successful CALL operation
-                for i in range(7):
-                    self._stacks[self._curr_contract].pop()
-                self._stacks[self._curr_contract].append(SVT(1)) # CALL successed
-                self._call_stack.append((dest_contract, dest_function))
-                self._curr_contract = dest_contract
-                self._curr_function = dest_function
-                print(">>> switched to contract: ", self._call_stack[-1][0])
-            elif instr[0]==("<"):
-                self._call_stack.pop()
-                self._curr_contract = self._call_stack[-1][0]
-                self._curr_function = self._call_stack[-1][1]        
-                print("<<< switched to contract: ", self._call_stack[-1][0])
-            elif opcode=="GAS":
-                self._stacks[self._curr_contract].append(SVT("GAS"))  # what is the GAS amount? 
-            elif opcode=="RETURNDATASIZE":
-                for elmt in self._abi_info[self._curr_contract]:
-                    if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
-                        return_count = len(elmt["outputs"])
-                        if(return_count == 0):
-                            self._stacks[self._curr_contract].append(SVT(0))
-                        else:
-                            raise Exception("return data SIZE to be implemented. ")    
-            elif opcode=="EXTCODESIZE":
-                self._stacks[self._curr_contract].append(SVT("CODESIZE"))                
-            elif opcode=="JUMP":
+            ### switch to a new contract and pops out the operands for a successful CALL operation
+            for i in range(7):
                 self._stacks[self._curr_contract].pop()
-            elif opcode=="JUMPI":
-                self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], branch_taken)
-                self._stacks[self._curr_contract].pop()
-                self._stacks[self._curr_contract].pop()
-            elif opcode=="MSTORE":
-                self.handle_MSTORE()            
-            elif opcode=="MLOAD":
-                node = self.handle_MLOAD()
-                self._stacks[self._curr_contract].append(node)  
-            elif opcode=="SSTORE":
-                print(instr)
-                self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
-            elif opcode=="SLOAD":
-                node = SVT("SLOAD")
+            self._stacks[self._curr_contract].append(SVT(1)) # CALL successed
+            self._call_stack.append((dest_contract, dest_function))
+            self._curr_contract = dest_contract
+            self._curr_function = dest_function
+            print(">>> switched to contract: ", self._call_stack[-1][0])
+        elif instr[0]==("<"):
+            self._call_stack.pop()
+            self._curr_contract = self._call_stack[-1][0]
+            self._curr_function = self._call_stack[-1][1]        
+            print("<<< switched to contract: ", self._call_stack[-1][0])
+        elif opcode=="GAS":
+            self._stacks[self._curr_contract].append(SVT("GAS"))  # what is the GAS amount? 
+        elif opcode=="RETURNDATASIZE":
+            for elmt in self._abi_info[self._curr_contract]:
+                if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
+                    return_count = len(elmt["outputs"])
+                    if(return_count == 0):
+                        self._stacks[self._curr_contract].append(SVT(0))
+                    else:
+                        raise Exception("return data SIZE to be implemented. ")    
+        elif opcode=="EXTCODESIZE":
+            self._stacks[self._curr_contract].append(SVT("CODESIZE"))                
+        elif opcode=="JUMP":
+            self._stacks[self._curr_contract].pop()
+        elif opcode=="JUMPI":
+            self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], branch_taken)
+            self._stacks[self._curr_contract].pop()
+            self._stacks[self._curr_contract].pop()
+        elif opcode=="MSTORE":
+            self.handle_MSTORE()            
+        elif opcode=="MLOAD":
+            node = self.handle_MLOAD()
+            self._stacks[self._curr_contract].append(node)  
+        elif opcode=="SSTORE":
+            print(instr)
+            self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
+        elif opcode=="SLOAD":
+            node = SVT("SLOAD")
+            node.children.append(self._stacks[self._curr_contract].pop())
+            self._stacks[self._curr_contract].append(node)
+        elif opcode=="PC":
+            self._stacks[self._curr_contract].append(SVT(PC))
+        elif opcode.startswith("PUSH"):
+            self._stacks[self._curr_contract].append(SVT(operand))
+        elif opcode.startswith("POP"):
+            self._stacks[self._curr_contract].pop()
+        elif opcode.startswith("CALLER"):
+            self._stacks[self._curr_contract].append(SVT("msg.sender")) # symbolic
+        elif opcode.startswith("ORIGIN"):
+            self._stacks[self._curr_contract].append(SVT("tx.origin")) # symbolic
+        elif opcode.startswith("DUP"):
+            position=int(re.search('[0-9]+', opcode)[0])
+            self._stacks[self._curr_contract].append(self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position]) 
+        elif opcode.startswith("SWAP"):
+            position=int(re.search('[0-9]+', opcode)[0])
+            dest = self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position-1] 
+            self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position] = self._stacks[self._curr_contract].pop()
+            self._stacks[self._curr_contract].append(dest)
+        elif opcode=="ISZERO" or opcode=="NOT":
+            if type(self._stacks[self._curr_contract][-1].value) == int:
+                val = self._stacks[self._curr_contract].pop().value
+                node = SVT(~(2**256|val) & (2**256-1))
+                self._stacks[self._curr_contract].append(node)
+            else:
+                node = SVT(opcode)
                 node.children.append(self._stacks[self._curr_contract].pop())
                 self._stacks[self._curr_contract].append(node)
-            elif opcode=="PC":
-                self._stacks[self._curr_contract].append(SVT(PC))
-            elif opcode.startswith("PUSH"):
-                self._stacks[self._curr_contract].append(SVT(operand))
-            elif opcode.startswith("POP"):
-                self._stacks[self._curr_contract].pop()
-            elif opcode.startswith("CALLER"):
-                self._stacks[self._curr_contract].append(SVT("msg.sender")) # symbolic
-            elif opcode.startswith("ORIGIN"):
-                self._stacks[self._curr_contract].append(SVT("tx.origin")) # symbolic
-            elif opcode.startswith("DUP"):
-                position=int(re.search('[0-9]+', opcode)[0])
-                self._stacks[self._curr_contract].append(self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position]) 
-            elif opcode.startswith("SWAP"):
-                position=int(re.search('[0-9]+', opcode)[0])
-                dest = self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position-1] 
-                self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position] = self._stacks[self._curr_contract].pop()
-                self._stacks[self._curr_contract].append(dest)
-            elif opcode=="ISZERO" or opcode=="NOT":
-                if type(self._stacks[self._curr_contract][-1].value) == int:
-                    val = self._stacks[self._curr_contract].pop().value
-                    node = SVT(~(2**256|val) & (2**256-1))
-                    self._stacks[self._curr_contract].append(node)
-                else:
-                    node = SVT(opcode)
-                    node.children.append(self._stacks[self._curr_contract].pop())
-                    self._stacks[self._curr_contract].append(node)
-            elif opcode=="AND":
-                node = self.handle_AND()
-                self._stacks[self._curr_contract].append(node)
-            elif opcode=="OR":
-                node = self.handle_OR()
-                self._stacks[self._curr_contract].append(node)
-            elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL":            
-                if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
-                    if opcode == "ADD":
-                        node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256) 
-                    elif opcode == "SUB":
-                        node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256)
-                    elif opcode == "DIV":
-                        node = SVT((self._stacks[self._curr_contract].pop().value // self._stacks[self._curr_contract].pop().value)%2**256)
-                    elif opcode == "EXP":
-                        node = SVT((self._stacks[self._curr_contract].pop().value ** self._stacks[self._curr_contract].pop().value)%2**256)
-                    elif opcode == "SHL":
-                        node = SVT((self._stacks[self._curr_contract].pop().value << self._stacks[self._curr_contract].pop().value)%2**256) 
-                    elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
-                        node = SVT(opcode)
-                        node.children.append(self._stacks[self._curr_contract].pop())
-                        node.children.append(self._stacks[self._curr_contract].pop())
-                else:
+        elif opcode=="AND":
+            node = self.handle_AND()
+            self._stacks[self._curr_contract].append(node)
+        elif opcode=="OR":
+            node = self.handle_OR()
+            self._stacks[self._curr_contract].append(node)
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL":            
+            if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
+                if opcode == "ADD":
+                    node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256) 
+                elif opcode == "SUB":
+                    node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256)
+                elif opcode == "DIV":
+                    node = SVT((self._stacks[self._curr_contract].pop().value // self._stacks[self._curr_contract].pop().value)%2**256)
+                elif opcode == "EXP":
+                    node = SVT((self._stacks[self._curr_contract].pop().value ** self._stacks[self._curr_contract].pop().value)%2**256)
+                elif opcode == "SHL":
+                    node = SVT((self._stacks[self._curr_contract].pop().value << self._stacks[self._curr_contract].pop().value)%2**256) 
+                elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
                     node = SVT(opcode)
                     node.children.append(self._stacks[self._curr_contract].pop())
                     node.children.append(self._stacks[self._curr_contract].pop())
-                self._stacks[self._curr_contract].append(node)
-            elif opcode=="SHA3":
-                if self._stacks[self._curr_contract][-2].value == 64:
-                    start_offset = self._stacks[self._curr_contract].pop().value
-                    if not isinstance(start_offset, int):
-                        raise Exception("start offset not constant")
-                    node = SVT("MapElement")
-                    node.children.append(self._memories[self._curr_contract][start_offset+32])
-                    # node.children.append(self._memories[self._curr_contract][start_offset])
-
-                    node.children.append(self._memories[self._curr_contract][start_offset])
-
-                    # node.children.append({self._curr_contract : self._memories[self._curr_contract][start_offset]})
-                    self._stacks[self._curr_contract].pop() # pop 64
-                    self._stacks[self._curr_contract].append(node)
             else:
-                print('[!]',str(instr), 'not supported yet')  
-                sys.exit()
+                node = SVT(opcode)
+                node.children.append(self._stacks[self._curr_contract].pop())
+                node.children.append(self._stacks[self._curr_contract].pop())
+            self._stacks[self._curr_contract].append(node)
+        elif opcode=="SHA3":
+            if self._stacks[self._curr_contract][-2].value == 64:
+                start_offset = self._stacks[self._curr_contract].pop().value
+                if not isinstance(start_offset, int):
+                    raise Exception("start offset not constant")
+                node = SVT("MapElement")
+                node.children.append(self._memories[self._curr_contract][start_offset+32])
+                # node.children.append(self._memories[self._curr_contract][start_offset])
+
+                node.children.append(self._memories[self._curr_contract][start_offset])
+
+                # node.children.append({self._curr_contract : self._memories[self._curr_contract][start_offset]})
+                self._stacks[self._curr_contract].pop() # pop 64
+                self._stacks[self._curr_contract].append(node)
+        else:
+            print('[!]',str(instr), 'not supported yet')  
+            sys.exit()
 
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
         to_return = ""
         if not node.children:
             return str(node.value)
-            # return self._curr_contract+'.'+str(node.value)
 
         if node.value == "ISZERO":
             to_return += self.postorder_traversal(node.children[0]) # + "==0;\n"
-            val1=self._tmp_var_count
-            self._tmp_var_count+=1
-            to_return = "tmp" + str(self._tmp_var_count)
-            to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
-            self._final_vars[to_return] = 'bool'
-            self._final_path.append(to_boogie)
+            if to_return.isnumeric():
+                if to_return == "0":
+                    to_return = "true"
+                else:
+                    to_return = "false"
+            elif to_return == "false":
+                to_return = "true"
+            elif to_return == "true":
+                to_return = "false"
+            else:
+                val1=self._tmp_var_count
+                self._tmp_var_count+=1
+                to_return = "tmp" + str(self._tmp_var_count)
+                to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
+                self._final_vars[to_return] = 'bool'
+                self._final_path.append(to_boogie)
         elif node.value == "SLOAD":
             # print(node)
             if node.children[0].value=="MapElement":
@@ -246,27 +255,55 @@ class EVM:
         elif node.value == "LT" or node.value == "GT" or node.value == "EQ":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
-            self._tmp_var_count+=1
-            to_return = "tmp" + str(self._tmp_var_count)
-            if node.value == "LT":
-                to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
-            elif node.value == "GT":
-                to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
-            elif node.value == "EQ":
-                to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
-            self._final_vars[to_return] = 'bool'
-            self._final_path.append(to_boogie) 
+            if val1.isnumeric() and val2.isnumeric():
+                to_return = ""
+                if node.value == "LT":
+                    if val1 < val2:
+                        to_return = "true"
+                    else:
+                        to_return = "false"
+                elif node.value == "GT":
+                    if val1 > val2:
+                        to_return = "true"
+                    else:
+                        to_return = "false"
+                elif node.value == "EQ":
+                    if val1 == val2:
+                        to_return = "true"
+                    else:
+                        to_return = "false"
+            else:
+                self._tmp_var_count+=1
+                to_return = "tmp" + str(self._tmp_var_count)
+                if node.value == "LT":
+                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
+                elif node.value == "GT":
+                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
+                elif node.value == "EQ":
+                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
+                self._final_vars[to_return] = 'bool'
+                self._final_path.append(to_boogie) 
         elif node.value == "ADD" or node.value == "SUB" or node.value == "AND":
-            self._tmp_var_count+=1
-            to_return =  "tmp" + str(self._tmp_var_count)
-            if node.value == "ADD":
-                to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
-            elif node.value == "SUB":
-                to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
-            elif node.value == "AND":
-                to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(self.postorder_traversal(node.children[0]))+","+str(self.postorder_traversal(node.children[1]))+");\n"
-            self._final_vars[to_return] = 'uint256'
-            self._final_path.append(to_boogie)
+            val1=self.postorder_traversal(node.children[0])
+            val2=self.postorder_traversal(node.children[1])
+            if val1.isnumeric() and val2.isnumeric():
+                if node.value == "ADD":
+                    to_return = val1 + val2
+                elif node.value == "SUB":
+                    to_return = val1 - val2
+                elif node.value == "AND":
+                    to_return = val1 & val2
+            else:
+                self._tmp_var_count+=1
+                to_return =  "tmp" + str(self._tmp_var_count)
+                if node.value == "ADD":
+                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(val1)+","+str(val2)+");\n"
+                elif node.value == "SUB":
+                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(val1)+","+str(val2)+");\n"
+                elif node.value == "AND":
+                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(val1)+","+str(val2)+");\n"
+                self._final_vars[to_return] = 'uint256'
+                self._final_path.append(to_boogie)
         elif node.value == "Partial32B":
             to_return = str(self.postorder_traversal(node.children[1]))
         else:
@@ -289,7 +326,17 @@ class EVM:
     '''generate boogie code when JUMPI happens'''         
     def boogie_gen_jumpi(self, node, isNotZero):
         var = self.postorder_traversal(node)
-        if(str(var).isdigit()):
+        if var == "true":
+            if isNotZero:
+                return
+            else:
+                path = "\tassume(false);\n\n" 
+        elif var == "false":
+            if isNotZero:
+                path = "\tassume(false);\n\n"
+            else:
+                return
+        elif(str(var).isdigit()):
             if (isNotZero):
                 path = "\tassume("+ var +"!=0);\n\n"
             else:    
