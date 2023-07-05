@@ -307,34 +307,34 @@ class EVM:
         elif node.value == "LT" or node.value == "GT" or node.value == "EQ":
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
-            # if val1.isnumeric() and val2.isnumeric():
-            #     to_return = ""
-            #     if node.value == "LT":
-            #         if val1 < val2:
-            #             to_return = "true"
-            #         else:
-            #             to_return = "false"
-            #     elif node.value == "GT":
-            #         if val1 > val2:
-            #             to_return = "true"
-            #         else:
-            #             to_return = "false"
-            #     elif node.value == "EQ":
-            #         if val1 == val2:
-            #             to_return = "true"
-            #         else:
-            #             to_return = "false"
-            # else:
-            self._tmp_var_count+=1
-            to_return = "tmp" + str(self._tmp_var_count)
-            if node.value == "LT":
-                to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
-            elif node.value == "GT":
-                to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
-            elif node.value == "EQ":
-                to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
-            self._final_vars[to_return] = 'bool'
-            self._final_path.append(to_boogie) 
+            if val1.isnumeric() and val2.isnumeric():
+                to_return = ""
+                if node.value == "LT":
+                    if val1 < val2:
+                        to_return = "true"
+                    else:
+                        to_return = "false"
+                elif node.value == "GT":
+                    if val1 > val2:
+                        to_return = "true"
+                    else:
+                        to_return = "false"
+                elif node.value == "EQ":
+                    if val1 == val2:
+                        to_return = "true"
+                    else:
+                        to_return = "false"
+            else:
+                self._tmp_var_count+=1
+                to_return = "tmp" + str(self._tmp_var_count)
+                if node.value == "LT":
+                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
+                elif node.value == "GT":
+                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
+                elif node.value == "EQ":
+                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
+                self._final_vars[to_return] = 'bool'
+                self._final_path.append(to_boogie) 
         elif node.value == "ADD" or node.value == "SUB" or node.value == "AND":
             val1=self.postorder_traversal(node.children[0])
             val2=self.postorder_traversal(node.children[1])
