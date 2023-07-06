@@ -13,7 +13,7 @@ contract UniswapV2Migrator is IUniswapV2Migrator {
     IUniswapV1Factory immutable factoryV1;
     IUniswapV2Router01 immutable router;
 
-    constructor(address _factoryV1, address _router) {
+    constructor(address _factoryV1, address _router) public {
         factoryV1 = IUniswapV1Factory(_factoryV1);
         router = IUniswapV2Router01(_router);
     }
@@ -29,7 +29,7 @@ contract UniswapV2Migrator is IUniswapV2Migrator {
         IUniswapV1Exchange exchangeV1 = IUniswapV1Exchange(factoryV1.getExchange(token));
         uint liquidityV1 = exchangeV1.balanceOf(msg.sender);
         require(exchangeV1.transferFrom(msg.sender, address(this), liquidityV1), 'TRANSFER_FROM_FAILED');
-        (uint amountETHV1, uint amountTokenV1) = exchangeV1.removeLiquidity(liquidityV1, 1, 1, uint(2**256-1));
+        (uint amountETHV1, uint amountTokenV1) = exchangeV1.removeLiquidity(liquidityV1, 1, 1, uint(-1));
         TransferHelper.safeApprove(token, address(router), amountTokenV1);
         (uint amountTokenV2, uint amountETHV2,) = router.addLiquidityETH{value: amountETHV1}(
             token,
