@@ -1,7 +1,7 @@
 {
 	"entry-for-test":"MultiVulnToken::clear(address)",
 	"entry-for-real":"0x5c9eb5d6a6c2c1b3efc52255c0b356f116f6f66d::0x3d0a4061",
-	"hypothesis":"MultiVulnToken.totalSupply<TwoE256 && msg.sender!=MultiVulnToken._to ",
+	"hypothesis":"this.totalSupply<TwoE256 && msg.sender!=_to ",
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)"
 }

@@ -83,13 +83,7 @@ class EVM:
             pass # no-op
         elif instr[0]==(">"):
             dest_contract, dest_function = get_dest_contract_and_function(instr)
-
-            print(dest_contract)
-            print(dest_function)
-
-            # get_contract_prefix(instr)
-            # print(get_contract_prefix(instr))
-            self._var_prefix = get_var_prefix(instr)
+            
             ### calling a new contract, set up calle stack
             # if (dest_contract not in self._stacks.keys()):
             callee_stack    = []
@@ -114,6 +108,18 @@ class EVM:
                 callee_stack.append(self._memories[-1][calldata_pos])
                 calldata_pos += 0x20
 
+
+            for elmt in callee_stack:
+                if (isinstance(self.find_key(elmt), str) and '.' in str(elmt)):
+                    elmt = self.find_key(elmt)
+                    # print("+++")
+                    # print(self._curr_contract)
+                    # print(elmt)
+                    var_name = elmt[elmt.find('.')+1: ]
+                    # print(var_name)
+                    self.add_new_vars(var_name)    
+                
+
             ### switch to a new contract and pops out the operands for a successful CALL operation
             # for i in range(7):
             #     self._stacks[-1].pop()
@@ -121,14 +127,19 @@ class EVM:
             for i in range(7):
                 self._stacks[-1].pop()
             self._stacks[-1].append(SVT(1)) # CALL successed
-            self._call_stack.append((dest_contract, dest_function))
+            dest_address = get_var_prefix(instr)
+            self._var_prefix = dest_address
+            self._call_stack.append((dest_contract, dest_function, dest_address))
             self._curr_contract = dest_contract
             self._curr_function = dest_function
+            self._var_prefix = get_var_prefix(instr)
 
             # self._stacks[dest_contract]     = callee_stack  
             # self._memories[dest_contract]   = {0x40: SVT(0x80),0x10000000000: SVT(0)} # temp
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
+
+
 
 
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
@@ -138,6 +149,7 @@ class EVM:
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]     
+            self._var_prefix = self._call_stack[-1][2]     
 
             self._stacks.pop()
             self._memories.pop()
@@ -372,14 +384,31 @@ class EVM:
         if node0.value=="MapElement":
             map_key = self.find_key(node0.children[1])
             var_name = self._storage_map[self._curr_contract][str(self.find_mapID(node0))]+"["+str(map_key)+"]"
-            # self.add_new_vars(var_name)
+            # print('+++', self._curr_contract)
+            # print('+++', var_name)
+            # if (str(map_key) not in self._final_vars.keys()):
+            #     self.add_new_vars(str(map_key))
+            # if (self._storage_map[self._curr_contract][str(self.find_mapID(node0))] not in self._final_vars.keys()):
+            #     self.add_new_vars(self._storage_map[self._curr_contract][str(self.find_mapID(node0))])
+            # if(self.is_called_param(str(map_key))):
+            #     self.add_new_vars(str(map_key))
+            # else:
+            #     print("nope")
+            # print(self._var_prefix+'.'+var_name)
             path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         else:
             var_name = self._storage_map[self._curr_contract][str(node0.value)]
             self.add_new_vars(var_name)
             path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         self._final_path.append(path)
-                      
+
+    def is_called_param(self, map_key):
+        if (re.search("c\_(.*).\_", map_key)):
+            print(map_key, "TRUE")
+            return True
+        print(map_key, "FALSE")    
+        return False
+
     '''generate boogie code when JUMPI happens'''         
     def boogie_gen_jumpi(self, node, isNotZero):
         # self._final_path.append(str(node)+'\n')
@@ -416,7 +445,6 @@ class EVM:
     '''wrote aux vars to Boogie'''
     def write_vars(self):
         for var in self._final_vars.keys():
-            # self._output_file.write(var+"\n")
             self._output_file.write("\tvar " + var + ":  " + self._final_vars[var] + ";\n")
         self._output_file.write("\n")
 
@@ -526,25 +554,27 @@ def main():
     CONTRACT_NAME,FUNCTION_NAME = get_contract_and_function_names()
     MACROS.CONTRACT_NAME    = CONTRACT_NAME
     MACROS.FUNCTION_NAME    = FUNCTION_NAME
+    VAR_PREFIX              = get_init_var_prefix() 
     check_entrypoint()
     gen_trace_essential()
 
     ''' parameters setup ''' 
-    STACKS      = gen_init_STACK()
+    STACKS      = gen_init_STACK(VAR_PREFIX)
     STORAGE     = gen_init_STORAGE()
     MEMORIES    = gen_init_MEMORY()
     BOOGIE_OUT  = open(MACROS.BOOGIE, "w")
     PATHS       = []
-    VARS        = {}
-    CALL_STACK  = gen_init_CALL_STACK()
+    CALL_STACK  = gen_init_CALL_STACK(VAR_PREFIX)
     ABI_INFO    = get_ABI_info()
     STOR_INFO   = get_STORAGE_info()
     HYPOTHESIS  = get_hypothesis()
     INVARIANTS  = get_invariant()
+    VARS        = get_init_vars(STOR_INFO,VAR_PREFIX)
     TRACE       = gen_path()
     MAP         = get_MAPS(STOR_INFO)
-    VAR_PREFIX  = get_init_var_prefix() 
+    
     MACROS.VAR_TYPES = get_types(STOR_INFO)
+   
 
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX)
@@ -557,10 +587,10 @@ def main():
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     # BOOGIE_OUT.write(write_locals(STOR_INFO))
     evm.write_vars() # aux vars for Boogie Proofs 
-    BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS))
-    BOOGIE_OUT.write(write_invariants(INVARIANTS))
+    BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
+    BOOGIE_OUT.write(write_invariants(INVARIANTS,VAR_PREFIX))
     evm.write_paths() # codegen for Boogie proofs
-    BOOGIE_OUT.write(write_epilogue(INVARIANTS))
+    BOOGIE_OUT.write(write_epilogue(INVARIANTS,VAR_PREFIX))
  
 if __name__ == '__main__':
     main()

@@ -20,7 +20,7 @@ def gen_solc():
 generate the inital stack dictionary {<contract_name> : <contract_stack>}
     Note that "FourByteSelector" is at the BOTTOM of the stack     
 '''
-def gen_init_STACK():
+def gen_init_STACK(var_prefix):
     # STACKS = {}
     STACKS = []
     stack = [
@@ -57,6 +57,7 @@ def gen_init_STACK():
     for o in json_object:
         if "name" in o and o["name"] == MACROS.FUNCTION_NAME:
             for i in o["inputs"]:
+                # stack.append(SVT(var_prefix +'.'+i["name"]))
                 stack.append(SVT(i["name"]))
     file.close()
     for n in file_names:
@@ -94,9 +95,9 @@ def gen_init_STORAGE():
 '''
 generate initial callstack array
 '''
-def gen_init_CALL_STACK():
+def gen_init_CALL_STACK(VAR_PREFIX):
     CALL_STACK = []
-    init_CALL = (MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME)
+    init_CALL = (MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME,VAR_PREFIX)
     CALL_STACK.append(init_CALL)
     return CALL_STACK
 

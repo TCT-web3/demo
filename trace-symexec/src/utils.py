@@ -7,6 +7,32 @@ import json
 from macros     import *
 
 
+def get_init_vars(storage_info, var_prefix):
+    vars = {}
+    locals = []
+    for elmt in storage_info[MACROS.CONTRACT_NAME]["storage"]:
+        label =  elmt["label"]
+        t_type = elmt["type"]
+        
+        if (label in locals):
+            pass
+        else:
+            if ("string" in t_type):
+                pass
+            elif ("contract" in t_type):
+                pass # TODO: contract address as a type
+            elif "t_mapping" in t_type:
+                t_type = t_type.replace("t_", "")
+                t_type = t_type.replace("mapping", "")[1:-1]
+                t_type = t_type.split(',')
+                # rt = rt + ("\tvar " + contract+'.'+label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
+                vars[var_prefix+'.'+label] = '['+t_type[0]+'] ' + t_type[1] 
+            else:
+                # rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n")  
+                vars[var_prefix+'.'+label] = t_type[2:]
+            # locals.append(contract+'.'+label)
+    return vars
+
 def get_var_prefix(instr):
     L = instr.find(" ")
     R = instr.find("::")
@@ -218,29 +244,32 @@ def get_dest_contract_and_function(instr):
 '''
 write hypothesis to Boogie
 '''
-def write_hypothesis(hypothesis):
+def write_hypothesis(hypothesis, var_prefix):
+        hypothesis = hypothesis.replace("this", var_prefix)
         return("\tassume(" + hypothesis + ");\n")
 
 '''
 write invariant to Boogie
 '''
-def write_invariants(invariants):
+def write_invariants(invariants, var_prefix):
     # get from ast
     rt = ""
     MVT_invariants = invariants[MACROS.CONTRACT_NAME]
     for inv in MVT_invariants:
         rt = rt + ("\tassume(" + inv + ");\n")
+        rt = rt.replace("this", var_prefix )
     rt = rt + ("\n")
     return rt 
 
 '''
 write epilogue to Boogie
 '''
-def write_epilogue(invariants):
+def write_epilogue(invariants,var_prefix):
     rt = ""
     MVT_invariants = invariants["MultiVulnToken"]
     for inv in MVT_invariants:
         rt = rt + ("\tassert(" + inv + ");\n")
+        rt = rt.replace("this", var_prefix )
         # self._output_file.write("\tassert(" + inv + ");\n")
     # self._output_file.write('}')
     rt = rt + ('}')
@@ -303,6 +332,7 @@ def get_types(storage_info):
                     rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n") 
                     types[label] = t_type[2:] 
                 locals.append(contract+'.'+label)
+                # print(contract, label, t_type)
         TYPES[contract] = types
     # return rt + '\n'
     return TYPES
