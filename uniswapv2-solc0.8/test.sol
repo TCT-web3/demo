@@ -33,17 +33,36 @@ contract Test {
         _tokenB = new FancyToken();
         _factory.createPair(address(_tokenA),address(_tokenB));
         _router = new UniswapV2Router(address(_factory));
+
+        _router.addLiquidity(
+            address(_tokenA),
+            address(_tokenB),
+            2000,
+            1000,
+            2000,
+            1000,
+            address(this)
+        );
     }
+    
     function call_addLiquidity() public
     {
         _router.addLiquidity(
             address(_tokenA),
             address(_tokenB),
+            2000,
             1000,
-            500,
-            900,
-            400,
+            2000,
+            1000,
             address(this)
         );
     }
+    /*
+    function get_pair_hash() public pure returns (bytes32)
+    {
+        bytes32 r=keccak256(type(UniswapV2Pair).creationCode);
+        return r;
+    }
+    */
+    
 }

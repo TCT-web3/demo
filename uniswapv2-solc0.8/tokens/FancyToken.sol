@@ -11,6 +11,7 @@ contract FancyToken is IERC20 {
     uint8 public override decimals = 18;
     constructor () {
         totalSupply = 10**8;
+        balanceOf[msg.sender] = totalSupply;
     }
     function transfer(address recipient, uint amount) external override returns (bool) {
         unchecked {
