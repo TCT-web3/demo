@@ -16,22 +16,22 @@ import "./interfaces/IWETH.sol";
 
 contract UniswapV2Router is IUniswapV2Router {
     address public immutable override factory;
-    address public immutable override WETH;
+    //address public immutable override WETH;
 
     modifier ensure(uint256 deadline) {
         require(deadline >= block.timestamp, "UniswapV2Router: EXPIRED");
         _;
     }
 
-    constructor(address _factory, address _WETH) {
+    constructor(address _factory /*, address _WETH*/) {
         factory = _factory;
-        WETH = _WETH;
+        // WETH = _WETH;
     }
-
+    /*
     receive() external payable {
         assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
     }
-
+    */
     // **** ADD LIQUIDITY ****
     function _addLiquidity(
         address tokenA,
@@ -87,13 +87,13 @@ contract UniswapV2Router is IUniswapV2Router {
         uint256 amountBDesired,
         uint256 amountAMin,
         uint256 amountBMin,
-        address to,
-        uint256 deadline
+        address to/*,
+        uint256 deadline*/
     )
         external
         virtual
         override
-        ensure(deadline)
+        //ensure(deadline)
         returns (uint256 amountA, uint256 amountB, uint256 liquidity)
     {
         (amountA, amountB) = _addLiquidity(
@@ -412,7 +412,7 @@ contract UniswapV2Router is IUniswapV2Router {
         );
         _swap(amounts, path, to);
     }
-
+    /*
     function swapExactETHForTokens(
         uint256 amountOutMin,
         address[] calldata path,
@@ -441,7 +441,7 @@ contract UniswapV2Router is IUniswapV2Router {
         );
         _swap(amounts, path, to);
     }
-
+    /*
     function swapTokensForExactETH(
         uint256 amountOut,
         uint256 amountInMax,
@@ -533,7 +533,7 @@ contract UniswapV2Router is IUniswapV2Router {
         if (msg.value > amounts[0])
             TransferHelper.safeTransferETH(msg.sender, msg.value - amounts[0]);
     }
-
+    */
     // **** SWAP (supporting fee-on-transfer tokens) ****
     // requires the initial amount to have already been sent to the first pair
     function _swapSupportingFeeOnTransferTokens(
@@ -572,7 +572,7 @@ contract UniswapV2Router is IUniswapV2Router {
             pair.swap(amount0Out, amount1Out, to, new bytes(0));
         }
     }
-
+    /*
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
         uint256 amountIn,
         uint256 amountOutMin,
@@ -642,7 +642,7 @@ contract UniswapV2Router is IUniswapV2Router {
         IWETH(WETH).withdraw(amountOut);
         TransferHelper.safeTransferETH(to, amountOut);
     }
-
+    */
     // **** LIBRARY FUNCTIONS ****
     function quote(
         uint256 amountA,
