@@ -61,7 +61,6 @@ class EVM:
     '''perfprm symbolic execution'''
     def sym_exec(self, code_trace):
             for i in range(len(code_trace)):
-                # self._final_path.append(code_trace[i][1])
                 if(code_trace[i][1]=="JUMPI"):
                     self.run_instruction(code_trace[i], (code_trace[i][0]+1 != code_trace[i+1][0]))
                 else:
@@ -74,25 +73,16 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        # print(instr)
-        # self._final_path.append(str(instr)+"\n")
-        # self.inspect("currstack")
-        # self.inspect("currmemory")
-
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
             pass # no-op
         elif instr[0]==(">"):
             dest_contract, dest_function = get_dest_contract_and_function(instr)
             
             ### calling a new contract, set up calle stack
-            # if (dest_contract not in self._stacks.keys()):
             callee_stack    = []
-            # calldata_pos    = self._stacks[-1][-4].value
-            # calldata_len    = self._stacks[-1][-5].value
             calldata_pos    = self._stacks[-1][-4].value
             calldata_len    = self._stacks[-1][-5].value
             func_selector   = self._memories[-1][calldata_pos].children[1].value
-
 
             if(isinstance(func_selector, int)):
                 func_selector//=0x100**28
@@ -108,22 +98,14 @@ class EVM:
                 callee_stack.append(self._memories[-1][calldata_pos])
                 calldata_pos += 0x20
 
-
             for elmt in callee_stack:
                 if (isinstance(self.find_key(elmt), str) and '.' in str(elmt)):
                     elmt = self.find_key(elmt)
-                    # print("+++")
-                    # print(self._curr_contract)
-                    # print(elmt)
                     var_name = elmt[elmt.find('.')+1: ]
-                    # print(var_name)
                     self.add_new_vars(var_name)    
                 
 
             ### switch to a new contract and pops out the operands for a successful CALL operation
-            # for i in range(7):
-            #     self._stacks[-1].pop()
-            # self._stacks[-1].append(SVT(1)) # CALL successed
             for i in range(7):
                 self._stacks[-1].pop()
             self._stacks[-1].append(SVT(1)) # CALL successed
@@ -133,41 +115,27 @@ class EVM:
             self._curr_contract = dest_contract
             self._curr_function = dest_function
             self._var_prefix = get_var_prefix(instr)
-
-            # self._stacks[dest_contract]     = callee_stack  
-            # self._memories[dest_contract]   = {0x40: SVT(0x80),0x10000000000: SVT(0)} # temp
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
-
-
-
-
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
-            # self._final_path.append(">>CALL,  switched to contract: "+ self._call_stack[-1][0] + '\n')
         elif instr[0]==("<"):
             
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]     
             self._var_prefix = self._call_stack[-1][2]     
-
             self._stacks.pop()
             self._memories.pop()
 
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
-            # self._final_path.append(">>LEAVE, switched to contract: "+ self._call_stack[-1][0] + '\n')
         elif opcode=="GAS":
-            # self._stacks[-1].append(SVT("GAS"))
             self._stacks[-1].append(SVT("GAS"))  
         elif opcode=="RETURNDATASIZE":
-            # print(self._curr_function)
             for elmt in self._abi_info[self._curr_contract]:
                 if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
                     return_count = len(elmt["outputs"])
                     if(return_count == 0):
                         self._stacks[-1].append(SVT(0))
-                        # self._stacks[-1].append(SVT(int(0)))
-                        # self._stacks[-1].append(SVT('false'))
                     else:
                         raise Exception("return data SIZE to be implemented. ")    
         elif opcode=="EXTCODESIZE":
@@ -186,12 +154,8 @@ class EVM:
             node = self.handle_MLOAD()
             self._stacks[-1].append(node)  
         elif opcode=="SSTORE":
-            # print(instr)
             self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop())
         elif opcode=="SLOAD":
-            # node = SVT("SLOAD")
-            # node.children.append(self._stacks[-1].pop())
-            # self._stacks[-1].append(node)
             to_load = self._stacks[-1].pop()
             if to_load.value == "MapElement": 
                 node = SVT("SLOAD")
@@ -200,7 +164,6 @@ class EVM:
             else:
                 stored_value = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
                 self._stacks[-1].append(SVT(stored_value))
-
         elif opcode=="PC":
             self._stacks[-1].append(SVT(PC))
         elif opcode.startswith("PUSH"):
@@ -252,7 +215,6 @@ class EVM:
                     node.children.append(self._stacks[-1].pop())
             else:
                 if opcode == "DIV":
-                    # print(instr)
                     node = self._stacks[-1].pop() # actual address
                     self._stacks[-1].pop() # dummy 0x1
                 else:
@@ -267,9 +229,7 @@ class EVM:
                     raise Exception("start offset not constant")
                 node = SVT("MapElement")
                 node.children.append(self._memories[-1][start_offset+32])
-                # node.children.append(self._memories[-1][start_offset])
                 node.children.append(self._memories[-1][start_offset])
-                # node.children.append({self._curr_contract : self._memories[-1][start_offset]})
                 self._stacks[-1].pop() # pop 64
                 self._stacks[-1].append(node)
         else:
@@ -384,17 +344,6 @@ class EVM:
         if node0.value=="MapElement":
             map_key = self.find_key(node0.children[1])
             var_name = self._storage_map[self._curr_contract][str(self.find_mapID(node0))]+"["+str(map_key)+"]"
-            # print('+++', self._curr_contract)
-            # print('+++', var_name)
-            # if (str(map_key) not in self._final_vars.keys()):
-            #     self.add_new_vars(str(map_key))
-            # if (self._storage_map[self._curr_contract][str(self.find_mapID(node0))] not in self._final_vars.keys()):
-            #     self.add_new_vars(self._storage_map[self._curr_contract][str(self.find_mapID(node0))])
-            # if(self.is_called_param(str(map_key))):
-            #     self.add_new_vars(str(map_key))
-            # else:
-            #     print("nope")
-            # print(self._var_prefix+'.'+var_name)
             path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         else:
             var_name = self._storage_map[self._curr_contract][str(node0.value)]
@@ -477,11 +426,6 @@ class EVM:
                 return_val = self.find_key(c)
                 if return_val:
                     return return_val
-        # for c in node.children:
-        #     if not isinstance(c, tuple):
-        #         return_val = self.find_key(c)
-        #         if return_val:
-        #             return return_val
 
     '''helper to find the map ID'''
     def find_mapID(self, node):
@@ -572,20 +516,18 @@ def main():
     VARS        = get_init_vars(STOR_INFO,VAR_PREFIX)
     TRACE       = gen_path()
     MAP         = get_MAPS(STOR_INFO)
-    
     MACROS.VAR_TYPES = get_types(STOR_INFO)
    
 
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX)
-    print('\n\ninputs: ', MACROS.SOLIDITY_FNAME, MACROS.THEOREM_FNAME, MACROS.TRACE_FNAME)
+    print('inputs: ', MACROS.SOLIDITY_FNAME, MACROS.THEOREM_FNAME, MACROS.TRACE_FNAME)
     print('\n(executing instructions...)')
     evm.sym_exec(TRACE)
 
     ''' write Boogie output '''
     BOOGIE_OUT.write(MACROS.PREAMBLE)
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
-    # BOOGIE_OUT.write(write_locals(STOR_INFO))
     evm.write_vars() # aux vars for Boogie Proofs 
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
     BOOGIE_OUT.write(write_invariants(INVARIANTS,VAR_PREFIX))
