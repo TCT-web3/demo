@@ -60,7 +60,6 @@ def handle_MLOAD(self):
             
         if k > offset and not in_copy_mode:   
         # We have found the place to insert the mem item of offset. It is between prev_k and k
-            #print("found k="+hex(k)+"   prev_k"+hex(prev_k))
             prev_len = self.mem_item_len(prev_v)
             #print("prev_len="+hex(prev_len))
             if (offset - prev_k < prev_len):
@@ -76,7 +75,6 @@ def handle_MLOAD(self):
                     node1_segment = (original_segment[0]+ignored_len, original_segment[1])
                     node1_value = prev_v.children[1]
                     
-                # print("//////////", node1_segment, node1_value)
                 node1.children.append(node1_segment)
                 node1.children.append(node1_value)
                 node.children.append(node1)

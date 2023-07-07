@@ -6,7 +6,9 @@ import os
 import json
 from macros     import *
 
-
+'''
+get initial variables
+'''
 def get_init_vars(storage_info, var_prefix):
     vars = {}
     locals = []
@@ -25,20 +27,35 @@ def get_init_vars(storage_info, var_prefix):
                 t_type = t_type.replace("t_", "")
                 t_type = t_type.replace("mapping", "")[1:-1]
                 t_type = t_type.split(',')
-                # rt = rt + ("\tvar " + contract+'.'+label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
                 vars[var_prefix+'.'+label] = '['+t_type[0]+'] ' + t_type[1] 
             else:
-                # rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n")  
                 vars[var_prefix+'.'+label] = t_type[2:]
-            # locals.append(contract+'.'+label)
     return vars
 
+'''
+get the prefix for the inital variables
+'''
+def get_init_var_prefix():
+    TRACE_file = open(MACROS.TRACE_FNAME, "r") 
+    lines = [line.rstrip() for line in TRACE_file]   
+    for i in range(0, len(lines)-1):
+        if lines[i].startswith(">>"):
+            prefix = get_var_prefix(lines[i])
+            break
+    return prefix
+
+'''
+get the variable prefix
+'''
 def get_var_prefix(instr):
     L = instr.find(" ")
     R = instr.find("::")
     name = instr[L+27:R] 
     return 'c_' + name[0:5]
- 
+
+'''
+get the storage map
+''' 
 def get_MAPS(storage_info):
     MAPS = {}
     for contract in storage_info.keys():
@@ -48,8 +65,6 @@ def get_MAPS(storage_info):
             label = elmt["label"]          
             MapIDs[slot] = label  
         MAPS[contract] = MapIDs
-        # print(contract)
-        # print(MapIDs)
     return MAPS
 
 '''
@@ -68,14 +83,6 @@ def find_essential_start(contract_name, function_name):
         raise Exception("error, cannot find function entrypoint")
     return essential_start
 
-def get_init_var_prefix():
-    TRACE_file = open(MACROS.TRACE_FNAME, "r") 
-    lines = [line.rstrip() for line in TRACE_file]   
-    for i in range(0, len(lines)-1):
-        if lines[i].startswith(">>"):
-            prefix = get_var_prefix(lines[i])
-            break
-    return prefix
 '''
 output the essential part of a trace to file TRACE_ESSENTIAL
 '''
@@ -93,8 +100,6 @@ def gen_trace_essential():
             matches = re.search(r"\(([^:]+)::([^()]+)\(.*?\)\)", lines[i])
             contract_name = matches.group(1)
             function_name = matches.group(2)
-            # print("Class name:", contract_name)
-            # print("Function signature:", function_name)
             if not lines[i-1].startswith("==="):
                 TRACE_essential.write(lines[i] + '\n')
                 essential_start = find_essential_start(contract_name, function_name)
@@ -128,19 +133,15 @@ def get_ABI_info():
         if line[0] == '{':
             continue
         elif len(line.strip()) == 0:
-            # print("},")
             line = ",\n"
         elif '===' in line:
             c_name = line.replace("======= ", "").replace(" =======", "").replace(MACROS.SOLIDITY_FNAME+":", "").replace("\n", "")
             line = "\"" + c_name + "\"" +":\n"
-            # print(c_name)
         elif 'JSON ABI' in line:
             continue    
         tmp = tmp + line
-        # print(line)
     tmp = tmp + '}'
     tmp = '{' + tmp[1:] #patch
-    # print(tmp)
     INFO = json.loads(tmp)
     return INFO
 
@@ -270,38 +271,8 @@ def write_epilogue(invariants,var_prefix):
     for inv in MVT_invariants:
         rt = rt + ("\tassert(" + inv + ");\n")
         rt = rt.replace("this", var_prefix )
-        # self._output_file.write("\tassert(" + inv + ");\n")
-    # self._output_file.write('}')
     rt = rt + ('}')
     return rt
-
-# '''
-# write local variables from storage file to Boogie
-# '''
-# def write_locals(storage_info):
-#     locals = []
-#     rt = ""
-#     for contract in storage_info.keys():
-#         for elmt in storage_info[contract]["storage"]:
-#             label =  elmt["label"]
-#             t_type = elmt["type"]
-            
-#             if (label in locals):
-#                 pass
-#             else:
-#                 if ("string" in t_type):
-#                     pass
-#                 elif ("contract" in t_type):
-#                     pass # TODO: contract address as a type
-#                 elif "t_mapping" in t_type:
-#                     t_type = t_type.replace("t_", "")
-#                     t_type = t_type.replace("mapping", "")[1:-1]
-#                     t_type = t_type.split(',')
-#                     rt = rt + ("\tvar " + contract+'.'+label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
-#                 else:
-#                     rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n")  
-#                 locals.append(contract+'.'+label)
-#     return rt + '\n'
 
 '''
 write local variables from storage file to Boogie
@@ -337,16 +308,42 @@ def get_types(storage_info):
     # return rt + '\n'
     return TYPES
 
-
-
-
+'''
+write the function parameters
+'''
 def write_params(abi_info, var_prefix):
     rt = ""
     for elmt in abi_info[MACROS.CONTRACT_NAME]:
         if ("name" in elmt.keys() and elmt["name"] == MACROS.FUNCTION_NAME):
             for input in elmt["inputs"]:
-                # print('?', input["name"], input["type"])
-                # rt = rt + "\tvar " + MACROS.CONTRACT_NAME+'.'+input["name"] + ":\t" + input["type"]+';\n'
                 rt = rt + "\tvar " +input["name"] + ":\t" + input["type"]+';\n'
-                # self._output_file.write("\tvar " + self._curr_contract+'.'+input["name"] + ":\t" + input["type"]+';\n')
     return rt + '\n'
+
+
+# '''
+# write local variables from storage file to Boogie
+# '''
+# def write_locals(storage_info):
+#     locals = []
+#     rt = ""
+#     for contract in storage_info.keys():
+#         for elmt in storage_info[contract]["storage"]:
+#             label =  elmt["label"]
+#             t_type = elmt["type"]
+            
+#             if (label in locals):
+#                 pass
+#             else:
+#                 if ("string" in t_type):
+#                     pass
+#                 elif ("contract" in t_type):
+#                     pass # TODO: contract address as a type
+#                 elif "t_mapping" in t_type:
+#                     t_type = t_type.replace("t_", "")
+#                     t_type = t_type.replace("mapping", "")[1:-1]
+#                     t_type = t_type.split(',')
+#                     rt = rt + ("\tvar " + contract+'.'+label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
+#                 else:
+#                     rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n")  
+#                 locals.append(contract+'.'+label)
+#     return rt + '\n'

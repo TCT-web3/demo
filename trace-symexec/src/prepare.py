@@ -57,14 +57,12 @@ def gen_init_STACK(var_prefix):
     for o in json_object:
         if "name" in o and o["name"] == MACROS.FUNCTION_NAME:
             for i in o["inputs"]:
-                # stack.append(SVT(var_prefix +'.'+i["name"]))
                 stack.append(SVT(i["name"]))
     file.close()
     for n in file_names:
         os.remove(n)
     
     STACKS.append(stack)
-    # STACKS[MACROS.CONTRACT_NAME] = stack
     return STACKS
 
 '''
@@ -80,7 +78,6 @@ def gen_init_MEMORY():
         # Dummy mem item
         0x10000000000: SVT(0)
     }
-    # MEMORIES[MACROS.CONTRACT_NAME] = init_MEM
     MEMORIES.append(init_MEM)
     return MEMORIES
 
@@ -127,6 +124,3 @@ def gen_path():
             trace.append(line)     
     inputfile.close()
     return trace
-
-
-

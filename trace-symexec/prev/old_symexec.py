@@ -401,7 +401,7 @@ procedure straightline_code ()
         return segment[1]-segment[0]+1
         
     def handle_MLOAD(self):
-        offset = self._stacks[self._curr_contract].pop().value
+        offset = self._stacks[-1].pop().value
         if not isinstance(offset, int):
                  raise Exception("Memory offset is not a concrete value. CodeGen is needed here!")
             
@@ -409,10 +409,10 @@ procedure straightline_code ()
         in_copy_mode = False
         node = SVT("concat")
         bytes_to_copy = 32
-        for k,v in self._memories[self._curr_contract].items():
+        for k,v in self._memories[-1].items():
             if k == offset:
-                if bytes_to_copy == 32 and self.mem_item_len(self._memories[self._curr_contract][offset]) == 32:
-                    return self._memories[self._curr_contract][offset]
+                if bytes_to_copy == 32 and self.mem_item_len(self._memories[-1][offset]) == 32:
+                    return self._memories[-1][offset]
                 unfilled_position = offset
                 in_copy_mode = True
                 
@@ -495,14 +495,14 @@ procedure straightline_code ()
         raise Exception ("In handle_mload. It should always return before the loop ends")
         
     def handle_MSTORE(self):
-        offset = self._stacks[self._curr_contract].pop().value
-        content_to_store = self._stacks[self._curr_contract].pop()
+        offset = self._stacks[-1].pop().value
+        content_to_store = self._stacks[-1].pop()
         content_to_store_len = 32
         if not isinstance(offset, int):
             raise Exception("An MSTORE offset is not int.")
         
         last_partial_overwritten_node=None
-        for k,v in self._memories[self._curr_contract].items():
+        for k,v in self._memories[-1].items():
             curr_len=self.mem_item_len(v)
             if k < offset and k+curr_len>offset:
             # This means offset falls in the current mem item
@@ -515,7 +515,7 @@ procedure straightline_code ()
                     node1_value = v
                 node1.children.append(node1_segment)
                 node1.children.append(node1_value)
-                self._memories[self._curr_contract][k] = node1
+                self._memories[-1][k] = node1
             if k < offset+content_to_store_len and k+curr_len>offset+content_to_store_len:
             # This means the end of content_to_store falls in the current mem item
                 node1=SVT("Partial32B")
@@ -530,27 +530,27 @@ procedure straightline_code ()
                 last_partial_overwritten_node = node1
                 
         if  last_partial_overwritten_node!=None:
-            self._memories[self._curr_contract][offset+content_to_store_len] = last_partial_overwritten_node
+            self._memories[-1][offset+content_to_store_len] = last_partial_overwritten_node
                 
-        for k,v in self._memories[self._curr_contract].items():        
+        for k,v in self._memories[-1].items():        
             if k > offset and k+curr_len<offset+content_to_store_len:
             # This mem item is completely overwrittn by the MSTORE
-                del self._memories[self._curr_contract][k]
+                del self._memories[-1][k]
         
         if isinstance(content_to_store.value,int) or content_to_store.value != "concat":
-            self._memories[self._curr_contract][offset] = content_to_store
+            self._memories[-1][offset] = content_to_store
         else:
             pos = offset
             for item in content_to_store.children:
-                self._memories[self._curr_contract][pos] = item
+                self._memories[-1][pos] = item
                 pos+=self.mem_item_len(item)
 
-        self._memories[self._curr_contract] = dict(sorted(self._memories[self._curr_contract].items()))  # use sorted dictionary to mimic memory allocation 
+        self._memories[-1] = dict(sorted(self._memories[-1].items()))  # use sorted dictionary to mimic memory allocation 
         
         memory_with_consolidated_items = {}
         active_k = None
         active_v = None
-        for k,v in self._memories[self._curr_contract].items():
+        for k,v in self._memories[-1].items():
             if active_k == None:
                 active_k = k
                 active_v = v
@@ -579,12 +579,12 @@ procedure straightline_code ()
         else:
             memory_with_consolidated_items[active_k]=active_v
 
-        self._memories[self._curr_contract] = memory_with_consolidated_items
+        self._memories[-1] = memory_with_consolidated_items
         
         
     def handle_AND(self):
-        a = self._stacks[self._curr_contract].pop()
-        b = self._stacks[self._curr_contract].pop()
+        a = self._stacks[-1].pop()
+        b = self._stacks[-1].pop()
         segment = None
         if isinstance(a.value, int):
             first,last = self.recognize_32B_mask(a.value)
@@ -634,8 +634,8 @@ procedure straightline_code ()
         return node
         
     def handle_OR(self):
-        a = self._stacks[self._curr_contract].pop()
-        b = self._stacks[self._curr_contract].pop()
+        a = self._stacks[-1].pop()
+        b = self._stacks[-1].pop()
         if a.value == "Partial32B" and b.value == "Partial32B":
             if b.children[0][0]==0:
                 tmp=a
@@ -695,13 +695,13 @@ procedure straightline_code ()
             self.inspect("stack")
 
             if (dest_contract not in self._stacks.keys()):
-                #offset = self._memories[self._curr_contract][self._stacks[self._curr_contract][-4].value]
-                #length = self._stacks[self._curr_contract][-5]
+                #offset = self._memories[-1][self._stacks[-1][-4].value]
+                #length = self._stacks[-1][-5]
                 callee_stack = []
-                calldata_pos = self._stacks[self._curr_contract][-4].value
-                calldata_len = self._stacks[self._curr_contract][-5].value
+                calldata_pos = self._stacks[-1][-4].value
+                calldata_len = self._stacks[-1][-5].value
                 
-                func_selector = self._memories[self._curr_contract][calldata_pos].children[1].value
+                func_selector = self._memories[-1][calldata_pos].children[1].value
                 func_selector//=0x100**28
                 print("func_selector="+hex(func_selector))
                 callee_stack.append(SVT(func_selector))
@@ -710,7 +710,7 @@ procedure straightline_code ()
                 calldata_pos +=4
 
                 for i in range(calldata_len//0x20):
-                    callee_stack.append(self._memories[self._curr_contract][calldata_pos])
+                    callee_stack.append(self._memories[-1][calldata_pos])
                     calldata_pos += 0x20
                     
                 self._stacks[dest_contract] = callee_stack  
@@ -718,8 +718,8 @@ procedure straightline_code ()
 
              # pops out the operands for a successful CALL operation
             for i in range(7):
-                self._stacks[self._curr_contract].pop()
-            self._stacks[self._curr_contract].append(SVT(1))
+                self._stacks[-1].pop()
+            self._stacks[-1].append(SVT(1))
 
             self._call_stack.append((dest_contract, dest_function))
             self._curr_contract = dest_contract
@@ -740,13 +740,13 @@ procedure straightline_code ()
         elif opcode=="JUMPDEST":
             pass
         elif opcode=="GAS":
-            self._stacks[self._curr_contract].append(SVT("GAS"))  # what is the GAS amount? 
+            self._stacks[-1].append(SVT("GAS"))  # what is the GAS amount? 
         elif opcode=="RETURNDATASIZE":
             for elmt in self._abi_info[self._curr_contract]:
                 if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
                     return_count = len(elmt["outputs"])
                     if(return_count == 0):
-                        self._stacks[self._curr_contract].append(SVT(0))
+                        self._stacks[-1].append(SVT(0))
                     else:
                         raise Exception("return data SIZE to be implemented. ")    
         elif opcode=="CALL":
@@ -754,120 +754,120 @@ procedure straightline_code ()
         elif opcode=="STOP":
             pass     
         elif opcode=="JUMP":
-            self._stacks[self._curr_contract].pop()
+            self._stacks[-1].pop()
         elif opcode=="JUMPI":
             print(self.inspect("stack"))
             print(instr)
-            print(self._stacks[self._curr_contract][-2])
+            print(self._stacks[-1][-2])
 
             # if branch taken we assume stack [-1] is not 0 
             # if not taken we should assume [-2] == 0
             # thiss part is kinda 
             if(branch_taken):
-                self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], True) 
+                self.boogie_gen_jumpi(self._stacks[-1][-2], True) 
             else:
-                self.boogie_gen_jumpi(self._stacks[self._curr_contract][-2], False)
+                self.boogie_gen_jumpi(self._stacks[-1][-2], False)
 
-            self._stacks[self._curr_contract].pop()
-            self._stacks[self._curr_contract].pop()
+            self._stacks[-1].pop()
+            self._stacks[-1].pop()
         elif opcode=="MSTORE":
             self.handle_MSTORE()            
         elif opcode=="MLOAD":
             node = self.handle_MLOAD()
-            self._stacks[self._curr_contract].append(node)  
+            self._stacks[-1].append(node)  
         elif opcode=="SSTORE":
             # print(instr)
-            self.boogie_gen_sstore(self._stacks[self._curr_contract].pop(), self._stacks[self._curr_contract].pop())
+            self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop())
             # sys.exit()
         elif opcode=="SLOAD":
             # self.inspect("storage") 
             # self.inspect("stack")
             node = SVT("SLOAD")
-            node.children.append(self._stacks[self._curr_contract].pop())
-            self._stacks[self._curr_contract].append(node)
+            node.children.append(self._stacks[-1].pop())
+            self._stacks[-1].append(node)
             #self.inspect("stack")
         elif opcode=="PC":
-            self._stacks[self._curr_contract].append(SVT(PC))
+            self._stacks[-1].append(SVT(PC))
         elif opcode.startswith("PUSH"):
-            self._stacks[self._curr_contract].append(SVT(operand))
+            self._stacks[-1].append(SVT(operand))
         elif opcode.startswith("POP"):
-            self._stacks[self._curr_contract].pop()
+            self._stacks[-1].pop()
         elif opcode.startswith("CALLER"):
-            self._stacks[self._curr_contract].append(SVT("msg.sender")) # symbolic
+            self._stacks[-1].append(SVT("msg.sender")) # symbolic
         elif opcode.startswith("ORIGIN"):
-            self._stacks[self._curr_contract].append(SVT("tx.origin")) # symbolic
+            self._stacks[-1].append(SVT("tx.origin")) # symbolic
         elif opcode.startswith("DUP"):
             position=int(re.search('[0-9]+', opcode)[0])
-            self._stacks[self._curr_contract].append(self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position]) 
+            self._stacks[-1].append(self._stacks[-1][len(self._stacks[-1])-position]) 
         elif opcode.startswith("SWAP"):
             position=int(re.search('[0-9]+', opcode)[0])
-            dest = self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position-1] 
-            self._stacks[self._curr_contract][len(self._stacks[self._curr_contract])-position] = self._stacks[self._curr_contract].pop()
-            self._stacks[self._curr_contract].append(dest)
+            dest = self._stacks[-1][len(self._stacks[-1])-position-1] 
+            self._stacks[-1][len(self._stacks[-1])-position] = self._stacks[-1].pop()
+            self._stacks[-1].append(dest)
         elif opcode=="ISZERO" or opcode=="NOT":
-            if type(self._stacks[self._curr_contract][-1].value) == int:
-                val = self._stacks[self._curr_contract].pop().value
+            if type(self._stacks[-1][-1].value) == int:
+                val = self._stacks[-1].pop().value
                 print(hex(val))
                 node = SVT(~(2**256|val) & (2**256-1))
-                self._stacks[self._curr_contract].append(node)
+                self._stacks[-1].append(node)
                 # print(hex(node.value & f))
                 # self.inspect("stack")
                 print(hex(node.value))
             else:
                 node = SVT(opcode)
-                node.children.append(self._stacks[self._curr_contract].pop())
-                self._stacks[self._curr_contract].append(node)
+                node.children.append(self._stacks[-1].pop())
+                self._stacks[-1].append(node)
         elif opcode=="AND":
             node = self.handle_AND()
-            self._stacks[self._curr_contract].append(node)
+            self._stacks[-1].append(node)
         elif opcode=="OR":
             node = self.handle_OR()
-            self._stacks[self._curr_contract].append(node)
+            self._stacks[-1].append(node)
             self.inspect("stack")
         elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL":
             # self.inspect("stack")
-            if isinstance(self._stacks[self._curr_contract][-1].value, int) and isinstance(self._stacks[self._curr_contract][-2].value, int):
+            if isinstance(self._stacks[-1][-1].value, int) and isinstance(self._stacks[-1][-2].value, int):
                 if opcode == "ADD":
-                    node = SVT((self._stacks[self._curr_contract].pop().value + self._stacks[self._curr_contract].pop().value)%2**256) 
+                    node = SVT((self._stacks[-1].pop().value + self._stacks[-1].pop().value)%2**256) 
                 elif opcode == "SUB":
-                    node = SVT((self._stacks[self._curr_contract].pop().value - self._stacks[self._curr_contract].pop().value)%2**256)
+                    node = SVT((self._stacks[-1].pop().value - self._stacks[-1].pop().value)%2**256)
                 elif opcode == "DIV":
-                    node = SVT((self._stacks[self._curr_contract].pop().value // self._stacks[self._curr_contract].pop().value)%2**256)
+                    node = SVT((self._stacks[-1].pop().value // self._stacks[-1].pop().value)%2**256)
                 elif opcode == "EXP":
-                    node = SVT((self._stacks[self._curr_contract].pop().value ** self._stacks[self._curr_contract].pop().value)%2**256)
+                    node = SVT((self._stacks[-1].pop().value ** self._stacks[-1].pop().value)%2**256)
                 elif opcode == "SHL":
-                    node = SVT((self._stacks[self._curr_contract].pop().value << self._stacks[self._curr_contract].pop().value)%2**256)
+                    node = SVT((self._stacks[-1].pop().value << self._stacks[-1].pop().value)%2**256)
                 elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
                     node = SVT(opcode)
-                    node.children.append(self._stacks[self._curr_contract].pop())
-                    node.children.append(self._stacks[self._curr_contract].pop())
+                    node.children.append(self._stacks[-1].pop())
+                    node.children.append(self._stacks[-1].pop())
                 # elif opcode == "LT":
-                #     node = SVT((self._stacks[self._curr_contract].pop().value < self._stacks[self._curr_contract].pop().value)) #True or False 
+                #     node = SVT((self._stacks[-1].pop().value < self._stacks[-1].pop().value)) #True or False 
                 # elif opcode == "GT":
-                #     node = SVT((self._stacks[self._curr_contract].pop().value > self._stacks[self._curr_contract].pop().value)) #True or False
+                #     node = SVT((self._stacks[-1].pop().value > self._stacks[-1].pop().value)) #True or False
                 # elif opcode == "EQ":
-                #     node = SVT((self._stacks[self._curr_contract].pop().value == self._stacks[self._curr_contract].pop().value)) #True or False          
+                #     node = SVT((self._stacks[-1].pop().value == self._stacks[-1].pop().value)) #True or False          
             else:
                 node = SVT(opcode)
-                node.children.append(self._stacks[self._curr_contract].pop())
-                node.children.append(self._stacks[self._curr_contract].pop())
-            self._stacks[self._curr_contract].append(node)
+                node.children.append(self._stacks[-1].pop())
+                node.children.append(self._stacks[-1].pop())
+            self._stacks[-1].append(node)
         elif opcode=="SHA3":
             # self.inspect("stack")
             # self.inspect("memory")
-            if self._stacks[self._curr_contract][-2].value == 64:
-                start_offset = self._stacks[self._curr_contract].pop().value
+            if self._stacks[-1][-2].value == 64:
+                start_offset = self._stacks[-1].pop().value
                 if not isinstance(start_offset, int):
                     raise Exception("start offset not constant")
                 node = SVT("MapElement")
                 # node.children.append(self._memory[start_offset//32+1]) # map name: balances
                 # node.children.append(self._memory[start_offset//32]) # key in balances
 
-                node.children.append(self._memories[self._curr_contract][start_offset+32])
-                node.children.append(self._memories[self._curr_contract][start_offset])
+                node.children.append(self._memories[-1][start_offset+32])
+                node.children.append(self._memories[-1][start_offset])
 
-                self._stacks[self._curr_contract].pop() # pop 64
-                self._stacks[self._curr_contract].append(node)
+                self._stacks[-1].pop() # pop 64
+                self._stacks[-1].append(node)
             # self.inspect("stack")
         else:
             print('[!]',str(instr), 'not supported yet')  
