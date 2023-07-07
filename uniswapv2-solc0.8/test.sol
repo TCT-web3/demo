@@ -14,8 +14,8 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
 
 
-import "UniswapV2Factory.sol";
-import "UniswapV2Router.sol";
+import "./UniswapV2Factory.sol";
+import "./UniswapV2Router.sol";
 import "./tokens/FancyToken.sol";
 
 contract Test {
