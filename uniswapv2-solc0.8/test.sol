@@ -57,7 +57,9 @@ contract Test {
             address(this)
         );
     }
+    
     /*
+    
     function get_pair_hash() public pure returns (bytes32)
     {
         bytes32 r=keccak256(type(UniswapV2Pair).creationCode);

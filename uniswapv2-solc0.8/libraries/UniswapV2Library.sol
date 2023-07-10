@@ -35,7 +35,8 @@ library UniswapV2Library {
                             factory,
                             keccak256(abi.encodePacked(token0, token1)),
                             //hex"1906638f5a6211d2efd44c01fd149a15dde4ed958aa1dceb9be01284250c2604" //Thi one is for online remix
-                            hex"13c61f62af0ad0360f71b787e8345515a68e8b31c39b8b44b20aca1644e8edaa"   //This one is for vs code remix
+                            //hex"13c61f62af0ad0360f71b787e8345515a68e8b31c39b8b44b20aca1644e8edaa"   //This one is for vs code remix
+                            hex"aea1c7cd9847756cf4209feb5fba95b644e6d05f5e9bbbe6aa59e708ec89968e"   //local remix 0.8.18
                         )
                     )
                 )
