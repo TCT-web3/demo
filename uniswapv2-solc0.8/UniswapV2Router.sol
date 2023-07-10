@@ -15,8 +15,8 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
 
 contract UniswapV2Router is IUniswapV2Router {
-    address public immutable override factory;
-    //address public immutable override WETH;
+    address public override factory;
+    //address public override WETH;
 
     modifier ensure(uint256 deadline) {
         require(deadline >= block.timestamp, "UniswapV2Router: EXPIRED");
