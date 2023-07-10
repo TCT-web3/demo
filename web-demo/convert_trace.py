@@ -11,6 +11,7 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
     with open(deployment_fname, "r") as deploy_info_file:
         deploy_info = json.load(deploy_info_file)
     output = open("trace-" + tx_hash + ".txt", "w")
+    # output = open("trace_UniswapAddLiquidity2.txt", "w")
 
     # Map entry point to deployment file
     hashes = re.search(r"0x([^:]+)::0x([^:]+)", theorem["entry-for-real"])
@@ -52,7 +53,12 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
             offset = int(trace[i]["stack"][-4], 16)
             row = offset // 32
             col = (offset % 32)*2
-            func_selector = trace[i]["memory"][row][col:col+8]
+            if col+8 > len(trace[i]["memory"][row]):
+                func_selector = trace[i]["memory"][row][col:] + trace[i]["memory"][row+1][:col+8-len(trace[i]["memory"][row])]
+            else:
+                func_selector = trace[i]["memory"][row][col:col+8]
+            print(trace[i]["memory"][row])
+            print(trace[i]["memory"][row+1])
             print(contract_address, func_selector)
             if not enter and func_selector == function_hash:
                 output.close()
@@ -80,7 +86,7 @@ def main():
     TRACE_FNAME = ARGS[1]
 
     # Call method
-    output_trace(TRACE_FNAME, "0xdbe39c1cdf67cef514c11fcfcd16702c4b97a2135fa2ad4ec58914290c90cb2e", "deployment_info.json", "theorem-0xdc796b5fd6d87794379e0014ad3dfe406696a6deda3c6fe45844225589a75722.json")
+    output_trace(TRACE_FNAME, "0xe0a0d6b2fb29fc1a984babe8c397db942273f807b108f1c08ac6afc74c1d759d", "deployment_info.json", "theorem-0xdc796b5fd6d87794379e0014ad3dfe406696a6deda3c6fe45844225589a75722.json")
     
 
 if __name__ == "__main__":
