@@ -76,7 +76,9 @@ def find_essential_start(contract_name, function_name):
     essential_start=0
     function_list = (RUNTIME_BYTE["contracts"][MACROS.SOLIDITY_FNAME+":"+contract_name]["function-debug-runtime"])
     for func in function_list:
-        if (function_name in func):
+        match = re.search(r'@(.+?)_', func)
+        func_name = match.group(1)
+        if (function_name==func_name):
             essential_start = (function_list[func]["entryPoint"])
             break 
     if (essential_start==0):
