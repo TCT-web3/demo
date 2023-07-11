@@ -73,9 +73,13 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
+        # print(instr)
+        # print(self._call_stack)
+
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
             pass # no-op
         elif instr[0]==(">"):
+            print(instr)
             dest_contract, dest_function = get_dest_contract_and_function(instr)
             
             ### calling a new contract, set up calle stack
@@ -104,7 +108,6 @@ class EVM:
                     var_name = elmt[elmt.find('.')+1: ]
                     self.add_new_vars(var_name)    
                 
-
             ### switch to a new contract and pops out the operands for a successful CALL operation
             for i in range(7):
                 self._stacks[-1].pop()
@@ -118,8 +121,11 @@ class EVM:
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
+        elif opcode=="STATICCALL":
+            for i in range(7):
+                self._stacks[-1].pop()
         elif instr[0]==("<"):
-            
+            print(instr)
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]     
@@ -234,7 +240,7 @@ class EVM:
                 self._stacks[-1].append(node)
         else:
             print('[!]',str(instr), 'not supported yet')  
-            sys.exit()
+            # sys.exit()
 
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
@@ -501,17 +507,18 @@ def main():
     VAR_PREFIX              = get_init_var_prefix() 
     check_entrypoint()
     gen_trace_essential()
-
+    ABI_INFO    = get_ABI_info()
+    STOR_INFO   = get_STORAGE_info()
+    
 
     ''' parameters setup ''' 
-    STACKS      = gen_init_STACK(VAR_PREFIX)
+    STACKS      = gen_init_STACK(VAR_PREFIX, ABI_INFO)
     STORAGE     = gen_init_STORAGE()
     MEMORIES    = gen_init_MEMORY()
     BOOGIE_OUT  = open(MACROS.BOOGIE, "w")
     PATHS       = []
     CALL_STACK  = gen_init_CALL_STACK(VAR_PREFIX)
-    ABI_INFO    = get_ABI_info()
-    STOR_INFO   = get_STORAGE_info()
+    
     HYPOTHESIS  = get_hypothesis()
     INVARIANTS  = get_invariant()
     VARS        = get_init_vars(STOR_INFO,VAR_PREFIX)
