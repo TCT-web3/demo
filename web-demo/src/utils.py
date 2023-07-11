@@ -71,10 +71,14 @@ def get_MAPS(storage_info):
 find where the essential part starts in a contract call
 '''
 def find_essential_start(contract_name, function_name):
+    print(MACROS.SOLIDITY_FNAME)
     RUNTIME_file = open(MACROS.RUNTIME, )
     RUNTIME_BYTE = json.load(RUNTIME_file)
     essential_start=0
-    function_list = (RUNTIME_BYTE["contracts"][MACROS.SOLIDITY_FNAME+":"+contract_name]["function-debug-runtime"])
+    # function_list = (RUNTIME_BYTE["contracts"][MACROS.SOLIDITY_FNAME+":"+contract_name]["function-debug-runtime"])
+    for contract in RUNTIME_BYTE["contracts"]:
+        if ":"+contract_name in contract:
+            function_list = RUNTIME_BYTE["contracts"][contract]["function-debug-runtime"]
     for func in function_list:
         match = re.search(r'@(.+?)_', func)
         func_name = match.group(1)
@@ -99,6 +103,7 @@ def gen_trace_essential():
     PRE_start = 0
     for i in range(0, len(lines)-1):
         if lines[i].startswith(">>"):
+            print(lines[i])
             matches = re.search(r"\(([^:]+)::([^()]+)\(.*?\)\)", lines[i])
             contract_name = matches.group(1)
             function_name = matches.group(2)

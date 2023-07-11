@@ -502,6 +502,7 @@ def main():
     check_entrypoint()
     gen_trace_essential()
 
+
     ''' parameters setup ''' 
     STACKS      = gen_init_STACK(VAR_PREFIX)
     STORAGE     = gen_init_STORAGE()
