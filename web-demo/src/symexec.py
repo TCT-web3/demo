@@ -73,13 +73,13 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        # print(instr)
+        print(instr)
         # print(self._call_stack)
 
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
             pass # no-op
         elif instr[0]==(">"):
-            print(instr)
+            # print(instr)
             dest_contract, dest_function = get_dest_contract_and_function(instr)
             
             ### calling a new contract, set up calle stack
@@ -122,17 +122,20 @@ class EVM:
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
         elif opcode=="STATICCALL":
-            for i in range(7):
-                self._stacks[-1].pop()
+            # TODO: finish
+            # for i in range(7):
+            #     self._stacks[-1].pop()
+            # self._call_stack.append((self._curr_function, "somefunction", 0x20))
+            # self._call_stack.pop()
         elif instr[0]==("<"):
-            print(instr)
+            # print(instr)
+            print(self._call_stack)
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]     
             self._var_prefix = self._call_stack[-1][2]     
             self._stacks.pop()
             self._memories.pop()
-
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
         elif opcode=="GAS":
             self._stacks[-1].append(SVT("GAS"))  
