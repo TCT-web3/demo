@@ -294,7 +294,7 @@ def check_entrypoint():
     # check theorem against trace
     trace = open(MACROS.TRACE_FNAME, 'r')
     line = ""
-    while not line.startswith(">>enter"):
+    while not line.startswith(">>"):
         line = trace.readline()
     trace_i1, trace_i2 = line.find("(")+1, line.find(")")
     m1 = line[trace_i1:trace_i2+1]
