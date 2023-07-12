@@ -195,7 +195,6 @@ def get_invariant():
                 for b in node["baseContracts"]:
                     if b["baseName"]["name"] in invariants:
                         invariants[node["name"]] += invariants[b["baseName"]["name"]]
-                    invariants[node["name"]] += invariants[b["baseName"]["name"]]
     
     return invariants
 
