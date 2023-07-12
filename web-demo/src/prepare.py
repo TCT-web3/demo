@@ -81,8 +81,7 @@ def gen_init_MEMORY():
     # MEMORIES = {}
     MEMORIES = []
     init_MEM = {
-        # We need to understand why this 0x40 is needed. Perhaps need to read more thoroughly the yellow paper, 
-        # or ask other people
+        # This is solc's convention. It tells a callee contract to use memory[0x80] for returndata
         0x40: SVT(0x80),
         # Dummy mem item
         0x10000000000: SVT(0)
