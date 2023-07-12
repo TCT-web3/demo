@@ -269,12 +269,12 @@ def get_invariant():
                     for i in range(len(inv_list)):
                         inv_list[i] = inv_list[i].replace("@custom:tct invariant: ", "")
                     invariants[node["name"]] = inv_list
-            # if "baseContracts" in node:
-            #     for b in node["baseContracts"]:
-            #         if b["baseName"]["name"] in invariants:
-            #             invariants[node["name"]] += invariants[b["baseName"]["name"]]
-            #         invariants[node["name"]] += invariants[b["baseName"]["name"]]
-            # TODO: check again
+                    
+            if "baseContracts" in node:
+                for b in node["baseContracts"]:
+                    if b["baseName"]["name"] in invariants:
+                        invariants[node["name"]] += invariants[b["baseName"]["name"]]
+    
     return invariants
 
 '''
