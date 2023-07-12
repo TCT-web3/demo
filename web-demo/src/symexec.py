@@ -75,9 +75,10 @@ class EVM:
         operand = instr[2]
 
         print(instr)
-        if isinstance(PC, int) and PC == 11552:
-            self.inspect("currstack")
-            self.inspect("currmemory")
+        if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
+            print("===========")
+            for n in self._stacks[-1]:
+                print(n, type(n))
         # print(self._call_stack)
 
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
@@ -232,7 +233,7 @@ class EVM:
         elif opcode=="OR":
             node = self.handle_OR()
             self._stacks[-1].append(node)
-        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL" or opcode=="SLT":            
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL" or opcode=="SLT" or opcode=="MUL":            
             if isinstance(self._stacks[-1][-1].value, int) and isinstance(self._stacks[-1][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[-1].pop().value + self._stacks[-1].pop().value)%2**256) 
@@ -244,7 +245,7 @@ class EVM:
                     node = SVT((self._stacks[-1].pop().value ** self._stacks[-1].pop().value)%2**256)
                 elif opcode == "SHL":
                     node = SVT((self._stacks[-1].pop().value << self._stacks[-1].pop().value)%2**256) 
-                elif opcode == "LT" or opcode == "GT" or opcode == "EQ" or opcode=="SLT": #TODO: Concrete evaluation
+                elif opcode == "LT" or opcode == "GT" or opcode == "EQ" or opcode=="SLT" or opcode=="MUL": #TODO: Concrete evaluation
                     node = SVT(opcode)
                     node.children.append(self._stacks[-1].pop())
                     node.children.append(self._stacks[-1].pop())
