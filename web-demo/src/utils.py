@@ -256,7 +256,7 @@ def get_invariant():
             nodes = AST_INFO["sources"][source_name]["AST"]["nodes"]
             break
     # print(nodes)
-    # nodes = json_file["sources"][MACROS.SOLIDITY_FNAME]["AST"]["nodes"]
+    nodes = AST_INFO["sources"][MACROS.SOLIDITY_FNAME]["AST"]["nodes"]
     # Sources->AST->nodes->[contracts: token, standard token, multivulntoken, reentrancy attack, demo]
     invariants = {}
     for node in nodes:
@@ -294,7 +294,7 @@ def check_entrypoint():
     # check theorem against trace
     trace = open(MACROS.TRACE_FNAME, 'r')
     line = ""
-    while not line.startswith(">>enter"):
+    while not line.startswith(">>"):
         line = trace.readline()
     trace_i1, trace_i2 = line.find("(")+1, line.find(")")
     m1 = line[trace_i1:trace_i2+1]
