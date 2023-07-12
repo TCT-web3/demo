@@ -41,7 +41,7 @@ class SVT:
 EVM core trace analysis
 '''
 class EVM:
-    from memory import recognize_32B_mask, mem_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR
+    from memory import recognize_32B_mask, mem_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR, memory_write
 
     def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, var_prefix): 
         self._stacks        = stacks  
@@ -136,19 +136,24 @@ class EVM:
             print("----BEFORE----")
             self.inspect("currstack")
             self.inspect("currmemory")
+            self._return_data_size =0
             if opcode=="RETURN":
                 return_data_start = self._stacks[-1][-1].value
-                return_data_size = self._stacks[-1][-2]
-                return_data = self._memories[-1][return_data_start]
+                self._return_data_size = self._stacks[-1][-2].value
+                pos = return_data_start
+                count = self._return_data_size
+                while count>0:  
+                    data = self._memories[-1][pos]
+                    self.memory_write(pos, data, 32, -2)
+                    pos+=32
+                    count-=32
             # print(self._call_stack)
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]     
             self._var_prefix = self._call_stack[-1][2]
             self._stacks.pop()
-            self._memories.pop()
-            if opcode=="RETURN":
-                self._memories[-1][return_data_start] = return_data
+            self._memories.pop()          
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
             print("----AFTER----")
             self.inspect("currmemory")
