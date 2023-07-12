@@ -12,7 +12,10 @@ get initial variables
 def get_init_vars(storage_info, var_prefix):
     vars = {}
     locals = []
-    for elmt in storage_info[MACROS.CONTRACT_NAME]["storage"]:
+
+    elements = storage_info["contracts"][MACROS.CONTRACT_NAME]["storage-layout"]["storage"]
+
+    for elmt in elements:
         label =  elmt["label"]
         t_type = elmt["type"]
         
@@ -58,23 +61,68 @@ get the storage map
 ''' 
 def get_MAPS(storage_info):
     MAPS = {}
-    for contract in storage_info.keys():
+    for contract in storage_info["contracts"]:
         MapIDs = {}
-        for elmt in storage_info[contract]["storage"]:
+        for elmt in storage_info["contracts"][contract]["storage-layout"]["storage"]:
             slot =  elmt["slot"]
             label = elmt["label"]          
-            MapIDs[slot] = label  
-        MAPS[contract] = MapIDs
+            MapIDs[slot] = label
+        contract_name = contract[contract.find(':')+1:]
+        # contract_name = contract_name[':':]
+        # print(contract) 
+        MAPS[contract_name] = MapIDs
     return MAPS
+
+'''
+write local variables from storage file to Boogie
+'''
+def get_types(storage_info):
+    locals = []
+    TYPES = {}    
+    rt = ""
+    # for contract in storage_info.keys():
+    for contract in storage_info["contracts"]:
+        types = {}
+        for elmt in storage_info["contracts"][contract]["storage-layout"]["storage"]:
+            label =  elmt["label"]
+            t_type = elmt["type"]
+            if (label in locals):
+                pass
+            else:
+                if ("string" in t_type):
+                    pass
+                elif ("contract" in t_type):
+                    pass # TODO: contract address as a type
+                elif "t_mapping" in t_type:
+                    t_type = t_type.replace("t_", "")
+                    t_type = t_type.replace("mapping", "")[1:-1]
+                    t_type = t_type.split(',')
+                    rt = rt + ("\tvar " + contract+'.'+label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
+                    types[label] = '['+t_type[0]+'] ' + t_type[1] 
+                else:
+                    rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n") 
+                    types[label] = t_type[2:] 
+                locals.append(contract+'.'+label)
+                # print(contract, label, t_type)
+        contract_name = contract[contract.find(':'):]
+        # contract_name = str(contract)
+        # contract_name = contract_name[':':]        
+        TYPES[contract_name] = types
+    return TYPES
+
 
 '''
 find where the essential part starts in a contract call
 '''
 def find_essential_start(contract_name, function_name):
+    # print(MACROS.SOLIDITY_FNAME)
     RUNTIME_file = open(MACROS.RUNTIME, )
     RUNTIME_BYTE = json.load(RUNTIME_file)
     essential_start=0
-    function_list = (RUNTIME_BYTE["contracts"][MACROS.SOLIDITY_FNAME+":"+contract_name]["function-debug-runtime"])
+    # function_list = (RUNTIME_BYTE["contracts"][MACROS.SOLIDITY_FNAME+":"+contract_name]["function-debug-runtime"])
+    for contract in RUNTIME_BYTE["contracts"]:
+        if ":"+contract_name in contract:
+            function_list = RUNTIME_BYTE["contracts"][contract]["function-debug-runtime"]
     for func in function_list:
         match = re.search(r'@(.+?)_', func)
         func_name = match.group(1)
@@ -98,8 +146,12 @@ def gen_trace_essential():
     start = False
     PRE_start = 0
     for i in range(0, len(lines)-1):
+        # print(lines[i])
         if lines[i].startswith(">>"):
+            # matches = re.search(r"\(([^:]+)::([^()]+)\(.*?\)\)", lines[i])
             matches = re.search(r"\(([^:]+)::([^()]+)\(.*?\)\)", lines[i])
+            # print(line[1])
+            # print(matches.group(1))
             contract_name = matches.group(1)
             function_name = matches.group(2)
             if not lines[i-1].startswith("==="):
@@ -128,56 +180,83 @@ get ABI information as a JSON
 '''
 def get_ABI_info():
     ABI_file = open(MACROS.ABI, "r")
-    tmp = ""
-    lines = ABI_file.readlines()
-    for line in lines:
-        # print("l" + line)
-        if line[0] == '{':
-            continue
-        elif len(line.strip()) == 0:
-            line = ",\n"
-        elif '===' in line:
-            c_name = line.replace("======= ", "").replace(" =======", "").replace(MACROS.SOLIDITY_FNAME+":", "").replace("\n", "")
-            line = "\"" + c_name + "\"" +":\n"
-        elif 'JSON ABI' in line:
-            continue    
-        tmp = tmp + line
-    tmp = tmp + '}'
-    tmp = '{' + tmp[1:] #patch
-    INFO = json.loads(tmp)
-    return INFO
+    INFO = json.load(ABI_file)
+
+    rt = {}
+    info = {}
+    for contract_name in INFO["contracts"].keys():
+        new_name = contract_name[contract_name.find(':')+1:] #trim name
+        info[new_name] = INFO["contracts"][contract_name]
+    rt["contracts"] = info
+    # print(rt["contracts"].keys())
+
+    # tmp = ""
+    # lines = ABI_file.readlines()
+    # for line in lines:
+    #     # print("l" + line)
+    #     if line[0] == '{':
+    #         continue
+    #     elif len(line.strip()) == 0:
+    #         line = ",\n"
+    #     elif '===' in line:
+    #         c_name = line.replace("======= ", "").replace(" =======", "").replace(MACROS.SOLIDITY_FNAME+":", "").replace("\n", "")
+    #         line = "\"" + c_name + "\"" +":\n"
+    #     elif 'JSON ABI' in line:
+    #         continue    
+    #     tmp = tmp + line
+    # tmp = tmp + '}'
+    # tmp = '{' + tmp[1:] #patch
+    # INFO = json.loads(tmp)
+    return rt
 
 '''
 get storage information as a python
 '''
 def get_STORAGE_info():
     STORAGE_file = open(MACROS.STORAGE, "r")
-    tmp = '{'
-    lines = STORAGE_file.readlines()
-    for line in lines:
-        # print("l" + line)
-        if len(line.strip()) == 0:
-            # print("},")
-            line = ",\n"    
-        elif '===' in line:
-            c_name = line.replace("======= ", "").replace(" =======", "").replace(MACROS.SOLIDITY_FNAME+":", "").replace("\n", "")
-            line = "\"" + c_name + "\"" +":\n"
-            # print(c_name)
-        elif 'Contract Storage' in line:
-            continue    
-        tmp = tmp + line
-    tmp = tmp + '}'
-    tmp = '{' + tmp[2:] #patch
-    INFO = json.loads(tmp)
-    return INFO   
+    INFO = json.load(STORAGE_file)
+    rt = {}
+    info = {}
+    for contract_name in INFO["contracts"].keys():
+        new_name = contract_name[contract_name.find(':')+1:] #trim name
+        info[new_name] = INFO["contracts"][contract_name]
+    rt["contracts"] = info
+    # print(rt["contracts"].keys())
+        # print(contract_name)
+    # STORAGE_file = open(MACROS.STORAGE, "r")
+    # tmp = '{'
+    # lines = STORAGE_file.readlines()
+    # for line in lines:
+    #     # print("l" + line)
+    #     if len(line.strip()) == 0:
+    #         # print("},")
+    #         line = ",\n"    
+    #     elif '===' in line:
+    #         c_name = line.replace("======= ", "").replace(" =======", "").replace(MACROS.SOLIDITY_FNAME+":", "").replace("\n", "")
+    #         line = "\"" + c_name + "\"" +":\n"
+    #         # print(c_name)
+    #     elif 'Contract Storage' in line:
+    #         continue    
+    #     tmp = tmp + line
+    # tmp = tmp + '}'
+    # tmp = '{' + tmp[2:] #patch
+    # INFO = json.loads(tmp)
+    return rt  
 
 '''
 get proof invariant from AST file
 '''
 def get_invariant():
     ast_file = open(MACROS.AST, 'r')
-    json_file = json.load(ast_file)
-    nodes = json_file["sources"][MACROS.SOLIDITY_FNAME]["AST"]["nodes"]
+    AST_INFO = json.load(ast_file)
+    # print(MACROS.CONTRACT_NAME)
+    for source_name in AST_INFO["sources"]:
+        if('/'+MACROS.CONTRACT_NAME in source_name):
+            # print(source_name)
+            nodes = AST_INFO["sources"][source_name]["AST"]["nodes"]
+            break
+    # print(nodes)
+    # nodes = json_file["sources"][MACROS.SOLIDITY_FNAME]["AST"]["nodes"]
     # Sources->AST->nodes->[contracts: token, standard token, multivulntoken, reentrancy attack, demo]
     invariants = {}
     for node in nodes:
@@ -276,40 +355,6 @@ def write_epilogue(invariants,var_prefix):
         rt = rt.replace("this", var_prefix )
     rt = rt + ('}')
     return rt
-
-'''
-write local variables from storage file to Boogie
-'''
-def get_types(storage_info):
-    locals = []
-    TYPES = {}    
-    rt = ""
-    for contract in storage_info.keys():
-        types = {}
-        for elmt in storage_info[contract]["storage"]:
-            label =  elmt["label"]
-            t_type = elmt["type"]
-            if (label in locals):
-                pass
-            else:
-                if ("string" in t_type):
-                    pass
-                elif ("contract" in t_type):
-                    pass # TODO: contract address as a type
-                elif "t_mapping" in t_type:
-                    t_type = t_type.replace("t_", "")
-                    t_type = t_type.replace("mapping", "")[1:-1]
-                    t_type = t_type.split(',')
-                    rt = rt + ("\tvar " + contract+'.'+label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
-                    types[label] = '['+t_type[0]+'] ' + t_type[1] 
-                else:
-                    rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n") 
-                    types[label] = t_type[2:] 
-                locals.append(contract+'.'+label)
-                # print(contract, label, t_type)
-        TYPES[contract] = types
-    # return rt + '\n'
-    return TYPES
 
 '''
 write the function parameters

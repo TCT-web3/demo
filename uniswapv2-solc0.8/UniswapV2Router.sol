@@ -14,6 +14,7 @@ import "./libraries/UniswapV2Library.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
 
+/// @custom:tct invariant: 1==1
 contract UniswapV2Router is IUniswapV2Router {
     address public override factory;
     //address public override WETH;
