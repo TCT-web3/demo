@@ -256,7 +256,7 @@ def get_invariant():
             nodes = AST_INFO["sources"][source_name]["AST"]["nodes"]
             break
     # print(nodes)
-    # nodes = json_file["sources"][MACROS.SOLIDITY_FNAME]["AST"]["nodes"]
+    nodes = AST_INFO["sources"][MACROS.SOLIDITY_FNAME]["AST"]["nodes"]
     # Sources->AST->nodes->[contracts: token, standard token, multivulntoken, reentrancy attack, demo]
     invariants = {}
     for node in nodes:

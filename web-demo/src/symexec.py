@@ -44,19 +44,20 @@ class EVM:
     from memory import recognize_32B_mask, mem_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR
 
     def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, var_prefix): 
-        self._stacks        = stacks  
-        self._storage       = storage
-        self._memories      = memories
-        self._output_file   = output_file
-        self._tmp_var_count = 0
-        self._final_path    = final_path
-        self._final_vars    = final_vars
-        self._storage_map   = storage_map
-        self._curr_contract = curr_contract
-        self._curr_function = curr_function
-        self._call_stack    = call_stack
-        self._abi_info      = abi_info
-        self._var_prefix    = var_prefix
+        self._stacks            = stacks  
+        self._storage           = storage
+        self._memories          = memories
+        self._output_file       = output_file
+        self._tmp_var_count     = 0
+        self._final_path        = final_path
+        self._final_vars        = final_vars
+        self._storage_map       = storage_map
+        self._curr_contract     = curr_contract
+        self._curr_function     = curr_function
+        self._call_stack        = call_stack
+        self._abi_info          = abi_info
+        self._var_prefix        = var_prefix
+        self._return_data_size  = 0
 
     '''perform symbolic execution'''
     def sym_exec(self, code_trace):
@@ -73,7 +74,7 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        print(instr)
+        # print(instr)
         # print(self._call_stack)
 
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
@@ -125,17 +126,17 @@ class EVM:
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
-            print("----AFTER----")
-            self.inspect("currstack")
-            self.inspect("currmemory")
+            # print("----AFTER----")
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
             # sys.exit()
         elif instr[0]==("<"):
             # print(instr)
             pass
         elif opcode=="RETURN" or opcode=="STOP":
-            print("----BEFORE----")
-            self.inspect("currstack")
-            self.inspect("currmemory")
+            # print("----BEFORE----")
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
             if opcode=="RETURN":
                 return_data_start = self._stacks[-1][-1].value
                 return_data_size = self._stacks[-1][-2]
@@ -150,18 +151,19 @@ class EVM:
             if opcode=="RETURN":
                 self._memories[-1][return_data_start] = return_data
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
-            print("----AFTER----")
-            self.inspect("currmemory")
+            # print("----AFTER----")
+            # self.inspect("currmemory")
         elif opcode=="GAS":
             self._stacks[-1].append(SVT("GAS"))  
         elif opcode=="RETURNDATASIZE":
-            for elmt in self._abi_info[self._curr_contract]:
+            for elmt in self._abi_info["contracts"][self._curr_contract]["abi"]:
                 if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
                     return_count = len(elmt["outputs"])
                     if(return_count == 0):
                         self._stacks[-1].append(SVT(0))
                     else:
-                        raise Exception("return data SIZE to be implemented. ")    
+
+                        # raise Exception("return data SIZE to be implemented. ")    
         elif opcode=="EXTCODESIZE":
             node=SVT("ACCOUNT_CODESIZE")
             node.children.append(self._stacks[-1].pop()) 
