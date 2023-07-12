@@ -37,10 +37,10 @@ def recognize_32B_mask(self,a):
         return -1,-1  #a is not a 32-byte mask
 
 def mem_item_len(self, mem_item):
-        if mem_item.value != "Partial32B":
-            return 32
-        segment = mem_item.children[0]
-        return segment[1]-segment[0]+1
+    if mem_item.value != "Partial32B":
+        return 32
+    segment = mem_item.children[0]
+    return segment[1]-segment[0]+1
         
 def handle_MLOAD(self):
     offset = self._stacks[-1].pop().value
@@ -48,6 +48,7 @@ def handle_MLOAD(self):
                 raise Exception("Memory offset is not a concrete value. CodeGen is needed here!")
         
     prev_k=None
+    prev_v=0
     in_copy_mode = False
     node = SVT("concat")
     bytes_to_copy = 32
@@ -266,7 +267,7 @@ def handle_AND(self):
                         new_concat_node.children.append(child)
                     elif pos+child.children[0][1]-child.children[0][0]+1 > first:
                         newPartial32BNode = SVT("Partial32B")
-                        newPartial32BNode.children.append(child.children[0][0]+first-pos,child.children[0][1])
+                        newPartial32BNode.children.append((child.children[0][0]+first-pos,child.children[0][1]))
                         newPartial32BNode.children.append(child.children[1])
                         new_concat_node.children.append(newPartial32BNode)
                     pos+= child.children[0][1]-child.children[0][0]+1

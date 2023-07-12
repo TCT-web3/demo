@@ -74,7 +74,10 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        # print(instr)
+        print(instr)
+        if isinstance(PC, int) and PC == 11552:
+            self.inspect("currstack")
+            self.inspect("currmemory")
         # print(self._call_stack)
 
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
@@ -229,7 +232,7 @@ class EVM:
         elif opcode=="OR":
             node = self.handle_OR()
             self._stacks[-1].append(node)
-        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL":            
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL" or opcode=="SLT":            
             if isinstance(self._stacks[-1][-1].value, int) and isinstance(self._stacks[-1][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[-1].pop().value + self._stacks[-1].pop().value)%2**256) 
@@ -241,7 +244,7 @@ class EVM:
                     node = SVT((self._stacks[-1].pop().value ** self._stacks[-1].pop().value)%2**256)
                 elif opcode == "SHL":
                     node = SVT((self._stacks[-1].pop().value << self._stacks[-1].pop().value)%2**256) 
-                elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
+                elif opcode == "LT" or opcode == "GT" or opcode == "EQ" or opcode=="SLT": #TODO: Concrete evaluation
                     node = SVT(opcode)
                     node.children.append(self._stacks[-1].pop())
                     node.children.append(self._stacks[-1].pop())
@@ -313,12 +316,12 @@ class EVM:
             to_boogie +=";\n"
             self._final_vars[to_return] = 'uint256'
             self._final_path.append(to_boogie) 
-        elif node.value == "LT" or node.value == "GT" or node.value == "EQ":
+        elif node.value == "LT" or node.value == "GT" or node.value == "EQ" or node.value == "SLT": #TODO: SLT implementation
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
             if isinstance(val1, int) and isinstance(val2, int):
                 to_return = ""
-                if node.value == "LT":
+                if node.value == "LT" or node.value == "SLT": #TODO: SLT implementation
                     if val1 < val2:
                         to_return = "true"
                     else:
@@ -336,7 +339,7 @@ class EVM:
             else:
                 self._tmp_var_count+=1
                 to_return = "tmp" + str(self._tmp_var_count)
-                if node.value == "LT":
+                if node.value == "LT" or node.value == "SLT": #TODO: SLT implementation
                     to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
                 elif node.value == "GT":
                     to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
