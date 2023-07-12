@@ -327,3 +327,4 @@ def handle_OR(self):
         node = SVT("OR")
         node.children.append(a)
         node.children.append(b)
+    return node
