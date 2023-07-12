@@ -47,18 +47,18 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
             value = trace[i+1]["stack"][-1]
             line += value + " "
         # Call
-        elif opcode == "CALL":
+        elif opcode == "CALL" or opcode == "STATICCALL":
+            stack_idx = -4 if opcode=="CALL" else -3
             # hex
             contract_address = trace[i]["stack"][-2].lstrip("000000000000000000000000")
-            offset = int(trace[i]["stack"][-4], 16)
+            offset = int(trace[i]["stack"][stack_idx], 16)
+            # print(hex(offset))
             row = offset // 32
             col = (offset % 32)*2
             if col+8 > len(trace[i]["memory"][row]):
                 func_selector = trace[i]["memory"][row][col:] + trace[i]["memory"][row+1][:col+8-len(trace[i]["memory"][row])]
             else:
                 func_selector = trace[i]["memory"][row][col:col+8]
-            print(trace[i]["memory"][row])
-            print(trace[i]["memory"][row+1])
             print(contract_address, func_selector)
             if not enter and func_selector == function_hash:
                 output.close()
@@ -83,10 +83,10 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
 def main():
     # Get file names
     ARGS = sys.argv
-    TRACE_FNAME = ARGS[1]
+    # TRACE_FNAME = ARGS[1]
 
     # Call method
-    output_trace(TRACE_FNAME, "0xe0a0d6b2fb29fc1a984babe8c397db942273f807b108f1c08ac6afc74c1d759d", "deployment_info.json", "theorem-0xdc796b5fd6d87794379e0014ad3dfe406696a6deda3c6fe45844225589a75722.json")
+    output_trace("trace-0x301b7d4d8899059aebcaec2c4f9e0613307518d9f5d466e170a961df8273de72.json", "0x301b7d4d8899059aebcaec2c4f9e0613307518d9f5d466e170a961df8273de72", "deployment_info.json", "theorem-0x301b7d4d8899059aebcaec2c4f9e0613307518d9f5d466e170a961df8273de72.json")
     
 
 if __name__ == "__main__":
