@@ -58,7 +58,7 @@ class EVM:
         self._abi_info      = abi_info
         self._var_prefix    = var_prefix
 
-    '''perfprm symbolic execution'''
+    '''perform symbolic execution'''
     def sym_exec(self, code_trace):
             for i in range(len(code_trace)):
                 if(code_trace[i][1]=="JUMPI"):
@@ -76,16 +76,20 @@ class EVM:
         print(instr)
         # print(self._call_stack)
 
-        if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
+        if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
         elif instr[0]==(">"):
-            # print(instr)
+            # print("----BEFORE----")
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
             dest_contract, dest_function = get_dest_contract_and_function(instr)
             
+            ### get call or staticcall
+            static_idx_diff = 0 if instr.startswith(">>call") else 1
             ### calling a new contract, set up calle stack
             callee_stack    = []
-            calldata_pos    = self._stacks[-1][-4].value
-            calldata_len    = self._stacks[-1][-5].value
+            calldata_pos    = self._stacks[-1][-4+static_idx_diff].value
+            calldata_len    = self._stacks[-1][-5+static_idx_diff].value
             func_selector   = self._memories[-1][calldata_pos].children[1].value
 
             if(isinstance(func_selector, int)):
@@ -109,7 +113,7 @@ class EVM:
                     self.add_new_vars(var_name)    
                 
             ### switch to a new contract and pops out the operands for a successful CALL operation
-            for i in range(7):
+            for i in range(7-static_idx_diff):
                 self._stacks[-1].pop()
             self._stacks[-1].append(SVT(1)) # CALL successed
             dest_address = get_var_prefix(instr)
@@ -121,22 +125,33 @@ class EVM:
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
-        elif opcode=="STATICCALL":
-            # TODO: finish
-            # for i in range(7):
-            #     self._stacks[-1].pop()
-            # self._call_stack.append((self._curr_function, "somefunction", 0x20))
-            # self._call_stack.pop()
+            print("----AFTER----")
+            self.inspect("currstack")
+            self.inspect("currmemory")
+            # sys.exit()
         elif instr[0]==("<"):
             # print(instr)
-            print(self._call_stack)
+            pass
+        elif opcode=="RETURN" or opcode=="STOP":
+            print("----BEFORE----")
+            self.inspect("currstack")
+            self.inspect("currmemory")
+            if opcode=="RETURN":
+                return_data_start = self._stacks[-1][-1].value
+                return_data_size = self._stacks[-1][-2]
+                return_data = self._memories[-1][return_data_start]
+            # print(self._call_stack)
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]     
-            self._var_prefix = self._call_stack[-1][2]     
+            self._var_prefix = self._call_stack[-1][2]
             self._stacks.pop()
             self._memories.pop()
+            if opcode=="RETURN":
+                self._memories[-1][return_data_start] = return_data
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
+            print("----AFTER----")
+            self.inspect("currmemory")
         elif opcode=="GAS":
             self._stacks[-1].append(SVT("GAS"))  
         elif opcode=="RETURNDATASIZE":
