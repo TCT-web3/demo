@@ -29,7 +29,7 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
 
     # Write header
     output.write("======================================Begin==========================================\n")
-    output.write(">>enter 0x" + contract_hash + "::0x" + function_hash + " (" + contract_name + "::" + function_name + ")\n")
+    output.write(">>call 0x" + contract_hash + "::0x" + function_hash + " (" + contract_name + "::" + function_name + ")\n")
     enter = False
     # Write rest of trace
     for i in range(len(trace)):
@@ -64,17 +64,17 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
                 output.close()
                 output = open("trace-" + tx_hash + ".txt", "w")
                 output.write("======================================Begin==========================================\n")
-                line = ">>enter 0x" + contract_hash + "::0x" + function_hash + " (" + deploy_info[contract_hash] + "::" + deploy_info[function_hash] + ") "
+                line = ">>call 0x" + contract_hash + "::0x" + function_hash + " (" + deploy_info[contract_hash] + "::" + deploy_info[function_hash] + ") "
                 enter = True
             else:
-                line += "-\n>>enter " + '0x' + contract_address
+                line += "-\n>>" + opcode.lower() + ' 0x' + contract_address
                 line += "::0x" + func_selector
                 # deployment info
                 line += " (" + deploy_info[contract_address] + "::" + deploy_info[func_selector] + ") "
         elif opcode == "RETURN":
-            line += "-\n<<leave "
+            line += "-\n<<return "
         elif opcode == "STOP":
-            line += "-\n<<leave "
+            line += "-\n<<stop "
         output.write(line + "-\n")
     output.write("======================================End==========================================")
     trace_file.close()
