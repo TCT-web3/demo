@@ -135,9 +135,9 @@ class EVM:
             pass
         elif opcode=="RETURN" or opcode=="STOP":
 
-            print("----BEFORE----")
-            self.inspect("currstack")
-            self.inspect("currmemory")
+            # print("----BEFORE----")
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
             self._return_data_size =0
 
             if opcode=="RETURN":
@@ -169,8 +169,7 @@ class EVM:
                     if(return_count == 0):
                         self._stacks[-1].append(SVT(0))
                     else:
-
-                        # raise Exception("return data SIZE to be implemented. ")    
+                        self._stacks[-1].append(SVT(self._return_data_size))
         elif opcode=="EXTCODESIZE":
             node=SVT("ACCOUNT_CODESIZE")
             node.children.append(self._stacks[-1].pop()) 

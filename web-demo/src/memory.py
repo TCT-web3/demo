@@ -146,7 +146,7 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
         curr_len=self.mem_item_len(v)
         if k < offset and k+curr_len>offset:
         # This means offset falls in the current mem item
-            print("shuo1")
+            # print("shuo1")
             node1=SVT("Partial32B")
             if v.value == "Partial32B":
                 node1_segment = (v.children[0][0], v.children[0][1]-(k+curr_len-offset))  # retract the current mem item's right end
@@ -160,7 +160,7 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
             self._memories[depth][k] = node1
         if k < offset+content_to_store_len and k+curr_len>offset+content_to_store_len:
         # This means the end of content_to_store falls in the current mem item
-            print("shuo2")
+            # print("shuo2")
             node1=SVT("Partial32B")
             if v.value == "Partial32B":
                 node1_segment = (v.children[0][0]+(offset+content_to_store_len-k), v.children[0][1])  # retract the current mem item's left end
@@ -173,8 +173,8 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
             # print("///////", node1) 
             last_partial_overwritten_node = node1
             
-    if  last_partial_overwritten_node!=None:
-        print("shuo3")
+    if last_partial_overwritten_node!=None:
+        # print("shuo3")
         self._memories[depth][offset+content_to_store_len] = last_partial_overwritten_node
             
     for k,v in self._memories[depth].items():        
@@ -212,13 +212,13 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
                 memory_with_consolidated_items[active_k]=active_v
             active_k = k
             active_v = v
-            print(">>>a>>>>>>", active_k, active_v)
+            # print(">>>a>>>>>>", active_k, active_v)
         else:
             new_v=SVT("Partial32B")
             new_v.children.append((active_v.children[0][0],v.children[0][1]))
             new_v.children.append(active_v.children[1])
             active_v = new_v
-            print(">>>b>>>>", active_k, active_v)
+            # print(">>>b>>>>", active_k, active_v)
             
     if not isinstance(active_v.value,int) and active_v.value=="Partial32B" \
         and active_v.children[0][0]==0 and active_v.children[0][1]==31:
