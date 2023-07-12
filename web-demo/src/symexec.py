@@ -75,10 +75,10 @@ class EVM:
         operand = instr[2]
 
         print(instr)
-        if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
-            print("===========")
-            for n in self._stacks[-1]:
-                print(n, type(n))
+        # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
+        #     print("===========")
+        #     for n in self._stacks[-1]:
+        #         print(n, type(n))
         # print(self._call_stack)
 
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
