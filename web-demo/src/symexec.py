@@ -84,6 +84,20 @@ class EVM:
             print("----JUMPDEST----")
             self.inspect("currstack")
             self.inspect("currmemory")
+        '''
+        if isinstance(PC, int) and  (PC==5746):
+            self.inspect("currstack")
+            self.inspect("currmemory")
+            if PC==5746:
+                sys.exit()
+        '''
+        '''
+        if isinstance(PC, int) and  (PC==11552 or PC==11553):
+            self.inspect("currstack")
+            self.inspect("currmemory")
+            if PC==11553:
+                sys.exit()
+        '''
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
         elif instr[0]==(">"):
