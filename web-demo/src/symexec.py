@@ -41,7 +41,7 @@ class SVT:
 EVM core trace analysis
 '''
 class EVM:
-    from memory import recognize_32B_mask, mem_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR, memory_write
+    from memory import recognize_32B_mask, mem_item_len, content_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR, memory_write
 
     def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, var_prefix): 
         self._stacks            = stacks  
@@ -97,6 +97,12 @@ class EVM:
             self.inspect("currmemory")
             if PC==11553:
                 sys.exit()
+        '''
+        '''
+        if isinstance(PC, int) and  (PC==7018):
+            self.write_vars()
+            self.write_paths()
+            sys.exit()
         '''
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
@@ -198,7 +204,7 @@ class EVM:
         elif opcode=="JUMP":
             self._stacks[-1].pop()
         elif opcode=="JUMPI":
-            self.boogie_gen_jumpi(self._stacks[-1][-2], branch_taken)
+            #self.boogie_gen_jumpi(self._stacks[-1][-2], branch_taken)
             self._stacks[-1].pop()
             self._stacks[-1].pop()
         elif opcode=="MSTORE":
