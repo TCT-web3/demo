@@ -67,12 +67,6 @@ class EVM:
                 else:
                     self.run_instruction(code_trace[i], None)
 
-    def peek_boogie(self):
-        for var in self._final_vars:
-            os.system('echo '+ var + ' > '+ "peek.bpl")
-        for path in self._final_path:
-            os.system('echo '+ path + ' > '+ "peek.bpl")
-
 
     '''run each EVM instruction with PC, operator, and operand'''        
     def run_instruction(self, instr, branch_taken):
@@ -80,7 +74,6 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        self.peek_boogie()
         print(instr)
         # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
         #     print("===========")
@@ -140,11 +133,10 @@ class EVM:
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
-        elif opcode=="STATICCALL":
-            print("----AFTER----")
-            self.inspect("currstack")
-            self.inspect("currmemory")
-            sys.exit()
+            # print("----AFTER----")
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
+            # sys.exit()
         elif instr[0]==("<"):
             # print(instr)
             pass
@@ -229,7 +221,18 @@ class EVM:
             dest = self._stacks[-1][len(self._stacks[-1])-position-1] 
             self._stacks[-1][len(self._stacks[-1])-position] = self._stacks[-1].pop()
             self._stacks[-1].append(dest)
-        elif opcode=="ISZERO" or opcode=="NOT":
+        elif opcode=="ISZERO":
+            if isinstance(self._stacks[-1][-1].value, int):
+                val = self._stacks[-1].pop().value
+                if val == 0:
+                    self._stacks[-1].append(SVT(1))
+                else:
+                    self._stacks[-1].append(SVT(0))
+            else:
+                node = SVT(opcode)
+                node.children.append(self._stacks[-1].pop())
+                self._stacks[-1].append(node)
+        elif opcode=="NOT":
             if type(self._stacks[-1][-1].value) == int:
                 val = self._stacks[-1].pop().value
                 node = SVT(~(2**256|val) & (2**256-1))

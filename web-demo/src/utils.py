@@ -243,6 +243,7 @@ def get_STORAGE_info():
     # INFO = json.loads(tmp)
     return rt  
 
+
 '''
 get proof invariant from AST file
 '''
@@ -256,7 +257,7 @@ def get_invariant():
             nodes = AST_INFO["sources"][source_name]["AST"]["nodes"]
             break
     # print(nodes)
-    nodes = AST_INFO["sources"][MACROS.SOLIDITY_FNAME]["AST"]["nodes"]
+    # nodes = AST_INFO["sources"][MACROS.CONTRACT_NAME]["AST"]["nodes"]     
     # Sources->AST->nodes->[contracts: token, standard token, multivulntoken, reentrancy attack, demo]
     invariants = {}
     for node in nodes:

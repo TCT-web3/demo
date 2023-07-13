@@ -31,8 +31,8 @@ def gen_init_STACK(var_prefix, abi_info):
     func_list = abi_info["contracts"][MACROS.CONTRACT_NAME]["abi"]
 
     for func in func_list:
-        if "name" in func.keys() and func["name"] == MACROS.FUNCTION_NAME:
-            for item in func["inputs"]:
+        if ("name" in func.keys()) and (func["name"] == MACROS.FUNCTION_NAME):
+            for item in func["inputs"] :
                 stack.append(SVT(item["name"]))
 
     STACKS.append(stack)
