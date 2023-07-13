@@ -41,24 +41,25 @@ class SVT:
 EVM core trace analysis
 '''
 class EVM:
-    from memory import recognize_32B_mask, mem_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR
+    from memory import recognize_32B_mask, mem_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR, memory_write
 
     def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, var_prefix): 
-        self._stacks        = stacks  
-        self._storage       = storage
-        self._memories      = memories
-        self._output_file   = output_file
-        self._tmp_var_count = 0
-        self._final_path    = final_path
-        self._final_vars    = final_vars
-        self._storage_map   = storage_map
-        self._curr_contract = curr_contract
-        self._curr_function = curr_function
-        self._call_stack    = call_stack
-        self._abi_info      = abi_info
-        self._var_prefix    = var_prefix
+        self._stacks            = stacks  
+        self._storage           = storage
+        self._memories          = memories
+        self._output_file       = output_file
+        self._tmp_var_count     = 0
+        self._final_path        = final_path
+        self._final_vars        = final_vars
+        self._storage_map       = storage_map
+        self._curr_contract     = curr_contract
+        self._curr_function     = curr_function
+        self._call_stack        = call_stack
+        self._abi_info          = abi_info
+        self._var_prefix        = var_prefix
+        self._return_data_size  = 0
 
-    '''perfprm symbolic execution'''
+    '''perform symbolic execution'''
     def sym_exec(self, code_trace):
             for i in range(len(code_trace)):
                 if(code_trace[i][1]=="JUMPI"):
@@ -81,18 +82,29 @@ class EVM:
 
         self.peek_boogie()
         print(instr)
+        # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
+        #     print("===========")
+        #     for n in self._stacks[-1]:
+        #         print(n, type(n))
         # print(self._call_stack)
-
-        if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STOP":
+        if isinstance(PC, int) and opcode=="JUMPDEST":
+            print("----JUMPDEST----")
+            self.inspect("currstack")
+            self.inspect("currmemory")
+        if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
         elif instr[0]==(">"):
-            # print(instr)
+            # print("----BEFORE----")
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
             dest_contract, dest_function = get_dest_contract_and_function(instr)
             
+            ### get call or staticcall
+            static_idx_diff = 0 if instr.startswith(">>call") else 1
             ### calling a new contract, set up calle stack
             callee_stack    = []
-            calldata_pos    = self._stacks[-1][-4].value
-            calldata_len    = self._stacks[-1][-5].value
+            calldata_pos    = self._stacks[-1][-4+static_idx_diff].value
+            calldata_len    = self._stacks[-1][-5+static_idx_diff].value
             func_selector   = self._memories[-1][calldata_pos].children[1].value
 
             if(isinstance(func_selector, int)):
@@ -116,7 +128,7 @@ class EVM:
                     self.add_new_vars(var_name)    
                 
             ### switch to a new contract and pops out the operands for a successful CALL operation
-            for i in range(7):
+            for i in range(7-static_idx_diff):
                 self._stacks[-1].pop()
             self._stacks[-1].append(SVT(1)) # CALL successed
             dest_address = get_var_prefix(instr)
@@ -128,32 +140,51 @@ class EVM:
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
-        # elif opcode=="STATICCALL":
-            # TODO: finish
-            # for i in range(7):
-            #     self._stacks[-1].pop()
-            # self._call_stack.append((self._curr_function, "somefunction", 0x20))
-            # self._call_stack.pop()
+        elif opcode=="STATICCALL":
+            print("----AFTER----")
+            self.inspect("currstack")
+            self.inspect("currmemory")
+            sys.exit()
         elif instr[0]==("<"):
             # print(instr)
-            print(self._call_stack)
+            pass
+        elif opcode=="RETURN" or opcode=="STOP":
+
+            # print("----BEFORE----")
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
+            self._return_data_size =0
+
+            if opcode=="RETURN":
+                return_data_start = self._stacks[-1][-1].value
+                self._return_data_size = self._stacks[-1][-2].value
+                pos = return_data_start
+                count = self._return_data_size
+                while count>0:  
+                    data = self._memories[-1][pos]
+                    self.memory_write(pos, data, 32, -2)
+                    pos+=32
+                    count-=32
+            # print(self._call_stack)
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]     
-            self._var_prefix = self._call_stack[-1][2]     
+            self._var_prefix = self._call_stack[-1][2]
             self._stacks.pop()
-            self._memories.pop()
+            self._memories.pop()          
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
+            # print("----AFTER----")
+            # self.inspect("currmemory")
         elif opcode=="GAS":
             self._stacks[-1].append(SVT("GAS"))  
         elif opcode=="RETURNDATASIZE":
-            for elmt in self._abi_info[self._curr_contract]:
+            for elmt in self._abi_info["contracts"][self._curr_contract]["abi"]:
                 if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
                     return_count = len(elmt["outputs"])
                     if(return_count == 0):
                         self._stacks[-1].append(SVT(0))
                     else:
-                        raise Exception("return data SIZE to be implemented. ")    
+                        self._stacks[-1].append(SVT(self._return_data_size))
         elif opcode=="EXTCODESIZE":
             node=SVT("ACCOUNT_CODESIZE")
             node.children.append(self._stacks[-1].pop()) 
@@ -213,7 +244,7 @@ class EVM:
         elif opcode=="OR":
             node = self.handle_OR()
             self._stacks[-1].append(node)
-        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL":            
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL" or opcode=="SLT" or opcode=="MUL":            
             if isinstance(self._stacks[-1][-1].value, int) and isinstance(self._stacks[-1][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[-1].pop().value + self._stacks[-1].pop().value)%2**256) 
@@ -225,7 +256,7 @@ class EVM:
                     node = SVT((self._stacks[-1].pop().value ** self._stacks[-1].pop().value)%2**256)
                 elif opcode == "SHL":
                     node = SVT((self._stacks[-1].pop().value << self._stacks[-1].pop().value)%2**256) 
-                elif opcode == "LT" or opcode == "GT" or opcode == "EQ":
+                elif opcode == "LT" or opcode == "GT" or opcode == "EQ" or opcode=="SLT" or opcode=="MUL": #TODO: Concrete evaluation
                     node = SVT(opcode)
                     node.children.append(self._stacks[-1].pop())
                     node.children.append(self._stacks[-1].pop())
@@ -297,12 +328,12 @@ class EVM:
             to_boogie +=";\n"
             self._final_vars[to_return] = 'uint256'
             self._final_path.append(to_boogie) 
-        elif node.value == "LT" or node.value == "GT" or node.value == "EQ":
+        elif node.value == "LT" or node.value == "GT" or node.value == "EQ" or node.value == "SLT": #TODO: SLT implementation
             val1 = self.postorder_traversal(node.children[0])
             val2 = self.postorder_traversal(node.children[1])
             if isinstance(val1, int) and isinstance(val2, int):
                 to_return = ""
-                if node.value == "LT":
+                if node.value == "LT" or node.value == "SLT": #TODO: SLT implementation
                     if val1 < val2:
                         to_return = "true"
                     else:
@@ -320,7 +351,7 @@ class EVM:
             else:
                 self._tmp_var_count+=1
                 to_return = "tmp" + str(self._tmp_var_count)
-                if node.value == "LT":
+                if node.value == "LT" or node.value == "SLT": #TODO: SLT implementation
                     to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
                 elif node.value == "GT":
                     to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
@@ -406,6 +437,8 @@ class EVM:
         else:
             raise Exception("JUMPI stack[-1] is_not_zero error")
         self._final_path.append(path)
+        self.write_paths()
+        sys.exit()
 
     '''wrote aux vars to Boogie'''
     def write_vars(self):
