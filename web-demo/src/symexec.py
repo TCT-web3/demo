@@ -66,6 +66,12 @@ class EVM:
                 else:
                     self.run_instruction(code_trace[i], None)
 
+    def peek_boogie(self):
+        for var in self._final_vars:
+            os.system('echo '+ var + ' > '+ "peek.bpl")
+        for path in self._final_path:
+            os.system('echo '+ path + ' > '+ "peek.bpl")
+
 
     '''run each EVM instruction with PC, operator, and operand'''        
     def run_instruction(self, instr, branch_taken):
@@ -73,6 +79,7 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
+        self.peek_boogie()
         print(instr)
         # print(self._call_stack)
 
@@ -121,7 +128,7 @@ class EVM:
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
-        elif opcode=="STATICCALL":
+        # elif opcode=="STATICCALL":
             # TODO: finish
             # for i in range(7):
             #     self._stacks[-1].pop()
