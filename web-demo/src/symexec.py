@@ -80,7 +80,10 @@ class EVM:
         #     for n in self._stacks[-1]:
         #         print(n, type(n))
         # print(self._call_stack)
-
+        if isinstance(PC, int) and opcode=="JUMPDEST":
+            print("----JUMPDEST----")
+            self.inspect("currstack")
+            self.inspect("currmemory")
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
         elif instr[0]==(">"):
@@ -426,6 +429,8 @@ class EVM:
         else:
             raise Exception("JUMPI stack[-1] is_not_zero error")
         self._final_path.append(path)
+        self.write_paths()
+        sys.exit()
 
     '''wrote aux vars to Boogie'''
     def write_vars(self):
