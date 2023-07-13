@@ -85,7 +85,7 @@ class EVM:
         #     self.inspect("currstack")
         #     self.inspect("currmemory")
         
-        tmpPC=7023
+        tmpPC=7025
         if isinstance(PC, int) and  (PC==tmpPC):
             self.inspect("currstack")
             self.inspect("currmemory")
@@ -295,11 +295,9 @@ class EVM:
                 if not isinstance(start_offset, int):
                     raise Exception("start offset not constant")
                 node = SVT("MapElement")
-                
                 mapID = self._memories[-1][start_offset+32]
                 if(mapID.value!="MapElement"):
-                    
-                    node.children.append(SVT(self._storage_map[self._curr_contract][str(mapID.value)]))
+                    node.children.append(SVT(self._var_prefix+'.'+self._storage_map[self._curr_contract][str(mapID.value)]))
                 else:
                     node.children.append(mapID)
                 node.children.append(self._memories[-1][start_offset])
