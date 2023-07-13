@@ -221,7 +221,18 @@ class EVM:
             dest = self._stacks[-1][len(self._stacks[-1])-position-1] 
             self._stacks[-1][len(self._stacks[-1])-position] = self._stacks[-1].pop()
             self._stacks[-1].append(dest)
-        elif opcode=="ISZERO" or opcode=="NOT":
+        elif opcode=="ISZERO":
+            if isinstance(self._stacks[-1][-1].value, int):
+                val = self._stacks[-1].pop().value
+                if val == 0:
+                    self._stacks[-1].append(SVT(1))
+                else:
+                    self._stacks[-1].append(SVT(0))
+            else:
+                node = SVT(opcode)
+                node.children.append(self._stacks[-1].pop())
+                self._stacks[-1].append(node)
+        elif opcode=="NOT":
             if type(self._stacks[-1][-1].value) == int:
                 val = self._stacks[-1].pop().value
                 node = SVT(~(2**256|val) & (2**256-1))
