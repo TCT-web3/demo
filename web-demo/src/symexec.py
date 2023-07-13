@@ -74,17 +74,31 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        # print(instr)
-        if isinstance(PC, int) and (PC == 9749):
-            self.write_vars()
-            self.write_paths()
-            sys.exit()
+        print(instr)
+        # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
+        #     print("===========")
+        #     for n in self._stacks[-1]:
+        #         print(n, type(n))
+        # print(self._call_stack)
+        if isinstance(PC, int) and opcode=="JUMPDEST":
+            print("----JUMPDEST----")
+            self.inspect("currstack")
+            self.inspect("currmemory")
+        '''
+        if isinstance(PC, int) and  (PC==5746):
+            self.inspect("currstack")
+            self.inspect("currmemory")
+            if PC==5746:
+                sys.exit()
+        '''
+        '''
+        if isinstance(PC, int) and  (PC==11552 or PC==11553):
+            self.inspect("currstack")
+            self.inspect("currmemory")
+            if PC==11553:
+                sys.exit()
+        '''
 
-        
-        # if isinstance(PC, int) and opcode=="JUMPDEST":
-            # print("----JUMPDEST----")
-            # self.inspect("currstack")
-            # self.inspect("currmemory")
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
         elif instr[0]==(">"):

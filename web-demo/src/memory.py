@@ -36,11 +36,20 @@ def recognize_32B_mask(self,a):
     else:
         return -1,-1  #a is not a 32-byte mask
 
-def mem_item_len(self, mem_item):
+def content_item_len(self, mem_item):
     if mem_item.value != "Partial32B":
         return 32
     segment = mem_item.children[0]
     return segment[1]-segment[0]+1
+
+
+def mem_item_len(self, mem, offset):
+    if mem[offset].value != "Partial32B":
+        return 32
+    for k,v in mem.items():
+        if k>offset:
+            return min(k-offset,32)
+                
         
 def handle_MLOAD(self):
     offset = self._stacks[-1].pop().value
@@ -54,14 +63,14 @@ def handle_MLOAD(self):
     bytes_to_copy = 32
     for k,v in self._memories[-1].items():
         if k == offset:
-            if bytes_to_copy == 32 and self.mem_item_len(self._memories[-1][offset]) == 32:
+            if bytes_to_copy == 32 and self.mem_item_len(self._memories[-1],offset) == 32:
                 return self._memories[-1][offset]
             unfilled_position = offset
             in_copy_mode = True
             
         if k > offset and not in_copy_mode:   
         # We have found the place to insert the mem item of offset. It is between prev_k and k
-            prev_len = self.mem_item_len(prev_v)
+            prev_len = self.mem_item_len(self._memories[-1],prev_k)
             #print("prev_len="+hex(prev_len))
             if (offset - prev_k < prev_len):
             #In this case, offset falls into the previous item.
@@ -109,7 +118,7 @@ def handle_MLOAD(self):
                 if bytes_to_copy==0:
                     return node
                     
-            curr_len = self.mem_item_len(v)
+            curr_len = self.mem_item_len(self._memories[-1],k)
             if bytes_to_copy >= curr_len:
                 # copy the current mem item in entirety 
                 node.children.append(v)
@@ -143,11 +152,12 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
         raise Exception("An MSTORE offset is not int.")
     
     last_partial_overwritten_node=None
+    k_to_delete=None
     for k,v in self._memories[depth].items():
-        curr_len=self.mem_item_len(v)
+        curr_len=self.mem_item_len(self._memories[depth],k)
         if k < offset and k+curr_len>offset:
         # This means offset falls in the current mem item
-            # print("shuo1")
+            #print("shuo1")
             node1=SVT("Partial32B")
             if v.value == "Partial32B":
                 node1_segment = (v.children[0][0], v.children[0][1]-(k+curr_len-offset))  # retract the current mem item's right end
@@ -161,27 +171,37 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
             self._memories[depth][k] = node1
         if k < offset+content_to_store_len and k+curr_len>offset+content_to_store_len:
         # This means the end of content_to_store falls in the current mem item
-            # print("shuo2")
+            #print(f"shuo2 k={k} curr_len={curr_len} offset={offset} content_to_store_len={content_to_store_len}")
+            
             node1=SVT("Partial32B")
             if v.value == "Partial32B":
-                node1_segment = (v.children[0][0]+(offset+content_to_store_len-k), v.children[0][1])  # retract the current mem item's left end
+                node1_segment = ((offset+content_to_store_len-k), v.children[0][1])  # retract the current mem item's left end
                 node1_value = v.children[1]
             else:
                 node1_segment = (offset+content_to_store_len-k,31) # retract the current mem item's left end
                 node1_value = v
             node1.children.append(node1_segment)
             node1.children.append(node1_value)
-            # print("///////", node1) 
+            #print("///////", node1) 
             last_partial_overwritten_node = node1
-            
+            k_to_delete=k
+            break
+    if k_to_delete != None:
+        del self._memories[depth][k_to_delete]
+        
     if last_partial_overwritten_node!=None:
-        # print("shuo3")
+        print("shuo3")
         self._memories[depth][offset+content_to_store_len] = last_partial_overwritten_node
-            
-    for k,v in self._memories[depth].items():        
+    
+    k_to_delete=None
+    for k,v in self._memories[depth].items():
+        curr_len=self.mem_item_len(self._memories[depth],k)
         if k > offset and k+curr_len<offset+content_to_store_len:
         # This mem item is completely overwrittn by the MSTORE
-            del self._memories[depth][k]
+            k_to_delete = k
+            break
+    if k_to_delete != None:
+        del self._memories[depth][k_to_delete]
     
     if isinstance(content_to_store.value,int) or content_to_store.value != "concat":
         self._memories[depth][offset] = content_to_store
@@ -189,7 +209,7 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
         pos = offset
         for item in content_to_store.children:
             self._memories[depth][pos] = item
-            pos+=self.mem_item_len(item)
+            pos+=self.content_item_len(item)
 
     self._memories[depth] = dict(sorted(self._memories[depth].items()))  # use sorted dictionary to mimic memory allocation 
     
