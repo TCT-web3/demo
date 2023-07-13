@@ -74,16 +74,17 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        print(instr)
-        # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
-        #     print("===========")
-        #     for n in self._stacks[-1]:
-        #         print(n, type(n))
-        # print(self._call_stack)
-        if isinstance(PC, int) and opcode=="JUMPDEST":
-            print("----JUMPDEST----")
-            self.inspect("currstack")
-            self.inspect("currmemory")
+        # print(instr)
+        if isinstance(PC, int) and (PC == 9749):
+            self.write_vars()
+            self.write_paths()
+            sys.exit()
+
+        
+        # if isinstance(PC, int) and opcode=="JUMPDEST":
+            # print("----JUMPDEST----")
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
         elif instr[0]==(">"):
@@ -392,14 +393,23 @@ class EVM:
     '''generate boogie code when SSTORE happens'''
     def boogie_gen_sstore(self, node0, node1):
         if node0.value=="MapElement":
-            map_key = self.find_key(node0.children[1])
-            var_name = self._storage_map[self._curr_contract][str(self.find_mapID(node0))]+"["+str(map_key)+"]"
+            if node0.children[0]=="MapElement": 
+                map_ID = self.find_mapID(node0.children[0].children[0])
+                map_key1 = self.find_key(node0.children[0].children[1])
+                map_key2 = self.find_key(node0.children[1].children[1])
+                var_name = self._storage_map[self._curr_contract][str(map_ID)]+"["+str(map_key1)+"]"+"["+str(map_key2)+"]"
+                print(var_name)
+                sys.exit()
+            else:
+                map_key = self.find_key(node0.children[1])
+                var_name = self._storage_map[self._curr_contract][str(self.find_mapID(node0))]+"["+str(map_key)+"]"
             path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         else:
             var_name = self._storage_map[self._curr_contract][str(node0.value)]
             self.add_new_vars(var_name)
             path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         self._final_path.append(path)
+        
 
     def is_called_param(self, map_key):
         if (re.search("c\_(.*).\_", map_key)):
@@ -440,8 +450,8 @@ class EVM:
         else:
             raise Exception("JUMPI stack[-1] is_not_zero error")
         self._final_path.append(path)
-        self.write_paths()
-        sys.exit()
+        # self.write_paths()
+        # sys.exit()
 
     '''wrote aux vars to Boogie'''
     def write_vars(self):
