@@ -104,10 +104,14 @@ def get_types(storage_info):
                     types[label] = t_type[2:] 
                 locals.append(contract+'.'+label)
                 # print(contract, label, t_type)
-        contract_name = contract[contract.find(':'):]
+        # contract_name = contract[contract.find(':'):]
         # contract_name = str(contract)
         # contract_name = contract_name[':':]        
-        TYPES[contract_name] = types
+        # print(contract)
+        # print(types)
+        TYPES[contract] = types
+
+        # print(TYPES)
     return TYPES
 
 
