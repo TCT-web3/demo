@@ -5,13 +5,13 @@ pragma solidity >=0.8.4;
 //solhint-disable var-name-mixedcase
 //solhint-disable reason-string
 
-import "./interfaces/IUniswapV2Factory.sol";
-import "./libraries/TransferHelper.sol";
+// import "./interfaces/IUniswapV2Factory.sol";
+// import "./libraries/TransferHelper.sol";
 
-import "./interfaces/IUniswapV2Router.sol";
-import "./libraries/UniswapV2Library.sol";
-import "./interfaces/IERC20.sol";
-import "./interfaces/IWETH.sol";
+// import "./interfaces/IUniswapV2Router.sol";
+// import "./libraries/UniswapV2Library.sol";
+// import "./interfaces/IERC20.sol";
+// import "./interfaces/IWETH.sol";
 
 
 import "./UniswapV2Factory.sol";
@@ -58,13 +58,11 @@ contract Test {
         );
     }
     
-    /*
+    // function get_pair_hash() public pure returns (bytes32)
+    // {
+    //     bytes32 r=keccak256(type(UniswapV2Pair).creationCode);
+    //     return r;
+    // }
     
-    function get_pair_hash() public pure returns (bytes32)
-    {
-        bytes32 r=keccak256(type(UniswapV2Pair).creationCode);
-        return r;
-    }
-    */
     
 }
