@@ -309,6 +309,10 @@ class EVM:
                 node.children.append(self._memories[-1][start_offset])
                 self._stacks[-1].pop() # pop 64
                 self._stacks[-1].append(node)
+            else:
+                self._stacks[-1].pop()    #ToDo: this is a temporary patch. It makes the stack layout correct. The content is still incorrect.
+                self._stacks[-1].pop()
+                self._stacks[-1].append(SVT(0xdeadbeef))
         else:
             print('[!]',str(instr), 'not supported yet')  
             # sys.exit()
