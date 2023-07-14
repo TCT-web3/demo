@@ -332,6 +332,7 @@ class EVM:
                 self._stacks[-1].append(SVT(0xdeadbeef))
         else:
             print('[!]',str(instr), 'not supported yet')  
+            raise Exception("not handled") 
             # sys.exit()
 
     '''recursively traverse an SVT node'''
