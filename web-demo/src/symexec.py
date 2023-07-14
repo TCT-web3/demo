@@ -80,12 +80,12 @@ class EVM:
         #     for n in self._stacks[-1]:
         #         print(n, type(n))
         # print(self._call_stack)
-        # if isinstance(PC, int) and opcode=="JUMPDEST":
-        #     print("----JUMPDEST----")
-        #     self.inspect("currstack")
-        #     self.inspect("currmemory")
+        if isinstance(PC, int) and opcode=="JUMPDEST":
+            print("----JUMPDEST----")
+            self.inspect("currstack")
+            self.inspect("currmemory")
         
-        tmpPC=7025
+        tmpPC=3929
         if isinstance(PC, int) and  (PC==tmpPC):
             self.inspect("currstack")
             self.inspect("currmemory")
@@ -275,12 +275,12 @@ class EVM:
                 elif opcode == "EXP":
                     node = SVT((self._stacks[-1].pop().value ** self._stacks[-1].pop().value)%2**256)
                 elif opcode == "SHL":
+                    shift= self._stacks[-1].pop().value
                     base = self._stacks[-1].pop().value
-                    shift = self._stacks[-1].pop().value
                     node = SVT((base << shift)%2**256)
                 elif opcode == "SHR":
-                    base = self._stacks[-1].pop().value
                     shift = self._stacks[-1].pop().value
+                    base = self._stacks[-1].pop().value
                     node = SVT(base >> shift) 
                 elif opcode == "LT" or opcode == "GT" or opcode == "EQ" or opcode=="SLT" or opcode=="MUL": #TODO: Concrete evaluation
                     node = SVT(opcode)

@@ -1,0 +1,11 @@
+correct:
+
+2460 (3886, 'SHL', None)
+2474  (10206, 'JUMPDEST', None) 
+2597  (6985, 'JUMPDEST', None)
+4174  (3906, 'JUMPDEST', None)
+4244 (3928, 'SHA3', None)
+incorrect:
+2933 (10147, 'JUMPDEST', None)
+4656  (10469, 'JUMPDEST', None)
+6921  (11046, 'JUMPDEST', None)
