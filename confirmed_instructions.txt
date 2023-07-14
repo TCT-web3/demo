@@ -1,11 +1,10 @@
 correct:
+1239  (3886, 'SHL', None)
+1253  (10206, 'JUMPDEST', None) 
+1353  (6985, 'JUMPDEST', None)
+2752  (3906, 'JUMPDEST', None)
+2770  (3928, 'SHA3', None)
 
-2460 (3886, 'SHL', None)
-2474  (10206, 'JUMPDEST', None) 
-2597  (6985, 'JUMPDEST', None)
-4174  (3906, 'JUMPDEST', None)
-4244 (3928, 'SHA3', None)
 incorrect:
-2933 (10147, 'JUMPDEST', None)
-4656  (10469, 'JUMPDEST', None)
-6921  (11046, 'JUMPDEST', None)
+2824  (10469, 'JUMPDEST', None)
+2874  (10147, 'JUMPDEST', None)
