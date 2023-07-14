@@ -61,11 +61,16 @@ class EVM:
 
     '''perform symbolic execution'''
     def sym_exec(self, code_trace):
-            for i in range(len(code_trace)):
+        for i in range(len(code_trace)):
+            # try:
                 if(code_trace[i][1]=="JUMPI"):
                     self.run_instruction(code_trace[i], (code_trace[i][0]+1 != code_trace[i+1][0]))
                 else:
                     self.run_instruction(code_trace[i], None)
+            # except:
+            #     self.write_vars()
+            #     self.write_paths()
+            #     sys.exit()
 
 
     '''run each EVM instruction with PC, operator, and operand'''        
@@ -74,7 +79,7 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        print(instr)
+        # print(instr)
         # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
         #     print("===========")
         #     for n in self._stacks[-1]:
@@ -116,23 +121,27 @@ class EVM:
             ### calling a new contract, set up calle stack
             callee_stack    = []
             calldata_pos    = self._stacks[-1][-4+static_idx_diff].value
+            print(calldata_pos)
             calldata_len    = self._stacks[-1][-5+static_idx_diff].value
             func_selector   = self._memories[-1][calldata_pos].children[1].value
-
+            # print(self._memories[-1][calldata_pos].children[1].value)
             if(isinstance(func_selector, int)):
                 func_selector//=0x100**28
             else:
                 func_selector = (self.find_key(self._memories[-1][calldata_pos].children[1].children[1]))
-
+            print(func_selector)
             callee_stack.append(SVT(func_selector))
             callee_stack.append(SVT("AConstantBySolc"))
             calldata_len -=4
             calldata_pos +=4
 
             print(calldata_pos)
-            self.inspect("currmemory")
+            print(calldata_len)
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
 
             for i in range(calldata_len//0x20):
+                # if calldata_pos in self._memories[-1]:
                 callee_stack.append(self._memories[-1][calldata_pos])
                 calldata_pos += 0x20
 
@@ -206,7 +215,8 @@ class EVM:
         elif opcode=="JUMP":
             self._stacks[-1].pop()
         elif opcode=="JUMPI":
-            #self.boogie_gen_jumpi(self._stacks[-1][-2], branch_taken)
+            print("PC:", PC)
+            self.boogie_gen_jumpi(self._stacks[-1][-2], branch_taken)
             self._stacks[-1].pop()
             self._stacks[-1].pop()
         elif opcode=="MSTORE":
@@ -325,6 +335,7 @@ class EVM:
 
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
+        print("before:", node)
         to_return = ""
         if not node.children:
             return node.value
@@ -444,6 +455,7 @@ class EVM:
             to_return = val << shift
         else:
             return str(node)
+        print("returned:", to_return)
         return to_return
     
     '''generate boogie code when SSTORE happens'''
@@ -477,6 +489,7 @@ class EVM:
     '''generate boogie code when JUMPI happens'''         
     def boogie_gen_jumpi(self, node, isNotZero):
         # self._final_path.append(str(node)+'\n')
+        print(node)
         var = self.postorder_traversal(node)
         if var == "true":
             if isNotZero:

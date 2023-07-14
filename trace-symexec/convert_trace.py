@@ -1,12 +1,37 @@
 import sys
 import json
+import re
 
-def output_trace(trace_fname, deployment_fname):
+def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
+    # Open files
     trace_file = open(trace_fname, "r")
     trace = json.load(trace_file)["result"]["structLogs"]
-    deploy_info = json.load(open(deployment_fname, "r"))
-    output = open("output.txt", "w")
+    theorem_file = open("uploads/" + theorem_fname, "r")
+    theorem = json.load(theorem_file)
+    with open(deployment_fname, "r") as deploy_info_file:
+        deploy_info = json.load(deploy_info_file)
+    output = open("trace-" + tx_hash + ".txt", "w")
+    # output = open("trace_UniswapAddLiquidity2.txt", "w")
+
+    # Map entry point to deployment file
+    hashes = re.search(r"0x([^:]+)::0x([^:]+)", theorem["entry-for-real"])
+    contract_hash = hashes.group(1)
+    function_hash = hashes.group(2)
+    names = re.search(r"([^:]+)::([^:]+)", theorem["entry-for-test"])
+    contract_name = names.group(1)
+    function_name = names.group(2)
+
+    deploy_info[contract_hash] = contract_name
+    deploy_info[function_hash] = function_name
+
+    with open(deployment_fname, "w") as deploy_info_file:
+        deploy_info_file.write(json.dumps(deploy_info))
+
+    # Write header
     output.write("======================================Begin==========================================\n")
+    output.write(">>enter 0x" + contract_hash + "::0x" + function_hash + " (" + contract_name + "::" + function_name + ")\n")
+    enter = False
+    # Write rest of trace
     for i in range(len(trace)):
         line = ""
         pc = str(trace[i]["pc"])
@@ -24,15 +49,28 @@ def output_trace(trace_fname, deployment_fname):
         # Call
         elif opcode == "CALL":
             # hex
-            contract_address = trace[i]["stack"][-2]
-            line += "-\n>>enter " + '0x' + contract_address
+            contract_address = trace[i]["stack"][-2].lstrip("000000000000000000000000")
             offset = int(trace[i]["stack"][-4], 16)
             row = offset // 32
             col = (offset % 32)*2
-            func_selector = trace[i]["memory"][row][col:col+8]
-            line += "::0x" + func_selector
-            # deployment info
-            line += "(" + deploy_info[contract_address] + "::" + deploy_info[func_selector] + ") "
+            if col+8 > len(trace[i]["memory"][row]):
+                func_selector = trace[i]["memory"][row][col:] + trace[i]["memory"][row+1][:col+8-len(trace[i]["memory"][row])]
+            else:
+                func_selector = trace[i]["memory"][row][col:col+8]
+            print(trace[i]["memory"][row])
+            print(trace[i]["memory"][row+1])
+            print(contract_address, func_selector)
+            if not enter and func_selector == function_hash:
+                output.close()
+                output = open("trace-" + tx_hash + ".txt", "w")
+                output.write("======================================Begin==========================================\n")
+                line = ">>enter 0x" + contract_hash + "::0x" + function_hash + " (" + deploy_info[contract_hash] + "::" + deploy_info[function_hash] + ") "
+                enter = True
+            else:
+                line += "-\n>>enter " + '0x' + contract_address
+                line += "::0x" + func_selector
+                # deployment info
+                line += " (" + deploy_info[contract_address] + "::" + deploy_info[func_selector] + ") "
         elif opcode == "RETURN":
             line += "-\n<<leave "
         elif opcode == "STOP":
@@ -45,10 +83,10 @@ def output_trace(trace_fname, deployment_fname):
 def main():
     # Get file names
     ARGS = sys.argv
-    TRACE_FNAME = ARGS[1]
+    # TRACE_FNAME = ARGS[1]
 
     # Call method
-    output_trace(TRACE_FNAME, "deployment_info.json")
+    output_trace("trace-0x301b7d4d8899059aebcaec2c4f9e0613307518d9f5d466e170a961df8273de72.json", "0x301b7d4d8899059aebcaec2c4f9e0613307518d9f5d466e170a961df8273de72", "deployment_info.json", "theorem-0x301b7d4d8899059aebcaec2c4f9e0613307518d9f5d466e170a961df8273de72.json")
     
 
 if __name__ == "__main__":
