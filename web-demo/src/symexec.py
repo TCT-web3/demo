@@ -84,15 +84,13 @@ class EVM:
         #     print("----JUMPDEST----")
         #     self.inspect("currstack")
         #     self.inspect("currmemory")
-        
-        tmpPC=7025
-        if isinstance(PC, int) and  (PC==tmpPC):
-            self.inspect("currstack")
-            self.inspect("currmemory")
-            if PC==tmpPC:
-                self.write_vars()
-                self.write_paths()
-                sys.exit()
+        # tmpPC=10664
+        # if isinstance(PC, int) and  (PC==tmpPC):
+        #     self.inspect("currstack")
+        #     self.inspect("currmemory")
+        #     self.write_vars()
+        #     self.write_paths()
+        #     sys.exit()
         '''
         if isinstance(PC, int) and  (PC==11552 or PC==11553):
             self.inspect("currstack")
@@ -126,6 +124,9 @@ class EVM:
             callee_stack.append(SVT("AConstantBySolc"))
             calldata_len -=4
             calldata_pos +=4
+
+            print(calldata_pos)
+            self.inspect("currmemory")
 
             for i in range(calldata_len//0x20):
                 callee_stack.append(self._memories[-1][calldata_pos])
@@ -425,6 +426,7 @@ class EVM:
     
     '''generate boogie code when SSTORE happens'''
     def boogie_gen_sstore(self, node0, node1):
+
         if node0.value=="MapElement":
             if node0.children[0]=="MapElement": 
                 map_ID = (node0.children[0].children[0])
@@ -437,8 +439,9 @@ class EVM:
             path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         else:
             var_name = self._storage_map[self._curr_contract][str(node0.value)]
-            self.add_new_vars(var_name)
             path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
+        
+        self.add_new_vars(var_name)
         self._final_path.append(path)
         
 
