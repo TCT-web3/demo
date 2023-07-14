@@ -320,6 +320,7 @@ class EVM:
                 self._stacks[-1].append(SVT(0xdeadbeef))
         else:
             print('[!]',str(instr), 'not supported yet')  
+            raise Exception("not handled") 
             # sys.exit()
 
     '''recursively traverse an SVT node'''
@@ -329,9 +330,9 @@ class EVM:
             return node.value
 
         if node.value == "ISZERO":
-            to_return += self.postorder_traversal(node.children[0]) # + "==0;\n"
-            if to_return.isnumeric():
-                if to_return == "0":
+            to_return = self.postorder_traversal(node.children[0])
+            if isinstance(to_return, int):
+                if to_return == 0:
                     to_return = "true"
                 else:
                     to_return = "false"
@@ -351,7 +352,6 @@ class EVM:
                 self._final_vars[to_return] = 'bool'
                 self._final_path.append(to_boogie)
         elif node.value == "SLOAD":
-
             if node.children[0].value=="MapElement":
                 if node.children[0].children[0].value=="MapElement": 
                     map_ID = node.children[0].children[0].children[0].value
@@ -386,20 +386,11 @@ class EVM:
             if isinstance(val1, int) and isinstance(val2, int):
                 to_return = ""
                 if node.value == "LT" or node.value == "SLT": #TODO: SLT implementation
-                    if val1 < val2:
-                        to_return = "true"
-                    else:
-                        to_return = "false"
+                    to_return = "true" if val1 < val2 else "false"
                 elif node.value == "GT":
-                    if val1 > val2:
-                        to_return = "true"
-                    else:
-                        to_return = "false"
+                    to_return = "true" if val1 > val2 else "false"
                 elif node.value == "EQ":
-                    if val1 == val2:
-                        to_return = "true"
-                    else:
-                        to_return = "false"
+                    to_return = "true" if val1 == val2 else "false"
             else:
                 self._tmp_var_count+=1
                 to_return = "tmp" + str(self._tmp_var_count)
@@ -411,7 +402,7 @@ class EVM:
                     to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
                 self._final_vars[to_return] = 'bool'
                 self._final_path.append(to_boogie) 
-        elif node.value == "ADD" or node.value == "SUB" or node.value == "AND":
+        elif node.value == "ADD" or node.value == "SUB" or node.value == "AND" or node.value == "OR" or node.value == "MUL":
             val1=self.postorder_traversal(node.children[0])
             val2=self.postorder_traversal(node.children[1])
             if isinstance(val1, int) and isinstance(val2, int):
@@ -421,6 +412,15 @@ class EVM:
                     to_return = val1 - val2
                 elif node.value == "AND":
                     to_return = val1 & val2
+                elif node.value == "OR":
+                    to_return = val1 | val2
+                elif node.value == "MUL":
+                    to_return = val1 * val2
+            # elif (isinstance(val2, int) and val2 == 0) and (node.value == "MUL" or node.value == "SUB" or node.value == "ADD"):
+            #     if node.value == "MUL":
+            #         to_return = 0
+            #     elif node.value == "SUB" or node.value == "ADD":
+            #         to_return = val1
             else:
                 self._tmp_var_count+=1
                 to_return =  "tmp" + str(self._tmp_var_count)
@@ -430,10 +430,18 @@ class EVM:
                     to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(val1)+","+str(val2)+");\n"
                 elif node.value == "AND":
                     to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(val1)+","+str(val2)+");\n"
+                elif node.value == "OR":
+                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmor("+str(val1)+","+str(val2)+");\n"
+                elif node.value == "MUL":
+                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmmul("+str(val1)+","+str(val2)+");\n"
                 self._final_vars[to_return] = 'uint256'
                 self._final_path.append(to_boogie)
         elif node.value == "Partial32B":
-            to_return = str(self.postorder_traversal(node.children[1]))
+            to_return = self.postorder_traversal(node.children[1])
+        elif node.value == "SHL":
+            shift = self.postorder_traversal(node.children[0])
+            val = self.postorder_traversal(node.children[1])
+            to_return = val << shift
         else:
             return str(node)
         return to_return
