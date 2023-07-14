@@ -270,10 +270,18 @@ def handle_AND(self):
             segment = (first,last)
             num = a
     if segment != None:
-        if num.value == "Partial32B" and num.children[0][0] == first and num.children[0][1] == last:
+        #print (f"shuo1:{first} {last}  {num}")
+        if num.value == "Partial32B" and num.children[0][0] >= first and num.children[0][1] <= last:
         # This means the new Partial32B would be superfuous
             return num
-                        
+        if num.value == "Partial32B":
+            left=max( num.children[0][0] , first)
+            right = min (num.children[0][1] , last)
+            newPartial32BNode = SVT("Partial32B")
+            newPartial32BNode.children.append((left,right))
+            newPartial32BNode.children.append(child.children[1])
+            print(newPartial32BNode)
+            return newPartial32BNode
         if num.value == "concat":
             new_concat_node = SVT("concat")
             if last ==31:

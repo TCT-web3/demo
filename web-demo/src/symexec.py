@@ -86,8 +86,8 @@ class EVM:
             self.inspect("currstack")
             self.inspect("currmemory")
         
-        tmpPC=4096 #10203
-        if isinstance(PC, int) and  (PC==tmpPC) and self._stacks[-1][-3].value==0x29a:
+        tmpPC=4060 #10203
+        if isinstance(PC, int) and  (PC==tmpPC) and self._stacks[-1][-2].value==0x29a:
             self.inspect("currstack")
             self.inspect("currmemory")
             if PC==tmpPC:
