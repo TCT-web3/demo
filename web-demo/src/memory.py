@@ -157,17 +157,19 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
         curr_len=self.mem_item_len(self._memories[depth],k)
         if k < offset and k+curr_len>offset:
         # This means offset falls in the current mem item
-            #print("shuo1")
+            #print(f"shuo1 k={k} curr_len={curr_len} offset={offset} content_to_store_len={content_to_store_len}")
             node1=SVT("Partial32B")
+            bytes_to_retract = k+curr_len-offset
             if v.value == "Partial32B":
-                node1_segment = (v.children[0][0], v.children[0][1]-(k+curr_len-offset))  # retract the current mem item's right end
+                right_end =   min(curr_len - bytes_to_retract -1,v.children[0][1])  
+                node1_segment = (v.children[0][0], right_end)  # retract the current mem item's right end
                 node1_value = v.children[1]
             else:
-                node1_segment = (0,31-(k+curr_len-offset)) # retract the current mem item's right end
+                node1_segment = (0,31-bytes_to_retract) # retract the current mem item's right end
                 node1_value = v   
             node1.children.append(node1_segment)
             node1.children.append(node1_value)
-            # print("///////", node1)    
+            #print("///////", node1)    
             self._memories[depth][k] = node1
         if k < offset+content_to_store_len and k+curr_len>offset+content_to_store_len:
         # This means the end of content_to_store falls in the current mem item
@@ -190,7 +192,7 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
         del self._memories[depth][k_to_delete]
         
     if last_partial_overwritten_node!=None:
-        print("shuo3")
+        #print("shuo3")
         self._memories[depth][offset+content_to_store_len] = last_partial_overwritten_node
     
     k_to_delete=None
