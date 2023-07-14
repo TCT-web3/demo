@@ -80,33 +80,21 @@ class EVM:
         #     for n in self._stacks[-1]:
         #         print(n, type(n))
         # print(self._call_stack)
-<<<<<<< HEAD
-        # if isinstance(PC, int) and opcode=="JUMPDEST":
-        #     print("----JUMPDEST----")
-        #     self.inspect("currstack")
-        #     self.inspect("currmemory")
-        # tmpPC=10664
-        # if isinstance(PC, int) and  (PC==tmpPC):
-        #     self.inspect("currstack")
-        #     self.inspect("currmemory")
-        #     self.write_vars()
-        #     self.write_paths()
-        #     sys.exit()
-=======
+
         if isinstance(PC, int) and opcode=="JUMPDEST":
             print("----JUMPDEST----")
             self.inspect("currstack")
             self.inspect("currmemory")
         
-        tmpPC=3929
-        if isinstance(PC, int) and  (PC==tmpPC):
+        tmpPC=4096 #10203
+        if isinstance(PC, int) and  (PC==tmpPC) and self._stacks[-1][-3].value==0x29a:
             self.inspect("currstack")
             self.inspect("currmemory")
             if PC==tmpPC:
                 self.write_vars()
                 self.write_paths()
                 sys.exit()
->>>>>>> 7061333b5d6bd912edb8c3145c2436d208b77f5d
+
         '''
         if isinstance(PC, int) and  (PC==11552 or PC==11553):
             self.inspect("currstack")

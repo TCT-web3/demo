@@ -341,8 +341,28 @@ def handle_OR(self):
             pos+= child.children[0][1]-child.children[0][0]+1
         # print("//////////", node)
         return node
-        
-        
+    
+    if a.value == "concat" and isinstance(b.value,int):
+        tmp=a
+        a=b
+        b=tmp
+    if isinstance(a.value,int) and b.value == "concat":
+        pos = 0
+        node = SVT("concat")
+        for child in b.children:
+            l = pos
+            r = pos + child.children[0][1]-child.children[0][0]
+            if isinstance(child.children[1].value,int) and child.children[1].value == 0x0:
+                newnode = SVT("Partial32B")
+                newnode.children.append(child.children[0])
+                newnode.children.append(SVT(a.value))
+                node.children.append(newnode)
+            else:
+                node.children.append(child)
+            pos+= child.children[0][1]-child.children[0][0]+1
+        # print("//////////", node)
+        return node
+      
     if isinstance(a.value, int) and isinstance(b.value, int):
         node = SVT((a.value & b.value)%2**256)
     else:
