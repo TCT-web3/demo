@@ -80,6 +80,7 @@ class EVM:
         #     for n in self._stacks[-1]:
         #         print(n, type(n))
         # print(self._call_stack)
+<<<<<<< HEAD
         # if isinstance(PC, int) and opcode=="JUMPDEST":
         #     print("----JUMPDEST----")
         #     self.inspect("currstack")
@@ -91,6 +92,21 @@ class EVM:
         #     self.write_vars()
         #     self.write_paths()
         #     sys.exit()
+=======
+        if isinstance(PC, int) and opcode=="JUMPDEST":
+            print("----JUMPDEST----")
+            self.inspect("currstack")
+            self.inspect("currmemory")
+        
+        tmpPC=3929
+        if isinstance(PC, int) and  (PC==tmpPC):
+            self.inspect("currstack")
+            self.inspect("currmemory")
+            if PC==tmpPC:
+                self.write_vars()
+                self.write_paths()
+                sys.exit()
+>>>>>>> 7061333b5d6bd912edb8c3145c2436d208b77f5d
         '''
         if isinstance(PC, int) and  (PC==11552 or PC==11553):
             self.inspect("currstack")
@@ -265,7 +281,7 @@ class EVM:
         elif opcode=="OR":
             node = self.handle_OR()
             self._stacks[-1].append(node)
-        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL" or opcode=="SLT" or opcode=="MUL":            
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL" or opcode=="SLT" or opcode=="MUL" or opcode=="SHR":            
             if isinstance(self._stacks[-1][-1].value, int) and isinstance(self._stacks[-1][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[-1].pop().value + self._stacks[-1].pop().value)%2**256) 
@@ -276,7 +292,13 @@ class EVM:
                 elif opcode == "EXP":
                     node = SVT((self._stacks[-1].pop().value ** self._stacks[-1].pop().value)%2**256)
                 elif opcode == "SHL":
-                    node = SVT((self._stacks[-1].pop().value << self._stacks[-1].pop().value)%2**256) 
+                    shift= self._stacks[-1].pop().value
+                    base = self._stacks[-1].pop().value
+                    node = SVT((base << shift)%2**256)
+                elif opcode == "SHR":
+                    shift = self._stacks[-1].pop().value
+                    base = self._stacks[-1].pop().value
+                    node = SVT(base >> shift) 
                 elif opcode == "LT" or opcode == "GT" or opcode == "EQ" or opcode=="SLT" or opcode=="MUL": #TODO: Concrete evaluation
                     node = SVT(opcode)
                     node.children.append(self._stacks[-1].pop())
@@ -304,6 +326,10 @@ class EVM:
                 node.children.append(self._memories[-1][start_offset])
                 self._stacks[-1].pop() # pop 64
                 self._stacks[-1].append(node)
+            else:
+                self._stacks[-1].pop()    #ToDo: this is a temporary patch. It makes the stack layout correct. The content is still incorrect.
+                self._stacks[-1].pop()
+                self._stacks[-1].append(SVT(0xdeadbeef))
         else:
             print('[!]',str(instr), 'not supported yet')  
             # sys.exit()
