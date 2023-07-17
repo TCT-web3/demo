@@ -62,15 +62,15 @@ class EVM:
     '''perform symbolic execution'''
     def sym_exec(self, code_trace):
         for i in range(len(code_trace)):
-            # try:
+            try:
                 if(code_trace[i][1]=="JUMPI"):
                     self.run_instruction(code_trace[i], (code_trace[i][0]+1 != code_trace[i+1][0]))
                 else:
                     self.run_instruction(code_trace[i], None)
-            # except:
-            #     self.write_vars()
-            #     self.write_paths()
-            #     sys.exit()
+            except:
+                self.write_vars()
+                self.write_paths()
+                sys.exit()
 
 
     '''run each EVM instruction with PC, operator, and operand'''        
@@ -90,8 +90,10 @@ class EVM:
             print("----JUMPDEST----")
             self.inspect("currstack")
             self.inspect("currmemory")
-        
-        tmpPC=-1  #4126  # 4060 #10203
+        if isinstance(PC, int) and (PC >= 2972 and PC <= 3063):
+            self.inspect("currstack")
+            self.inspect("currmemory")
+        tmpPC=9726  #4126  # 4060 #10203
         if isinstance(PC, int) and  (PC==tmpPC) :#and self._stacks[-1][-2].value==0x29a:
             self.inspect("currstack")
             self.inspect("currmemory")
