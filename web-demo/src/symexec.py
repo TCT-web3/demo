@@ -79,7 +79,7 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        # print(instr)
+        print(instr)
         # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
         #     print("===========")
         #     for n in self._stacks[-1]:
@@ -91,8 +91,8 @@ class EVM:
             self.inspect("currstack")
             self.inspect("currmemory")
         
-        tmpPC=4060 #10203
-        if isinstance(PC, int) and  (PC==tmpPC) and self._stacks[-1][-2].value==0x29a:
+        tmpPC=-1  #4126  # 4060 #10203
+        if isinstance(PC, int) and  (PC==tmpPC) :#and self._stacks[-1][-2].value==0x29a:
             self.inspect("currstack")
             self.inspect("currmemory")
             if PC==tmpPC:

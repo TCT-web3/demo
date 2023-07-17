@@ -77,7 +77,7 @@ def handle_MLOAD(self):
                 ignored_len = offset - prev_k
                 len_to_copy = prev_len - ignored_len
                 node1=SVT("Partial32B")
-                if prev_v!= "Partial32B":
+                if prev_v.value!= "Partial32B":
                     node1_segment = (ignored_len,31)
                     node1_value = prev_v
                 else:
@@ -128,16 +128,22 @@ def handle_MLOAD(self):
                     return node
             else:
                 node1=SVT("Partial32B")
-                if v!= "Partial32B":
+                '''
+                if v.value!= "Partial32B":
                     node1_segment = (0,bytes_to_copy-1)
                     node1_value = v
+                    print(f"shuo0: v={v}") 
                 else:
                     original_segment = v.children[0]
-                    node1_segment = (original_segment[0], original_segment[1]+bytes_to_copy)
+                    #print(f"shuo1:  v.children[0]={v.children[0]}  v.children[1]={v.children[1]} bytes_to_copy={bytes_to_copy}" )
+                    node1_segment = (0,bytes_to_copy-1)
                     node1_value = v.children[1]
+                '''
+                node1_segment = (0,bytes_to_copy-1)
+                node1_value = v
                 node1.children.append(node1_segment)
                 node1.children.append(node1_value)
-
+                #print(f"shuo2:  node1_segment={node1_segment}  node1_value={node1_value}", hex(prev_len))
                 node.children.append(node1)
                 bytes_to_copy = 0
                 return node
@@ -220,14 +226,21 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
     active_v = None
     # check all key,value in memories
     for k,v in self._memories[depth].items():
+        #print(f"active_v={active_v}  v={v}")
         if active_k == None:
             active_k = k
             active_v = v
+        elif active_v.value=="Partial32B" and v.value=="Partial32B" \
+             and active_v.children[0][0]==0 and v.children[0][1] ==31 \
+             and active_v.children[0][1]+1==v.children[0][0] and active_v.children[1].value=="Partial32B":
+             # we want to combine Partial32B((0, 27),Partial32B((12, 31),msg.sender)) and Partial32B((28, 31),msg.sender) into Partial32B((12, 31),msg.sender)
+             memory_with_consolidated_items[active_k]=active_v.children[1]
+             active_k = k
+             active_v = v
         elif isinstance(active_v.value,int) or isinstance(v.value,int) \
             or active_v.value!="Partial32B" or v.value!="Partial32B" \
             or active_v.children[1]!=v.children[1] \
             or active_v.children[0][1]+1!=v.children[0][0]:
-            #print("active item="+hex(active_item[0])+":"+str(active_item[1]))
             if not isinstance(active_v.value,int) and active_v.value=="Partial32B" \
                 and active_v.children[0][0]==0 and active_v.children[0][1]==31:
                 memory_with_consolidated_items[active_k]=active_v.children[1]
@@ -235,13 +248,14 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
                 memory_with_consolidated_items[active_k]=active_v
             active_k = k
             active_v = v
-            # print(">>>a>>>>>>", active_k, active_v)
+            #print(">>>a>>>>>>", active_k, active_v)
         else:
+            #combine active_v and v
             new_v=SVT("Partial32B")
             new_v.children.append((active_v.children[0][0],v.children[0][1]))
             new_v.children.append(active_v.children[1])
             active_v = new_v
-            # print(">>>b>>>>", active_k, active_v)
+            #print(">>>b>>>>", active_k, active_v)
             
     if not isinstance(active_v.value,int) and active_v.value=="Partial32B" \
         and active_v.children[0][0]==0 and active_v.children[0][1]==31:
