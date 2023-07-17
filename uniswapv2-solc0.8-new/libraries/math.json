@@ -1,0 +1,10 @@
+{
+  "contracts":
+  {
+    "Math.sol:Math":
+    {
+      "generated-sources-runtime": []
+    }
+  },
+  "version": "0.8.18+commit.87f61d96.Windows.msvc"
+}
