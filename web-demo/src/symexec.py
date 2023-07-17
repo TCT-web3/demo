@@ -242,9 +242,9 @@ class EVM:
         elif opcode.startswith("POP"):
             self._stacks[-1].pop()
         elif opcode.startswith("CALLER"):
-            self._stacks[-1].append(SVT("msg.sender")) # symbolic
+            self._stacks[-1].append(SVT("msg_sender")) # symbolic
         elif opcode.startswith("ORIGIN"):
-            self._stacks[-1].append(SVT("tx.origin")) # symbolic
+            self._stacks[-1].append(SVT("tx_origin")) # symbolic
         elif opcode.startswith("DUP"):
             position=int(re.search('[0-9]+', opcode)[0])
             self._stacks[-1].append(self._stacks[-1][len(self._stacks[-1])-position]) 
