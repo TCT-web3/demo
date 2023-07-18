@@ -93,8 +93,8 @@ class EVM:
         if isinstance(PC, int) and (PC >= 2972 and PC <= 3063):
             self.inspect("currstack")
             self.inspect("currmemory")
-        tmpPC=9726  #4126  # 4060 #10203
-        if isinstance(PC, int) and  (PC==tmpPC) :#and self._stacks[-1][-2].value==0x29a:
+        tmpPC=7956 #9726  #4126  # 4060 #10203
+        if isinstance(PC, int) and  (PC==tmpPC) and self._stacks[-1][-2].value==0xa4:
             self.inspect("currstack")
             self.inspect("currmemory")
             if PC==tmpPC:
@@ -183,12 +183,14 @@ class EVM:
             if opcode=="RETURN":
                 return_data_start = self._stacks[-1][-1].value
                 self._return_data_size = self._stacks[-1][-2].value
-                pos = return_data_start
+                pos_src = return_data_start
+                pos_dst = self._memories[-2][0x40].value
                 count = self._return_data_size
                 while count>0:  
-                    data = self._memories[-1][pos]
-                    self.memory_write(pos, data, 32, -2)
-                    pos+=32
+                    data = self._memories[-1][pos_src]
+                    self.memory_write(pos_dst, data, 32, -2)
+                    pos_src+=32
+                    pos_dst+=32
                     count-=32
             # print(self._call_stack)
             self._call_stack.pop()
