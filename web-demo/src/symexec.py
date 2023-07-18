@@ -493,7 +493,10 @@ class EVM:
     '''generate boogie code when JUMPI happens'''         
     def boogie_gen_jumpi(self, node, isNotZero):
         # self._final_path.append(str(node)+'\n')
-        print(node)
+        # print(self._final_vars)
+        # self.inspect("currstack")
+        if node.value == "c_04c4d.reserve0":
+            return
         var = self.postorder_traversal(node)
         if var == "true":
             if isNotZero:
