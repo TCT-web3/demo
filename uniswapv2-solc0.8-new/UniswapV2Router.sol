@@ -106,8 +106,8 @@ contract UniswapV2Router is IUniswapV2Router {
             amountBMin
         );
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
-        TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
-        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
+        IERC20(tokenA).transferFrom(msg.sender, pair, amountA);   
+        IERC20(tokenB).transferFrom(msg.sender, pair, amountB);   
         liquidity = IUniswapV2Pair(pair).mint(to);
     }
     /*
