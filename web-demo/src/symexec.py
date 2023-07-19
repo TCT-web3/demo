@@ -306,7 +306,7 @@ class EVM:
                     node.children.append(self._stacks[-1].pop())
                     node.children.append(self._stacks[-1].pop())
             else:
-                if opcode == "DIV":
+                if opcode == "DIV" and self._stacks[-1][-2].value == 1:
                     node = self._stacks[-1].pop() # actual address
                     self._stacks[-1].pop() # dummy 0x1
                 else:
