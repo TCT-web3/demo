@@ -158,6 +158,7 @@ class EVM:
                 self._stacks[-1].pop()
             self._stacks[-1].append(SVT(1)) # CALL successed
             dest_address = get_var_prefix(instr)
+            self._full_address = get_curr_address(instr)
             self._var_prefix = dest_address
             self._call_stack.append((dest_contract, dest_function, dest_address))
             self._curr_contract = dest_contract
@@ -212,6 +213,8 @@ class EVM:
                         self._stacks[-1].append(SVT(0))
                     else:
                         self._stacks[-1].append(SVT(self._return_data_size))
+        elif opcode=="TIMESTAMP":
+            self._stacks[-1].append(SVT("BLOCKTIME"))
         elif opcode=="EXTCODESIZE":
             node=SVT("ACCOUNT_CODESIZE")
             node.children.append(self._stacks[-1].pop()) 
@@ -241,6 +244,10 @@ class EVM:
                 self._stacks[-1].append(SVT(stored_value))
         elif opcode=="PC":
             self._stacks[-1].append(SVT(PC))
+        elif opcode.startswith("LOG"):
+            position=int(re.search('[0-9]+', opcode)[0])
+            for _ in range(position+2):
+                self._stacks[-1].pop()
         elif opcode.startswith("PUSH"):
             self._stacks[-1].append(SVT(operand))
         elif opcode.startswith("POP"):
@@ -283,7 +290,7 @@ class EVM:
         elif opcode=="OR":
             node = self.handle_OR()
             self._stacks[-1].append(node)
-        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL" or opcode=="SLT" or opcode=="MUL" or opcode=="SHR":            
+        elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL" or opcode=="SLT" or opcode=="MUL" or opcode=="SHR" or opcode=="MOD":            
             if isinstance(self._stacks[-1][-1].value, int) and isinstance(self._stacks[-1][-2].value, int):
                 if opcode == "ADD":
                     node = SVT((self._stacks[-1].pop().value + self._stacks[-1].pop().value)%2**256) 
@@ -301,6 +308,10 @@ class EVM:
                     shift = self._stacks[-1].pop().value
                     base = self._stacks[-1].pop().value
                     node = SVT(base >> shift) 
+                elif opcode == "MOD":
+                    val1 = self._stacks[-1].pop().value
+                    val2 = self._stacks[-1].pop().value
+                    node = SVT(val1 % val2)
                 elif opcode == "LT" or opcode == "GT" or opcode == "EQ" or opcode=="SLT" or opcode=="MUL": #TODO: Concrete evaluation
                     node = SVT(opcode)
                     node.children.append(self._stacks[-1].pop())
@@ -332,6 +343,8 @@ class EVM:
                 self._stacks[-1].pop()    #ToDo: this is a temporary patch. It makes the stack layout correct. The content is still incorrect.
                 self._stacks[-1].pop()
                 self._stacks[-1].append(SVT(0xdeadbeef))
+        elif opcode=="ADDRESS":
+            self._stacks[-1].append(SVT(self._full_address))
         else:
             print('[!]',str(instr), 'not supported yet')  
             raise Exception("not handled") 
@@ -339,7 +352,6 @@ class EVM:
 
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
-        print("before:", node)
         to_return = ""
         if not node.children:
             return node.value
@@ -459,7 +471,6 @@ class EVM:
             to_return = val << shift
         else:
             return str(node)
-        print("returned:", to_return)
         return to_return
     
     '''generate boogie code when SSTORE happens'''

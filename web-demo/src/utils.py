@@ -48,6 +48,14 @@ def get_init_var_prefix():
     return prefix
 
 '''
+get the current contract address
+'''
+def get_curr_address(instr):
+    L = instr.find(" ")
+    R = instr.find("::")
+    return instr[L:R]
+
+'''
 get the variable prefix
 '''
 def get_var_prefix(instr):
