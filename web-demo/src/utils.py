@@ -33,6 +33,8 @@ def get_init_vars(storage_info, var_prefix):
                 vars[var_prefix+'.'+label] = '['+t_type[0]+'] ' + t_type[1] 
             else:
                 vars[var_prefix+'.'+label] = t_type[2:]
+    
+    print("init vars", vars)
     return vars
 
 '''

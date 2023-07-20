@@ -62,15 +62,17 @@ class EVM:
     '''perform symbolic execution'''
     def sym_exec(self, code_trace):
         for i in range(len(code_trace)):
-            try:
+            # try:
                 if(code_trace[i][1]=="JUMPI"):
                     self.run_instruction(code_trace[i], (code_trace[i][0]+1 != code_trace[i+1][0]))
                 else:
                     self.run_instruction(code_trace[i], None)
-            except:
-                self.write_vars()
-                self.write_paths()
-                sys.exit()
+            # except:
+            #     self.inspect("currstack")
+            #     self.inspect("currmemory")
+            #     self.write_vars()
+            #     self.write_paths()
+            #     # sys.exit()
 
 
     '''run each EVM instruction with PC, operator, and operand'''        
@@ -79,43 +81,24 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        print(instr)
+        # print(instr)
         # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
         #     print("===========")
         #     for n in self._stacks[-1]:
         #         print(n, type(n))
-        # print(self._call_stack)
-
-        if isinstance(PC, int) and opcode=="JUMPDEST":
-            print("----JUMPDEST----")
-            self.inspect("currstack")
-            self.inspect("currmemory")
-        if isinstance(PC, int) and (PC >= 2972 and PC <= 3063):
-            self.inspect("currstack")
-            self.inspect("currmemory")
-        tmpPC=7956 #9726  #4126  # 4060 #10203
-        if isinstance(PC, int) and  (PC==tmpPC) and self._stacks[-1][-2].value==0xa4:
-            self.inspect("currstack")
-            self.inspect("currmemory")
-            if PC==tmpPC:
-                self.write_vars()
-                self.write_paths()
-                sys.exit()
-
-        '''
-        if isinstance(PC, int) and  (PC==11552 or PC==11553):
-            self.inspect("currstack")
-            self.inspect("currmemory")
-            if PC==11553:
-                sys.exit()
-        '''
+        # if opcode == "MSTORE":
+        #     print("\n")
+        #     print(instr)
+        #     print(hex(self._stacks[-1][-1].value), self._stacks[-1][-2])
+        # if isinstance(PC, int) and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  and opcode=="JUMPI"):
+        #     self.inspect("currstack")
+        #     # self.inspect("currmemory")
+        #     # sys.exit()
 
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
         elif instr[0]==(">"):
-            # print("----BEFORE----")
-            # self.inspect("currstack")
-            # self.inspect("currmemory")
+            print(instr)
             dest_contract, dest_function = get_dest_contract_and_function(instr)
             
             ### get call or staticcall
@@ -123,7 +106,7 @@ class EVM:
             ### calling a new contract, set up calle stack
             callee_stack    = []
             calldata_pos    = self._stacks[-1][-4+static_idx_diff].value
-            print(calldata_pos)
+            # print(calldata_pos)
             calldata_len    = self._stacks[-1][-5+static_idx_diff].value
             func_selector   = self._memories[-1][calldata_pos].children[1].value
             # print(self._memories[-1][calldata_pos].children[1].value)
@@ -131,27 +114,27 @@ class EVM:
                 func_selector//=0x100**28
             else:
                 func_selector = (self.find_key(self._memories[-1][calldata_pos].children[1].children[1]))
-            print(func_selector)
+            # print(func_selector)
             callee_stack.append(SVT(func_selector))
             callee_stack.append(SVT("AConstantBySolc"))
             calldata_len -=4
             calldata_pos +=4
-
-            print(calldata_pos)
+            # print(calldata_pos)
             print(calldata_len)
-            # self.inspect("currstack")
-            # self.inspect("currmemory")
+            self.inspect("currstack")
+            self.inspect("currmemory")
 
             for i in range(calldata_len//0x20):
                 # if calldata_pos in self._memories[-1]:
                 callee_stack.append(self._memories[-1][calldata_pos])
                 calldata_pos += 0x20
 
-            for elmt in callee_stack:
-                if (isinstance(self.find_key(elmt), str) and '.' in str(elmt)):
-                    elmt = self.find_key(elmt)
-                    var_name = elmt[elmt.find('.')+1: ]
-                    self.add_new_vars(var_name)    
+            # for elmt in callee_stack:
+            #     if (isinstance(self.find_key(elmt), str) and '.' in str(elmt)):
+            #         elmt = self.find_key(elmt)
+            #         print("ELMT:", elmt)
+            #         # var_name = elmt[elmt.find('.')+1: ]
+            #         self.add_new_vars(elmt)
                 
             ### switch to a new contract and pops out the operands for a successful CALL operation
             for i in range(7-static_idx_diff):
@@ -189,6 +172,7 @@ class EVM:
                 count = self._return_data_size
                 while count>0:  
                     data = self._memories[-1][pos_src]
+                    print(self._final_vars)
                     self.memory_write(pos_dst, data, 32, -2)
                     pos_src+=32
                     pos_dst+=32
@@ -222,10 +206,17 @@ class EVM:
         elif opcode=="JUMP":
             self._stacks[-1].pop()
         elif opcode=="JUMPI":
-            print("PC:", PC)
+            if PC==7235:
+                print("======START======")
+                print(instr)
             self.boogie_gen_jumpi(self._stacks[-1][-2], branch_taken)
             self._stacks[-1].pop()
             self._stacks[-1].pop()
+            if PC==7235:
+                self.inspect("currstack")
+                self.inspect("currmemory")
+                print("======END======")
+                # sys.exit()
         elif opcode=="MSTORE":
             self.handle_MSTORE()            
         elif opcode=="MLOAD":
@@ -233,6 +224,8 @@ class EVM:
             self._stacks[-1].append(node)  
         elif opcode=="SSTORE":
             self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop())
+            # self._stacks[-1].pop()
+            # self._stacks[-1].pop()
         elif opcode=="SLOAD":
             to_load = self._stacks[-1].pop()
             if to_load.value == "MapElement": 
@@ -241,6 +234,7 @@ class EVM:
                 self._stacks[-1].append(node)
             else:
                 stored_value = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
+                self.add_new_vars(stored_value)
                 self._stacks[-1].append(SVT(stored_value))
         elif opcode=="PC":
             self._stacks[-1].append(SVT(PC))
@@ -352,6 +346,7 @@ class EVM:
 
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
+        print("TRAVERSE:", node)
         to_return = ""
         if not node.children:
             return node.value
@@ -394,11 +389,12 @@ class EVM:
                     # var_name  = self._storage_map[self._curr_contract][str(map_id)]
                     key_for_boogie = "["+str(map_key)+"]"
                     var_name = map_ID + key_for_boogie
-            else:
-                map_id = node.children[0].value
+            # else:
+            #     map_id = node.children[0].value
             self._tmp_var_count+=1
             to_return = "tmp" + str(self._tmp_var_count)
             # var_name  = self._storage_map[self._curr_contract][str(map_id)]
+            print("======ADD NEW VARS======")
             self.add_new_vars(var_name)
             to_boogie = "\ttmp"+str(self._tmp_var_count)+":="+ self._var_prefix+'.'+var_name
 
@@ -475,16 +471,18 @@ class EVM:
     
     '''generate boogie code when SSTORE happens'''
     def boogie_gen_sstore(self, node0, node1):
-
+        print(node0)
         if node0.value=="MapElement":
-            if node0.children[0]=="MapElement": 
+            if node0.children[0].value=="MapElement": 
                 map_ID = (node0.children[0].children[0])
                 map_key1 = self.find_key(node0.children[0].children[1])
                 map_key2 = self.find_key(node0.children[1].children[1])
+                print(map_ID, map_key1, map_key2)
                 var_name = self._storage_map[self._curr_contract][str(map_ID)]+"["+str(map_key1)+"]"+"["+str(map_key2)+"]"
             else:
+                map_ID = self.find_mapID(node0)
                 map_key = self.find_key(node0.children[1])
-                var_name = self._storage_map[self._curr_contract][str(self.find_mapID(node0))]+"["+str(map_key)+"]"
+                var_name = self._storage_map[self._curr_contract][str(map_ID)]+"["+str(map_key)+"]"
             path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         else:
             var_name = self._storage_map[self._curr_contract][str(node0.value)]
@@ -503,11 +501,14 @@ class EVM:
 
     '''generate boogie code when JUMPI happens'''         
     def boogie_gen_jumpi(self, node, isNotZero):
+        print("======ENTER BOOGIE GEN======")
+        print(node)
         # self._final_path.append(str(node)+'\n')
         # print(self._final_vars)
         # self.inspect("currstack")
-        if node.value == "c_04c4d.reserve0":
-            return
+        # if node.value == "c_005aa.reserve1":
+        #     return
+        print("======ENTER TRAVERSAL======")
         var = self.postorder_traversal(node)
         if var == "true":
             if isNotZero:
@@ -537,7 +538,7 @@ class EVM:
         else:
             raise Exception("JUMPI stack[-1] is_not_zero error")
         self._final_path.append(path)
-        # self.write_paths()
+        self.write_paths()
         # sys.exit()
 
     '''wrote aux vars to Boogie'''
@@ -559,10 +560,25 @@ class EVM:
             return False
 
     def add_new_vars(self, var_name):
-        if ('][' in var_name):
-            self._final_vars[self._var_prefix+'.'+var_name] = 'address' # patch
+        print(var_name, self._curr_contract)
+        print(self._var_prefix)
+        # print(MACROS.VAR_TYPES)
+        print(self._final_vars)
+        if var_name in self._final_vars:
+            print("already in final vars")
+            return
+        
+        mapping = re.findall(r'\[(.*?)\]', var_name)
+        var_type = ""
+
+        for i in range(len(mapping)):
+            var_type += "[" + self._final_vars[mapping[i]] + "] "
+        # elif ('][' in var_name):
+        #     self._final_vars[var_name] = 'address' # patch
+        if ('.' in var_name):
+            self._final_vars[var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name[var_name.find('.')+1:]]
         else:
-            self._final_vars[self._var_prefix+'.'+var_name] = MACROS.VAR_TYPES[self._curr_contract][var_name]
+            self._final_vars[self._var_prefix+'.'+var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name]
 
 
     '''helper to find the key of a node'''
