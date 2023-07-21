@@ -72,7 +72,7 @@ class EVM:
             #     self.inspect("currmemory")
             #     self.write_vars()
             #     self.write_paths()
-            #     # sys.exit()
+            #     sys.exit()
 
 
     '''run each EVM instruction with PC, operator, and operand'''        
@@ -223,16 +223,20 @@ class EVM:
             node = self.handle_MLOAD()
             self._stacks[-1].append(node)  
         elif opcode=="SSTORE":
+            print(instr)
             self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop())
             # self._stacks[-1].pop()
             # self._stacks[-1].pop()
         elif opcode=="SLOAD":
+            print(instr)
+            self.inspect("currstack")
             to_load = self._stacks[-1].pop()
             if to_load.value == "MapElement": 
                 node = SVT("SLOAD")
                 node.children.append(to_load)
                 self._stacks[-1].append(node)
             else:
+                print("LOADING VARIABLE")
                 stored_value = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
                 self.add_new_vars(stored_value)
                 self._stacks[-1].append(SVT(stored_value))
@@ -327,7 +331,9 @@ class EVM:
                 node = SVT("MapElement")
                 mapID = self._memories[-1][start_offset+32]
                 if(mapID.value!="MapElement"):
-                    node.children.append(SVT(self._var_prefix+'.'+self._storage_map[self._curr_contract][str(mapID.value)]))
+                    var_name = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(mapID.value)]
+                    self.add_new_vars(var_name)
+                    node.children.append(SVT(var_name))
                 else:
                     node.children.append(mapID)
                 node.children.append(self._memories[-1][start_offset])
@@ -383,8 +389,8 @@ class EVM:
                     var_name = map_ID+key_for_boogie
                 else:
                     # print("???")
-                    # map_id  = self.find_mapID(node.children[0])
-                    map_id  = node.children[0].value
+                    # map_ID  = self.find_mapID(node.children[0])
+                    map_ID  = node.children[0].children[0].value
                     map_key = self.find_key(node.children[0].children[1])
                     # var_name  = self._storage_map[self._curr_contract][str(map_id)]
                     key_for_boogie = "["+str(map_key)+"]"
@@ -396,7 +402,7 @@ class EVM:
             # var_name  = self._storage_map[self._curr_contract][str(map_id)]
             print("======ADD NEW VARS======")
             self.add_new_vars(var_name)
-            to_boogie = "\ttmp"+str(self._tmp_var_count)+":="+ self._var_prefix+'.'+var_name
+            to_boogie = "\ttmp"+str(self._tmp_var_count)+":="+ var_name
 
             # if node.children[0].value=="MapElement":
             #     to_boogie += key_for_boogie
@@ -477,13 +483,19 @@ class EVM:
                 map_ID = (node0.children[0].children[0])
                 map_key1 = self.find_key(node0.children[0].children[1])
                 map_key2 = self.find_key(node0.children[1].children[1])
-                print(map_ID, map_key1, map_key2)
-                var_name = self._storage_map[self._curr_contract][str(map_ID)]+"["+str(map_key1)+"]"+"["+str(map_key2)+"]"
+                print(map_ID, type(map_ID), map_key1, map_key2)
+                if "." in str(map_ID):
+                    var_name = str(map_ID)+"["+str(map_key1)+"]"+"["+str(map_key2)+"]"
+                else:
+                    var_name = self._storage_map[self._curr_contract][str(map_ID)]+"["+str(map_key1)+"]"+"["+str(map_key2)+"]"
             else:
                 map_ID = self.find_mapID(node0)
                 map_key = self.find_key(node0.children[1])
-                var_name = self._storage_map[self._curr_contract][str(map_ID)]+"["+str(map_key)+"]"
-            path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
+                if "." in str(map_ID):
+                    var_name = str(map_ID)+"["+str(map_key)+"]"
+                else:
+                    var_name = self._storage_map[self._curr_contract][str(map_ID)]+"["+str(map_key)+"]"
+            path="\t"+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         else:
             var_name = self._storage_map[self._curr_contract][str(node0.value)]
             path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
@@ -538,7 +550,7 @@ class EVM:
         else:
             raise Exception("JUMPI stack[-1] is_not_zero error")
         self._final_path.append(path)
-        self.write_paths()
+        # self.write_paths()
         # sys.exit()
 
     '''wrote aux vars to Boogie'''
@@ -561,24 +573,30 @@ class EVM:
 
     def add_new_vars(self, var_name):
         print(var_name, self._curr_contract)
-        print(self._var_prefix)
-        # print(MACROS.VAR_TYPES)
+        print(MACROS.VAR_TYPES)
         print(self._final_vars)
+        
+        
+        mapping = re.findall(r'\[(.*?)\]', var_name)
+        var_name = var_name.split('[')[0]
+        print(var_name)
+        var_type = ""
+
         if var_name in self._final_vars:
             print("already in final vars")
             return
-        
-        mapping = re.findall(r'\[(.*?)\]', var_name)
-        var_type = ""
-
-        for i in range(len(mapping)):
-            var_type += "[" + self._final_vars[mapping[i]] + "] "
-        # elif ('][' in var_name):
-        #     self._final_vars[var_name] = 'address' # patch
-        if ('.' in var_name):
-            self._final_vars[var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name[var_name.find('.')+1:]]
         else:
-            self._final_vars[self._var_prefix+'.'+var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name]
+            for i in range(len(mapping)):
+                var_type += "[" + self._final_vars[mapping[i]] + "] "
+            # elif ('][' in var_name):
+            #     self._final_vars[var_name] = 'address' # patch
+
+            if ('.' in var_name):
+                self._final_vars[var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name[var_name.find('.')+1:]]
+            else:
+                self._final_vars[self._var_prefix+'.'+var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name]
+        
+        print(self._final_vars)
 
 
     '''helper to find the key of a node'''
@@ -683,7 +701,7 @@ def main():
     
     HYPOTHESIS  = get_hypothesis()
     INVARIANTS  = get_invariant()
-    VARS        = get_init_vars(STOR_INFO,VAR_PREFIX)
+    VARS        = get_init_vars(STOR_INFO, ABI_INFO, VAR_PREFIX)
     TRACE       = gen_path()
     MAP         = get_MAPS(STOR_INFO)
     MACROS.VAR_TYPES = get_types(STOR_INFO)
@@ -702,7 +720,7 @@ def main():
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
     BOOGIE_OUT.write(write_invariants(INVARIANTS,VAR_PREFIX))
     evm.write_paths() # codegen for Boogie proofs
-    BOOGIE_OUT.write(write_epilogue(INVARIANTS,VAR_PREFIX))
+    # BOOGIE_OUT.write(write_epilogue(INVARIANTS,VAR_PREFIX))
  
 if __name__ == '__main__':
     main()

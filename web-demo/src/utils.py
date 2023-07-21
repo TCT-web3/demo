@@ -9,7 +9,7 @@ from macros     import *
 '''
 get initial variables
 '''
-def get_init_vars(storage_info, var_prefix):
+def get_init_vars(storage_info, abi_info, var_prefix):
     vars = {}
     locals = []
 
@@ -33,6 +33,12 @@ def get_init_vars(storage_info, var_prefix):
                 vars[var_prefix+'.'+label] = '['+t_type[0]+'] ' + t_type[1] 
             else:
                 vars[var_prefix+'.'+label] = t_type[2:]
+    
+    for elmt in abi_info['contracts'][MACROS.CONTRACT_NAME]['abi']:
+        if ("name" in elmt.keys() and elmt["name"] == MACROS.FUNCTION_NAME):
+            for input in elmt["inputs"]:
+                vars[input["name"]] = input["type"]
+                print(input["name"], input["type"])
     
     print("init vars", vars)
     return vars
@@ -104,11 +110,12 @@ def get_types(storage_info):
                 elif ("contract" in t_type):
                     pass # TODO: contract address as a type
                 elif "t_mapping" in t_type:
-                    t_type = t_type.replace("t_", "")
-                    t_type = t_type.replace("mapping", "")[1:-1]
-                    t_type = t_type.split(',')
-                    rt = rt + ("\tvar " + contract+'.'+label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
-                    types[label] = '['+t_type[0]+'] ' + t_type[1] 
+                    var_type = get_boogie_type(t_type)
+                    # t_type = t_type.replace("t_", "")
+                    # t_type = t_type.replace("mapping", "")[1:-1]
+                    # t_type = t_type.split(',')
+                    rt = rt + ("\tvar " + contract+'.'+label + ': ' + var_type + ';\n')
+                    types[label] = var_type
                 else:
                     rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n") 
                     types[label] = t_type[2:] 
@@ -124,6 +131,22 @@ def get_types(storage_info):
         # print(TYPES)
     return TYPES
 
+'''
+convert t_mapping to Boogie type
+'''
+def get_boogie_type(t_type):
+    #print(t_type)
+    if not t_type.startswith("t_mapping"):
+        return t_type.replace("t_","")
+
+    #"t_mapping(t_address,t_mapping(t_address,t_address))"
+    ret_str = t_type[len("t_mapping("):]
+    #print(f"ret_str={ret_str}")
+    comma_pos = ret_str.find(",")
+    first = ret_str[0:comma_pos]
+    first = "["+first.replace("t_","")+"]"
+    ret_str = ret_str[comma_pos+1:len(ret_str)-1]
+    return first + " " + get_boogie_type(ret_str)
 
 '''
 find where the essential part starts in a contract call
@@ -376,7 +399,7 @@ write the function parameters
 '''
 def write_params(abi_info, var_prefix):
     rt = ""
-    for elmt in abi_info[MACROS.CONTRACT_NAME]:
+    for elmt in abi_info['contracts'][MACROS.CONTRACT_NAME]['abi']:
         if ("name" in elmt.keys() and elmt["name"] == MACROS.FUNCTION_NAME):
             for input in elmt["inputs"]:
                 rt = rt + "\tvar " +input["name"] + ":\t" + input["type"]+';\n'
