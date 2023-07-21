@@ -385,7 +385,7 @@ class EVM:
                     key_for_boogie = "["+str(map_key)+"]"
                     var_name = map_ID + key_for_boogie
             # else:
-            #     map_id = node.children[0].value
+            #     map_ID = node.children[0].value
             self._tmp_var_count+=1
             to_return = "tmp" + str(self._tmp_var_count)
             # var_name  = self._storage_map[self._curr_contract][str(map_id)]
@@ -395,7 +395,7 @@ class EVM:
             # if node.children[0].value=="MapElement":
             #     to_boogie += key_for_boogie
             to_boogie +=";\n"
-            node.value = var_name
+            node.value = to_return
             node.children = []
             self._final_vars[to_return] = 'uint256'
             self._final_path.append(to_boogie) 
@@ -485,6 +485,8 @@ class EVM:
         if node0.value=="MapElement":
             if node0.children[0].value=="MapElement": 
                 map_ID = (node0.children[0].children[0])
+                self.postorder_traversal(node0.children[0].children[1])
+                self.postorder_traversal(node0.children[1].children[1])
                 map_key1 = self.find_key(node0.children[0].children[1])
                 map_key2 = self.find_key(node0.children[1].children[1])
                 if "." in str(map_ID):
@@ -493,6 +495,7 @@ class EVM:
                     var_name = self._storage_map[self._curr_contract][str(map_ID)]+"["+str(map_key1)+"]"+"["+str(map_key2)+"]"
             else:
                 map_ID = self.find_mapID(node0)
+                self.postorder_traversal(node0.children[1])
                 map_key = self.find_key(node0.children[1])
                 if "." in str(map_ID):
                     var_name = str(map_ID)+"["+str(map_key)+"]"
@@ -500,9 +503,8 @@ class EVM:
                     var_name = self._storage_map[self._curr_contract][str(map_ID)]+"["+str(map_key)+"]"
             path="\t"+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         else:
-            var_name = self._storage_map[self._curr_contract][str(node0.value)]
-            path="\t"+self._var_prefix+'.'+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
-        
+            var_name = self._var_prefix+'.'+ self._storage_map[self._curr_contract][str(node0.value)]
+            path="\t"+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
         self.add_new_vars(var_name)
         self._final_path.append(path)
         
