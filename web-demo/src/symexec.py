@@ -81,7 +81,7 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        # print(instr)
+        print(instr)
         # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
         #     print("===========")
         #     for n in self._stacks[-1]:
@@ -90,10 +90,10 @@ class EVM:
         #     print("\n")
         #     print(instr)
         #     print(hex(self._stacks[-1][-1].value), self._stacks[-1][-2])
-        # if isinstance(PC, int) and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  and opcode=="JUMPI"):
-        #     self.inspect("currstack")
-        #     # self.inspect("currmemory")
-        #     # sys.exit()
+        if isinstance(PC, int) and opcode=="STATICCALL": #and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  
+            self.inspect("currstack")
+            self.inspect("currmemory")
+            #sys.exit()
 
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
@@ -135,7 +135,9 @@ class EVM:
             #         print("ELMT:", elmt)
             #         # var_name = elmt[elmt.find('.')+1: ]
             #         self.add_new_vars(elmt)
-                
+            
+            self._sym_this_address = self._stacks[-1][-2]    
+            
             ### switch to a new contract and pops out the operands for a successful CALL operation
             for i in range(7-static_idx_diff):
                 self._stacks[-1].pop()
@@ -344,7 +346,7 @@ class EVM:
                 self._stacks[-1].pop()
                 self._stacks[-1].append(SVT(0xdeadbeef))
         elif opcode=="ADDRESS":
-            self._stacks[-1].append(SVT(self._full_address))
+            self._stacks[-1].append(self._sym_this_address)
         else:
             print('[!]',str(instr), 'not supported yet')  
             raise Exception("not handled") 
