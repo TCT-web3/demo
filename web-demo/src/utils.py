@@ -37,9 +37,7 @@ def get_init_vars(storage_info, abi_info, var_prefix):
     for elmt in abi_info['contracts'][MACROS.CONTRACT_NAME]['abi']:
         if ("name" in elmt.keys() and elmt["name"] == MACROS.FUNCTION_NAME):
             for input in elmt["inputs"]:
-                vars[input["name"]] = input["type"]
-                print(input["name"], input["type"])
-    
+                vars[input["name"]] = input["type"]    
     return vars
 
 '''
