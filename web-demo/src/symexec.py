@@ -81,7 +81,7 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        print(instr)
+        # print(instr)
         # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
         #     print("===========")
         #     for n in self._stacks[-1]:
@@ -90,10 +90,10 @@ class EVM:
         #     print("\n")
         #     print(instr)
         #     print(hex(self._stacks[-1][-1].value), self._stacks[-1][-2])
-        if isinstance(PC, int) and opcode=="STATICCALL": #and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  
-            self.inspect("currstack")
-            self.inspect("currmemory")
-            #sys.exit()
+        # if isinstance(PC, int) and opcode=="STATICCALL": #and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  
+        #     self.inspect("currstack")
+        #     self.inspect("currmemory")
+        #     #sys.exit()
 
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
@@ -296,7 +296,7 @@ class EVM:
                     val1 = self._stacks[-1].pop().value
                     val2 = self._stacks[-1].pop().value
                     node = SVT(val1 % val2)
-                elif opcode == "LT" or opcode == "GT" or opcode == "EQ" or opcode=="SLT" or opcode=="MUL": #TODO: Concrete evaluation
+                elif opcode == "LT" or opcode == "GT" or opcode == "EQ" or opcode=="SLT" or opcode=="MUL":
                     node = SVT(opcode)
                     node.children.append(self._stacks[-1].pop())
                     node.children.append(self._stacks[-1].pop())
@@ -369,6 +369,8 @@ class EVM:
             if node.children[0].value=="MapElement":
                 if node.children[0].children[0].value=="MapElement": 
                     map_ID = node.children[0].children[0].children[0].value
+                    self.postorder_traversal(node.children[0].children[0].children[1])
+                    self.postorder_traversal(node.children[0].children[1])
                     map_key1 = self.find_key(node.children[0].children[0].children[1])
                     map_key2 = self.find_key(node.children[0].children[1])
                     key_for_boogie = "["+str(map_key1)+"]"+"["+str(map_key2)+"]"
@@ -377,6 +379,7 @@ class EVM:
                     # print("???")
                     # map_ID  = self.find_mapID(node.children[0])
                     map_ID  = node.children[0].children[0].value
+                    self.postorder_traversal(node.children[0].children[1])
                     map_key = self.find_key(node.children[0].children[1])
                     # var_name  = self._storage_map[self._curr_contract][str(map_id)]
                     key_for_boogie = "["+str(map_key)+"]"
@@ -392,34 +395,39 @@ class EVM:
             # if node.children[0].value=="MapElement":
             #     to_boogie += key_for_boogie
             to_boogie +=";\n"
-            node.value = to_return
+            node.value = var_name
             node.children = []
             self._final_vars[to_return] = 'uint256'
             self._final_path.append(to_boogie) 
         elif node.value == "LT" or node.value == "GT" or node.value == "EQ" or node.value == "SLT": #TODO: SLT implementation
-            val1 = self.postorder_traversal(node.children[0])
-            val2 = self.postorder_traversal(node.children[1])
-            if isinstance(val1, int) and isinstance(val2, int):
-                to_return = ""
-                if node.value == "LT" or node.value == "SLT": #TODO: SLT implementation
-                    to_return = "true" if val1 < val2 else "false"
-                elif node.value == "GT":
-                    to_return = "true" if val1 > val2 else "false"
-                elif node.value == "EQ":
-                    to_return = "true" if val1 == val2 else "false"
+            if node.value == "EQ" and node.children[0] == node.children[1]:
+                to_return = "true"
             else:
-                self._tmp_var_count+=1
-                to_return = "tmp" + str(self._tmp_var_count)
-                if node.value == "LT" or node.value == "SLT": #TODO: SLT implementation
-                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
-                elif node.value == "GT":
-                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
-                elif node.value == "EQ":
-                    to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
-                node.value = to_return
-                node.children = []
-                self._final_vars[to_return] = 'bool'
-                self._final_path.append(to_boogie) 
+                val1 = self.postorder_traversal(node.children[0])
+                val2 = self.postorder_traversal(node.children[1])
+                if isinstance(val1, int) and isinstance(val2, int):
+                    to_return = ""
+                    if node.value == "LT" or node.value == "SLT": #TODO: SLT implementation
+                        to_return = "true" if val1 < val2 else "false"
+                    elif node.value == "GT":
+                        to_return = "true" if val1 > val2 else "false"
+                    elif node.value == "EQ":
+                        to_return = "true" if val1 == val2 else "false"
+                # elif node.value == "EQ" and val1 == val2:
+                #     to_return = "true"
+                else:
+                    self._tmp_var_count+=1
+                    to_return = "tmp" + str(self._tmp_var_count)
+                    if node.value == "LT" or node.value == "SLT": #TODO: SLT implementation
+                        to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"<"+str(val2)+");\n"
+                    elif node.value == "GT":
+                        to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
+                    elif node.value == "EQ":
+                        to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
+                    node.value = to_return
+                    node.children = []
+                    self._final_vars[to_return] = 'bool'
+                    self._final_path.append(to_boogie) 
         elif node.value == "ADD" or node.value == "SUB" or node.value == "AND" or node.value == "OR" or node.value == "MUL" or node.value == "DIV": # DIV, MUL
             val1=self.postorder_traversal(node.children[0])
             val2=self.postorder_traversal(node.children[1])
