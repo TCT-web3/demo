@@ -98,7 +98,6 @@ class EVM:
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
         elif instr[0]==(">"):
-            print(instr)
             dest_contract, dest_function = get_dest_contract_and_function(instr)
             
             ### get call or staticcall
@@ -120,9 +119,9 @@ class EVM:
             calldata_len -=4
             calldata_pos +=4
             # print(calldata_pos)
-            print(calldata_len)
-            self.inspect("currstack")
-            self.inspect("currmemory")
+            # print(calldata_len)
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
 
             for i in range(calldata_len//0x20):
                 # if calldata_pos in self._memories[-1]:
@@ -172,7 +171,6 @@ class EVM:
                 count = self._return_data_size
                 while count>0:  
                     data = self._memories[-1][pos_src]
-                    print(self._final_vars)
                     self.memory_write(pos_dst, data, 32, -2)
                     pos_src+=32
                     pos_dst+=32
@@ -206,37 +204,23 @@ class EVM:
         elif opcode=="JUMP":
             self._stacks[-1].pop()
         elif opcode=="JUMPI":
-            if PC==7235:
-                print("======START======")
-                print(instr)
             self.boogie_gen_jumpi(self._stacks[-1][-2], branch_taken)
             self._stacks[-1].pop()
             self._stacks[-1].pop()
-            if PC==7235:
-                self.inspect("currstack")
-                self.inspect("currmemory")
-                print("======END======")
-                # sys.exit()
         elif opcode=="MSTORE":
             self.handle_MSTORE()            
         elif opcode=="MLOAD":
             node = self.handle_MLOAD()
             self._stacks[-1].append(node)  
         elif opcode=="SSTORE":
-            print(instr)
             self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop())
-            # self._stacks[-1].pop()
-            # self._stacks[-1].pop()
         elif opcode=="SLOAD":
-            print(instr)
-            self.inspect("currstack")
             to_load = self._stacks[-1].pop()
             if to_load.value == "MapElement": 
                 node = SVT("SLOAD")
                 node.children.append(to_load)
                 self._stacks[-1].append(node)
             else:
-                print("LOADING VARIABLE")
                 stored_value = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
                 self.add_new_vars(stored_value)
                 self._stacks[-1].append(SVT(stored_value))
@@ -352,7 +336,6 @@ class EVM:
 
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
-        print("TRAVERSE:", node)
         to_return = ""
         if not node.children:
             return node.value
@@ -376,7 +359,8 @@ class EVM:
                     to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
                 elif (self._final_vars["tmp"+str(val1)] == 'uint256'):
                     to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==0;\n"
-            
+                node.value = to_return
+                node.children = []
                 self._final_vars[to_return] = 'bool'
                 self._final_path.append(to_boogie)
         elif node.value == "SLOAD":
@@ -400,13 +384,14 @@ class EVM:
             self._tmp_var_count+=1
             to_return = "tmp" + str(self._tmp_var_count)
             # var_name  = self._storage_map[self._curr_contract][str(map_id)]
-            print("======ADD NEW VARS======")
             self.add_new_vars(var_name)
             to_boogie = "\ttmp"+str(self._tmp_var_count)+":="+ var_name
 
             # if node.children[0].value=="MapElement":
             #     to_boogie += key_for_boogie
             to_boogie +=";\n"
+            node.value = to_return
+            node.children = []
             self._final_vars[to_return] = 'uint256'
             self._final_path.append(to_boogie) 
         elif node.value == "LT" or node.value == "GT" or node.value == "EQ" or node.value == "SLT": #TODO: SLT implementation
@@ -429,9 +414,11 @@ class EVM:
                     to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+">"+str(val2)+");\n"
                 elif node.value == "EQ":
                     to_boogie = "\ttmp"+str(self._tmp_var_count)+":= ("+str(val1)+"=="+str(val2)+");\n"
+                node.value = to_return
+                node.children = []
                 self._final_vars[to_return] = 'bool'
                 self._final_path.append(to_boogie) 
-        elif node.value == "ADD" or node.value == "SUB" or node.value == "AND" or node.value == "OR" or node.value == "MUL":
+        elif node.value == "ADD" or node.value == "SUB" or node.value == "AND" or node.value == "OR" or node.value == "MUL" or node.value == "DIV": # DIV, MUL
             val1=self.postorder_traversal(node.children[0])
             val2=self.postorder_traversal(node.children[1])
             if isinstance(val1, int) and isinstance(val2, int):
@@ -445,6 +432,8 @@ class EVM:
                     to_return = val1 | val2
                 elif node.value == "MUL":
                     to_return = val1 * val2
+                elif node.value == "DIV":
+                    to_return = val1 / val2
             # elif (isinstance(val2, int) and val2 == 0) and (node.value == "MUL" or node.value == "SUB" or node.value == "ADD"):
             #     if node.value == "MUL":
             #         to_return = 0
@@ -463,6 +452,10 @@ class EVM:
                     to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmor("+str(val1)+","+str(val2)+");\n"
                 elif node.value == "MUL":
                     to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmmul("+str(val1)+","+str(val2)+");\n"
+                elif node.value == "DIV":
+                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmdiv("+str(val1)+","+str(val2)+");\n"
+                node.value = to_return
+                node.children = []
                 self._final_vars[to_return] = 'uint256'
                 self._final_path.append(to_boogie)
         elif node.value == "Partial32B":
@@ -471,19 +464,19 @@ class EVM:
             shift = self.postorder_traversal(node.children[0])
             val = self.postorder_traversal(node.children[1])
             to_return = val << shift
+            node.value = to_return
+            node.children = []
         else:
             return str(node)
         return to_return
     
     '''generate boogie code when SSTORE happens'''
     def boogie_gen_sstore(self, node0, node1):
-        print(node0)
         if node0.value=="MapElement":
             if node0.children[0].value=="MapElement": 
                 map_ID = (node0.children[0].children[0])
                 map_key1 = self.find_key(node0.children[0].children[1])
                 map_key2 = self.find_key(node0.children[1].children[1])
-                print(map_ID, type(map_ID), map_key1, map_key2)
                 if "." in str(map_ID):
                     var_name = str(map_ID)+"["+str(map_key1)+"]"+"["+str(map_key2)+"]"
                 else:
@@ -513,14 +506,6 @@ class EVM:
 
     '''generate boogie code when JUMPI happens'''         
     def boogie_gen_jumpi(self, node, isNotZero):
-        print("======ENTER BOOGIE GEN======")
-        print(node)
-        # self._final_path.append(str(node)+'\n')
-        # print(self._final_vars)
-        # self.inspect("currstack")
-        # if node.value == "c_005aa.reserve1":
-        #     return
-        print("======ENTER TRAVERSAL======")
         var = self.postorder_traversal(node)
         if var == "true":
             if isNotZero:
@@ -572,18 +557,11 @@ class EVM:
             return False
 
     def add_new_vars(self, var_name):
-        print(var_name, self._curr_contract)
-        print(MACROS.VAR_TYPES)
-        print(self._final_vars)
-        
-        
         mapping = re.findall(r'\[(.*?)\]', var_name)
         var_name = var_name.split('[')[0]
-        print(var_name)
         var_type = ""
 
         if var_name in self._final_vars:
-            print("already in final vars")
             return
         else:
             for i in range(len(mapping)):
@@ -595,9 +573,6 @@ class EVM:
                 self._final_vars[var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name[var_name.find('.')+1:]]
             else:
                 self._final_vars[self._var_prefix+'.'+var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name]
-        
-        print(self._final_vars)
-
 
     '''helper to find the key of a node'''
     def find_key(self, node):

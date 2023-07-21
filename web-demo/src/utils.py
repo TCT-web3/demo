@@ -40,7 +40,6 @@ def get_init_vars(storage_info, abi_info, var_prefix):
                 vars[input["name"]] = input["type"]
                 print(input["name"], input["type"])
     
-    print("init vars", vars)
     return vars
 
 '''
