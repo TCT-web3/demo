@@ -399,7 +399,7 @@ class EVM:
             to_boogie +=";\n"
             node.value = to_return
             node.children = []
-            self._final_vars[to_return] = 'uint256'
+            self._final_vars[to_return] = self._final_vars[map_ID].split()[-1] # patch
             self._final_path.append(to_boogie) 
         elif node.value == "LT" or node.value == "GT" or node.value == "EQ" or node.value == "SLT": #TODO: SLT implementation
             if node.value == "EQ" and node.children[0] == node.children[1]:
@@ -454,21 +454,28 @@ class EVM:
             else:
                 self._tmp_var_count+=1
                 to_return =  "tmp" + str(self._tmp_var_count)
-                if node.value == "ADD":
-                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(val1)+","+str(val2)+");\n"
-                elif node.value == "SUB":
-                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(val1)+","+str(val2)+");\n"
-                elif node.value == "AND":
-                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(val1)+","+str(val2)+");\n"
-                elif node.value == "OR":
-                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmor("+str(val1)+","+str(val2)+");\n"
-                elif node.value == "MUL":
-                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmmul("+str(val1)+","+str(val2)+");\n"
-                elif node.value == "DIV":
-                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmdiv("+str(val1)+","+str(val2)+");\n"
+                if val1 in self._final_vars and val2 in self._final_vars and self._final_vars[val1] == 'bool' and self._final_vars[val2] == 'bool':
+                    if node.value == "AND":
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":="+str(val1)+"&&"+str(val2)+";\n"
+                    elif node.value == "OR":
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":="+str(val1)+"||"+str(val2)+";\n"
+                    self._final_vars[to_return] = 'bool'
+                else:
+                    if node.value == "ADD":
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(val1)+","+str(val2)+");\n"
+                    elif node.value == "SUB":
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(val1)+","+str(val2)+");\n"
+                    elif node.value == "AND":
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(val1)+","+str(val2)+");\n"
+                    elif node.value == "OR":
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmor("+str(val1)+","+str(val2)+");\n"
+                    elif node.value == "MUL":
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmmul("+str(val1)+","+str(val2)+");\n"
+                    elif node.value == "DIV":
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmdiv("+str(val1)+","+str(val2)+");\n"
+                    self._final_vars[to_return] = 'uint256'
                 node.value = to_return
                 node.children = []
-                self._final_vars[to_return] = 'uint256'
                 self._final_path.append(to_boogie)
         elif node.value == "Partial32B":
             to_return = self.postorder_traversal(node.children[1])

@@ -45,7 +45,7 @@ procedure straightline_code ()
 	var tmp8:  uint256;
 	var tmp9:  bool;
 	var tmp10:  bool;
-	var tmp11:  uint256;
+	var tmp11:  address;
 	var tmp12:  uint256;
 	var tmp13:  uint256;
 	var tmp14:  bool;
@@ -70,13 +70,13 @@ procedure straightline_code ()
 	var tmp21:  uint256;
 	var tmp22:  uint256;
 	var tmp23:  bool;
-	var tmp24:  uint256;
+	var tmp24:  bool;
 	var tmp25:  bool;
 	var tmp26:  uint256;
 	var tmp27:  uint256;
 	var tmp28:  uint256;
 	var tmp29:  bool;
-	var tmp30:  uint256;
+	var tmp30:  bool;
 	var tmp31:  uint256;
 	var tmp32:  bool;
 	var tmp33:  bool;
@@ -165,18 +165,18 @@ procedure straightline_code ()
 	tmp21:=evmmul(tmp18,tmp20);
 	tmp22:=evmdiv(tmp21,tmp18);
 	tmp23:= (tmp20==tmp22);
-	tmp24:=evmor(tmp19,tmp23);
-	assume(tmp24!=0);
+	tmp24:=tmp19||tmp23;
+	assume(tmp24);
 
 	assume(c_66795.totalSupply!=0);
 
-	tmp25:=tmp24==0;
+	tmp25:=!tmp24;
 	tmp26:=c_969fd.balanceOf[tmp11];
 	tmp27:=evmmul(tmp18,tmp26);
 	tmp28:=evmdiv(tmp27,tmp18);
 	tmp29:= (tmp26==tmp28);
-	tmp30:=evmor(tmp25,tmp29);
-	assume(tmp30!=0);
+	tmp30:=tmp25||tmp29;
+	assume(tmp30);
 
 	assume(c_66795.totalSupply!=0);
 
