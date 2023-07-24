@@ -58,6 +58,7 @@ class EVM:
         self._abi_info          = abi_info
         self._var_prefix        = var_prefix
         self._return_data_size  = 0
+        self._sym_this_addresses  = []
 
     '''perform symbolic execution'''
     def sym_exec(self, code_trace):
@@ -135,7 +136,7 @@ class EVM:
             #         # var_name = elmt[elmt.find('.')+1: ]
             #         self.add_new_vars(elmt)
             
-            self._sym_this_address = self._stacks[-1][-2]    
+            self._sym_this_addresses.append(self._stacks[-1][-2])  
             
             ### switch to a new contract and pops out the operands for a successful CALL operation
             for i in range(7-static_idx_diff):
@@ -183,7 +184,8 @@ class EVM:
             self._curr_function = self._call_stack[-1][1]     
             self._var_prefix = self._call_stack[-1][2]
             self._stacks.pop()
-            self._memories.pop()          
+            self._memories.pop()   
+            self._sym_this_addresses.pop()            
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
             # print("----AFTER----")
             # self.inspect("currmemory")
@@ -330,7 +332,7 @@ class EVM:
                 self._stacks[-1].pop()
                 self._stacks[-1].append(SVT(0xdeadbeef))
         elif opcode=="ADDRESS":
-            self._stacks[-1].append(self._sym_this_address)
+            self._stacks[-1].append(self._sym_this_addresses[-1])
         else:
             print('[!]',str(instr), 'not supported yet')  
             raise Exception("not handled") 
