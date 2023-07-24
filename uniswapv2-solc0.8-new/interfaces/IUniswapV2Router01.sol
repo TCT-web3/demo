@@ -38,8 +38,8 @@ interface IUniswapV2Router01 {
         uint256 liquidity,
         uint256 amountAMin,
         uint256 amountBMin,
-        address to,
-        uint256 deadline
+        address to
+        //uint256 deadline
     ) external returns (uint256 amountA, uint256 amountB);
     /*
     function removeLiquidityETH(

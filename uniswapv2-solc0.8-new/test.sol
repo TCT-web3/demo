@@ -9,7 +9,7 @@ pragma solidity >=0.8.4;
 // import "./libraries/TransferHelper.sol";
 
 // import "./interfaces/IUniswapV2Router.sol";
-// import "./libraries/UniswapV2Library.sol";
+import "./libraries/UniswapV2Library.sol";
 // import "./interfaces/IERC20.sol";
 // import "./interfaces/IWETH.sol";
 
@@ -45,6 +45,22 @@ contract Test {
         );
     }
     
+    function call_removeLiquidity() public {
+        _router.removeLiquidity(
+            address(_tokenA),
+            address(_tokenB),
+            10,
+            1,
+            1,
+            address(this)
+        );
+    }
+
+    function getLiquidity() public view returns (uint256) {
+        address pair = UniswapV2Library.pairFor(address(_factory), address(_tokenA), address(_tokenB));
+        return IERC20(pair).balanceOf(address(this));
+    }
+
     function call_addLiquidity() public
     {
         _router.addLiquidity(

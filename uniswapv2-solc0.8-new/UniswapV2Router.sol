@@ -151,13 +151,13 @@ contract UniswapV2Router is IUniswapV2Router {
         uint256 liquidity,
         uint256 amountAMin,
         uint256 amountBMin,
-        address to,
-        uint256 deadline
+        address to
+        //uint256 deadline
     )
         public
         virtual
         override
-        ensure(deadline)
+        //ensure(deadline)
         returns (uint256 amountA, uint256 amountB)
     {
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
