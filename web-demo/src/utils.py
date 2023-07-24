@@ -372,8 +372,8 @@ write invariant to Boogie
 def write_invariants(invariants, var_prefix):
     # get from ast
     rt = ""
-    MVT_invariants = invariants[MACROS.CONTRACT_NAME]
-    for inv in MVT_invariants:
+    trace_invariants = invariants[MACROS.CONTRACT_NAME]
+    for inv in trace_invariants:
         rt = rt + ("\tassume(" + inv + ");\n")
         rt = rt.replace("this", var_prefix )
     rt = rt + ("\n")
@@ -384,8 +384,8 @@ write epilogue to Boogie
 '''
 def write_epilogue(invariants,var_prefix):
     rt = ""
-    MVT_invariants = invariants["MultiVulnToken"]
-    for inv in MVT_invariants:
+    trace_invariants = invariants[MACROS.CONTRACT_NAME]
+    for inv in trace_invariants:
         rt = rt + ("\tassert(" + inv + ");\n")
         rt = rt.replace("this", var_prefix )
     rt = rt + ('}')

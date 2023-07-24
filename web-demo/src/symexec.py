@@ -709,7 +709,7 @@ def main():
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
     BOOGIE_OUT.write(write_invariants(INVARIANTS,VAR_PREFIX))
     evm.write_paths() # codegen for Boogie proofs
-    # BOOGIE_OUT.write(write_epilogue(INVARIANTS,VAR_PREFIX))
+    BOOGIE_OUT.write(write_epilogue(INVARIANTS,VAR_PREFIX))
  
 if __name__ == '__main__':
     main()
