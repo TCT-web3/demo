@@ -45,13 +45,18 @@ contract Test {
         );
     }
     
+    function approve() public {
+        address pair = UniswapV2Library.pairFor(address(_factory), address(_tokenA), address(_tokenB));
+        IERC20(pair).approve(address(_router),400);
+    }
+
     function call_removeLiquidity() public {
         _router.removeLiquidity(
             address(_tokenA),
             address(_tokenB),
-            10,
-            1,
-            1,
+            200,
+            100,
+            100,
             address(this)
         );
     }
@@ -59,6 +64,11 @@ contract Test {
     function getLiquidity() public view returns (uint256) {
         address pair = UniswapV2Library.pairFor(address(_factory), address(_tokenA), address(_tokenB));
         return IERC20(pair).balanceOf(address(this));
+    }
+
+    function getRouterAllowance() public view returns (uint256) {
+        address pair = UniswapV2Library.pairFor(address(_factory), address(_tokenA), address(_tokenB));
+        return IERC20(pair).allowance(address(this),address(_router));
     }
 
     function call_addLiquidity() public
