@@ -184,8 +184,10 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
             "UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED"
         );
         _burn(address(this), liquidity);
-        _safeTransfer(_token0, to, amount0);
-        _safeTransfer(_token1, to, amount1);
+        //_safeTransfer(_token0, to, amount0);
+        //_safeTransfer(_token1, to, amount1);
+        IERC20(_token0).transfer(to,amount0);
+        IERC20(_token1).transfer(to,amount1);
         balance0 = IERC20(_token0).balanceOf(address(this));
         balance1 = IERC20(_token1).balanceOf(address(this));
 
