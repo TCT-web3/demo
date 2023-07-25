@@ -1,5 +1,6 @@
-const { Web3 } = require('web3');
-var web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
+const axios = require('axios');
+const {Web3} = require('web3');
+var web3 = new Web3('http://localhost:8545');
 
 // This is an example, replace it with your own contract's ABI
 const contractABI = [
@@ -70,50 +71,47 @@ const contractABI = [
 	}
 ]
 
-web3.eth.getAccounts().then(console.log);
-
 // Finding the function signature
 const functionSignature = web3.eth.abi.encodeFunctionSignature(contractABI.find(x => x.name === 'attack1_int_overflow'));
+console.log(functionSignature)
 
 // 2. Create account variables
 const accountFrom = {
-    privateKey: '0x3a3a5a560064da8fe89e51c9b7e1b6386eb960ff42dbfa768f30d86e8d11d7e3',
-    address: '0x84A7B1b8094ff18c6a058BEbcA62236316BbE539',
+    privateKey: '0xa2c28995f93af6f9ca02bb1082dfa55fab1d0c7945e7c09b7594d82b83a06f79',
+    address: '0x0e6322d1B8b3d57D6f96fA3f529892fE77c3daE8',
 };
 
-const addressTo = '0xa3950FF01e378f2A237A3C13a74eFE67C9726D67'; // Change addressTo
+const contractAddress = '0x93B1eC1655303B81F5D00b888854eD3674966B14'; // Change addressTo
 
-console.log("sender addr:", accountFrom.address, " to addr: ", addressTo)
 
-// 3. Create send function
 async function send() {
-    console.log(`Attempting to send transaction from ${accountFrom.address} to ${addressTo}`);
-    // 4. Sign tx with PK
-    const signedTx = await web3.eth.accounts.signTransaction(
-        {
+    try {
+        console.log(`Attempting to send transaction from ${accountFrom.address} to ${contractAddress}`);
+        const nonce = await web3.eth.getTransactionCount(accountFrom.address, "latest");
+
+        const rawTx = {
             from: accountFrom.address,
-            to: addressTo,
-            value: web3.utils.toWei('1', 'ether'),
-            nonce: await web3.eth.getTransactionCount(accountFrom.address, "latest"),
-            gas: 300000,
-            maxFeePerGas: 250000000000,
-            maxPriorityFeePerGas: 250000000000,
-            gasLimit: 300000,
+            to: contractAddress,
+            nonce: web3.utils.toHex(nonce),
+            gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')), 
+            gasLimit: web3.utils.toHex(300000), 
             data: functionSignature,
-        },
-        accountFrom.privateKey
-    );
-    // 5. Send tx and wait for receipt
-    web3.eth.sendSignedTransaction(signedTx.rawTransaction, function (error, hash) {
-        if (!error) {
-            console.log("The hash of your transaction is: ", hash,
-                "\n Check Transactions tab in Ganache to view your transaction!");
-        } else {
-            console.log("Something went wrong while submitting your transaction:", error);
-        }
-    });
+        };
+
+        const signedTx = await web3.eth.accounts.signTransaction(rawTx, accountFrom.privateKey);
+
+        const response = await axios.post('http://localhost:8545', {
+            jsonrpc: '2.0',
+            method: 'eth_sendRawTransaction',
+            params: [signedTx.rawTransaction],
+            id: 1,
+        });
+
+        console.log("The hash of your transaction is: ", response.data.result,
+            "\nCheck Transactions tab in your Ethereum client to view your transaction!");
+    } catch (error) {
+        console.log("Something went wrong while submitting your transaction:", error);
+    }
 };
 
-
-// 6. Call send function
 send();

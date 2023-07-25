@@ -1,7 +1,7 @@
 from web3.auto import w3
 import binascii
 
-key_file_path = "/Users/billy/Library/Ethereum/rinkeby/keystore/UTC--2023-07-08T09-07-25.779700000Z--8ca598d518af8e104f2d9e1ceb9dc6307c8bc02d"
+key_file_path = "/Users/billy/Library/Ethereum/goerli/keystore/UTC--2023-07-20T07-58-34.125121000Z--97b35d326217bb5b15b92aa2f57874f7f26bd6e4"
 
 with open(key_file_path) as keyfile:
     encrypted_key = keyfile.read()
