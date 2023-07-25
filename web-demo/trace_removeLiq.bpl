@@ -23,7 +23,7 @@ axiom (forall m: [address] uint256 :: ((forall a:address :: 0<=m[a]) ==> (forall
 
 procedure straightline_code ()
 {  
-    var msg_sender: address;
+    var tx_origin: address;
 	var tokenA:	address;
 	var tokenB:	address;
 	var liquidity:	uint256;
@@ -122,25 +122,25 @@ procedure straightline_code ()
 	assume(1==1);
 	assume(1==1);
 
-	tmp1:=c_66795.allowance[msg_sender][msg_sender];
+	tmp1:=c_66795.allowance[tx_origin][entry_contract_address];
 	tmp2:= (tmp1==115792089237316195423570985008687907853269984665640564039457584007913129639935);
 	assume(!tmp2);
 
-	tmp3:=c_66795.allowance[msg_sender][msg_sender];
+	tmp3:=c_66795.allowance[tx_origin][entry_contract_address];
 	tmp4:=evmsub(tmp3,liquidity);
 	tmp5:= (tmp4>tmp3);
 	tmp6:=!tmp5;
 	assume(tmp6);
 
-	c_66795.allowance[msg_sender][msg_sender]:=tmp4;
+	c_66795.allowance[tx_origin][entry_contract_address]:=tmp4;
 
-	tmp7:=c_66795.balanceOf[msg_sender];
+	tmp7:=c_66795.balanceOf[tx_origin];
 	tmp8:=evmsub(tmp7,liquidity);
 	tmp9:= (tmp8>tmp7);
 	tmp10:=!tmp9;
 	assume(tmp10);
 
-	c_66795.balanceOf[msg_sender]:=tmp8;
+	c_66795.balanceOf[tx_origin]:=tmp8;
 
 	tmp11:=c_6a5c4.getPair[tokenA][tokenB];
 	tmp12:=c_66795.balanceOf[tmp11];
@@ -204,17 +204,17 @@ procedure straightline_code ()
 
 	c_66795.totalSupply:=tmp40;
 
-	tmp43:=c_83c71.balanceOf[msg_sender];
+	tmp43:=c_83c71.balanceOf[tmp11];
 	tmp44:=evmsub(tmp43,tmp31);
-	c_83c71.balanceOf[msg_sender]:=tmp44;
+	c_83c71.balanceOf[tmp11]:=tmp44;
 
 	tmp45:=c_83c71.balanceOf[to];
 	tmp46:=evmadd(tmp45,tmp31);
 	c_83c71.balanceOf[to]:=tmp46;
 
-	tmp47:=c_969fd.balanceOf[msg_sender];
+	tmp47:=c_969fd.balanceOf[tmp11];
 	tmp48:=evmsub(tmp47,tmp34);
-	c_969fd.balanceOf[msg_sender]:=tmp48;
+	c_969fd.balanceOf[tmp11]:=tmp48;
 
 	tmp49:=c_969fd.balanceOf[to];
 	tmp50:=evmadd(tmp49,tmp34);

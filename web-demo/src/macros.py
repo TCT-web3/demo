@@ -42,7 +42,7 @@ axiom (forall m: [address] uint256 :: ((forall a:address :: 0<=m[a]) ==> (forall
 
 procedure straightline_code ()
 {  
-    var msg_sender: address;
+    var tx_origin: address;
 """
 
 
