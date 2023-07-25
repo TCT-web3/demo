@@ -129,7 +129,7 @@ modifies c_66795.totalSupply,c_83c71.balanceOf,c_969fd.balanceOf;
 	var old_reserveB: uint256;
 	
 	//---------------- MANUALLY ENTERED
-	assume tx_origin != c_6a5c4.getPair[tokenA][tokenB];    //I didn't think of this condition until Boogie returned negative result.
+	assume to != c_6a5c4.getPair[tokenA][tokenB];    //I didn't think of this condition until Boogie returned negative result.
 	assume c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] !=0.0;
 	assume c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] !=0.0;
 	
@@ -290,14 +290,8 @@ modifies c_66795.totalSupply,c_83c71.balanceOf,c_969fd.balanceOf;
 	//Manually entered=============================
 	//We want to prove the invariant:
 	assert( evmdiv(c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old(c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])) == evmdiv(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])));
-//assert(old(c_66795.totalSupply)!=0.0);	
-//assert(old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])!=0.0);
-//assume(old(c_66795.totalSupply)!=0.0);	
-//assume(old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])!=0.0);
-assume(old_totalSupply!=0.0);	
-assume(old_reserveB!=0.0);
-	//assert( evmdiv(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])) == evmdiv(c_66795.totalSupply , old(c_66795.totalSupply)));
-	assert( evmdiv(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old_reserveB) == evmdiv(c_66795.totalSupply , old_totalSupply));
+
+	assert( evmdiv(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])) == evmdiv(c_66795.totalSupply , old(c_66795.totalSupply)));
 	
 	assert (c_66795.reserve0 == c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]]);
 	assert (c_66795.reserve1 == c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]]);
