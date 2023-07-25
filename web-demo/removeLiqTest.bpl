@@ -18,8 +18,11 @@ function evmmul(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: evmmul(a,b) == a*b);
 function evmdiv(a,b: uint256) returns (uint256);
 axiom (forall a, b : uint256:: evmdiv(a,b) == a / b); 
-
+var c_66795.totalSupply:  uint256;
+var c_83c71.balanceOf:  [address] uint256;
+var c_969fd.balanceOf:  [address] uint256;
 procedure straightline_code ()
+modifies c_66795.totalSupply,c_83c71.balanceOf,c_969fd.balanceOf;
 {  
     var tx_origin: address;
 	var tokenA:	address;
@@ -56,13 +59,13 @@ procedure straightline_code ()
 	var c_66795.blockTimestampLast:  uint256;
 	var c_66795.token0:  address;
 	var c_66795.token1:  address;
-	var c_83c71.balanceOf:  [address] uint256;
-	var c_969fd.balanceOf:  [address] uint256;
+
+	
 	var c_66795.factory:  address;
 	var c_6a5c4.feeTo:  address;
 	var c_66795.kLast:  uint256;
 	var tmp17:  bool;
-	var c_66795.totalSupply:  uint256;
+
 	var tmp18:  uint256;
 	var tmp19:  bool;
 	var tmp20:  uint256;
@@ -121,18 +124,21 @@ procedure straightline_code ()
 	var tmp69:  bool;
 	var tmp70:  bool;
 	var tmp71:  bool;
-
+	
+	var old_totalSupply: uint256;
+	var old_reserveB: uint256;
+	
 	//---------------- MANUALLY ENTERED
 	assume tx_origin != c_6a5c4.getPair[tokenA][tokenB];    //I didn't think of this condition until Boogie returned negative result.
 	assume c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] !=0.0;
 	assume c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] !=0.0;
-	assume c_66795.totalSupply!=0.0;
 	
 	//assume invariants
 	assume (c_66795.reserve0 == c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]]);
 	assume (c_66795.reserve1 == c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]]);
 	//========================================================================================
-	
+	old_totalSupply := c_66795.totalSupply;
+	old_reserveB:= c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]];
 	
 	tmp1:=c_66795.allowance[tx_origin][256577013454289827829678403807674012776083424995];
 	tmp2:= (tmp1==115792089237316195423570985008687907853269984665640564039457584007913129639935.0);
@@ -283,10 +289,17 @@ procedure straightline_code ()
 
 	//Manually entered=============================
 	//We want to prove the invariant:
-	//assert( evmdiv(c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old(c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])) == evmdiv(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])));
-	assert( evmdiv(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])) == evmdiv(c_66795.totalSupply , old(c_66795.totalSupply)));
+	assert( evmdiv(c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old(c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])) == evmdiv(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])));
+//assert(old(c_66795.totalSupply)!=0.0);	
+//assert(old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])!=0.0);
+//assume(old(c_66795.totalSupply)!=0.0);	
+//assume(old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])!=0.0);
+assume(old_totalSupply!=0.0);	
+assume(old_reserveB!=0.0);
+	//assert( evmdiv(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]])) == evmdiv(c_66795.totalSupply , old(c_66795.totalSupply)));
+	assert( evmdiv(c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]] , old_reserveB) == evmdiv(c_66795.totalSupply , old_totalSupply));
 	
-	//assert (c_66795.reserve0 == c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]]);
-	//assert (c_66795.reserve1 == c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]]);
+	assert (c_66795.reserve0 == c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]]);
+	assert (c_66795.reserve1 == c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]]);
 
 }
