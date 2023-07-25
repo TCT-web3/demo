@@ -192,7 +192,11 @@ def gen_trace_essential():
                 TRACE_essential.write(lines[i] + '\n')
                 essential_start = find_essential_start(contract_name, function_name)
                 start = False
-        elif lines[i].startswith("<<leave"):
+            else:
+                matches = re.search(r"(0x[a-fA-F0-9]+)::(0x[a-fA-F0-9]+)", lines[i])
+                entry_address   = matches.group(1)
+                entry_func_hash = matches.group(2)
+        elif lines[i].startswith("<<"):
             TRACE_essential.write(lines[i] + '\n')
         elif not lines[i][0:1].isnumeric():
             continue
@@ -208,7 +212,8 @@ def gen_trace_essential():
                 start = True
             else:
                 PRE_start = int(lines[i][0:4])
-
+        
+    return int(entry_address, 16), int(entry_func_hash, 16)
 '''
 get ABI information as a JSON
 '''
