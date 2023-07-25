@@ -1,5 +1,4 @@
 const axios = require('axios');
-
 const {Web3} = require('web3');
 var web3 = new Web3('http://localhost:8545');
 
@@ -76,31 +75,43 @@ const contractABI = [
 const functionSignature = web3.eth.abi.encodeFunctionSignature(contractABI.find(x => x.name === 'attack1_int_overflow'));
 console.log(functionSignature)
 
-async function traceRevertedTransaction() {
-	try {
-		const response = await axios.post('http://localhost:8545', {
-			jsonrpc: '2.0',
-			method: 'debug_traceCall',
-			params: [
-				{
-					from: "0xd0f9295EA2A0a26E5D0A57F4A8a77CC42F91d19d",
-					to: "0xf0d527df89411Fb2149e629C010D31fBEe337698", //contract addr
-					data: functionSignature,
-				},
-				"latest",
-				{
-					"tracer": "callTracer"
-				}
-			],
-			id: 1,
-		});
+// 2. Create account variables
+const accountFrom = {
+    privateKey: '0xa2c28995f93af6f9ca02bb1082dfa55fab1d0c7945e7c09b7594d82b83a06f79',
+    address: '0x0e6322d1B8b3d57D6f96fA3f529892fE77c3daE8',
+};
 
-		console.log('Transaction trace:', response.data.result);
-	} catch (error) {
-		console.error('Error:', error);
-	}
-}
-
-traceRevertedTransaction();
+const contractAddress = '0x93B1eC1655303B81F5D00b888854eD3674966B14'; // Change addressTo
 
 
+async function send() {
+    try {
+        console.log(`Attempting to send transaction from ${accountFrom.address} to ${contractAddress}`);
+        const nonce = await web3.eth.getTransactionCount(accountFrom.address, "latest");
+
+        const rawTx = {
+            from: accountFrom.address,
+            to: contractAddress,
+            nonce: web3.utils.toHex(nonce),
+            gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')), 
+            gasLimit: web3.utils.toHex(300000), 
+            data: functionSignature,
+        };
+
+        const signedTx = await web3.eth.accounts.signTransaction(rawTx, accountFrom.privateKey);
+
+        const response = await axios.post('http://localhost:8545', {
+            jsonrpc: '2.0',
+            method: 'eth_sendRawTransaction',
+            params: [signedTx.rawTransaction],
+            id: 1,
+        });
+
+        console.log("The hash of your transaction is: ", response.data.result,
+            "\nCheck Transactions tab in your Ethereum client to view your transaction!");
+    } catch (error) {
+        console.log("Something went wrong while submitting your transaction:", error);
+    }
+};
+
+send();
