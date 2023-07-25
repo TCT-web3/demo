@@ -681,7 +681,7 @@ def main():
     MACROS.FUNCTION_NAME    = FUNCTION_NAME
     VAR_PREFIX              = get_init_var_prefix() 
     check_entrypoint()
-    entry_contract_address=gen_trace_essential()
+    entry_contract_address=gen_trace_essential()[0]
     ABI_INFO    = get_ABI_info()
     STOR_INFO   = get_STORAGE_info()
     
@@ -704,7 +704,7 @@ def main():
 
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX)
-    evm._sym_this_addresses  = [SVT("tx_origin"),SVT("entry_contract_address")]
+    evm._sym_this_addresses  = [SVT("tx_origin"),SVT(entry_contract_address)]
     print('inputs: ', MACROS.SOLIDITY_FNAME, MACROS.THEOREM_FNAME, MACROS.TRACE_FNAME)
     print('\n(executing instructions...)')
     evm.sym_exec(TRACE)
