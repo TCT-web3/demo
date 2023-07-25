@@ -106,8 +106,8 @@ contract UniswapV2Router is IUniswapV2Router {
             amountBMin
         );
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);
-        TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
-        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
+        IERC20(tokenA).transferFrom(msg.sender, pair, amountA);   
+        IERC20(tokenB).transferFrom(msg.sender, pair, amountB);   
         liquidity = IUniswapV2Pair(pair).mint(to);
     }
     /*
@@ -151,13 +151,13 @@ contract UniswapV2Router is IUniswapV2Router {
         uint256 liquidity,
         uint256 amountAMin,
         uint256 amountBMin,
-        address to,
-        uint256 deadline
+        address to
+        //uint256 deadline
     )
         public
         virtual
         override
-        ensure(deadline)
+        //ensure(deadline)
         returns (uint256 amountA, uint256 amountB)
     {
         address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);

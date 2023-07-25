@@ -36,17 +36,13 @@ function evmsub(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b>=0 ==> evmsub(a,b) == a-b);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b<0 ==> evmsub(a,b) == a-b+TwoE256);
 
-function evmand(a, b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0 ==> evmand(a,b) == a+b);
-axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmand(a,b) == a+b-TwoE256);
-
 function sum(m: [address] uint256) returns (uint256);
 axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(m) - m[a] + v);
 axiom (forall m: [address] uint256 :: ((forall a:address :: 0<=m[a]) ==> (forall a:address :: m[a]<=sum(m))));    
 
 procedure straightline_code ()
 {  
-    var msg.sender: address;
+    var msg_sender: address;
 """
 
 
