@@ -33,7 +33,10 @@ def gen_init_STACK(var_prefix, abi_info):
     for func in func_list:
         if ("name" in func.keys()) and (func["name"] == MACROS.FUNCTION_NAME):
             for item in func["inputs"] :
-                stack.append(SVT(item["name"]))
+                if item["name"] == "path":
+                    stack.append(SVT(0x80)) # for swap trace
+                else:
+                    stack.append(SVT(item["name"]))
 
     STACKS.append(stack)
             
@@ -84,6 +87,9 @@ def gen_init_MEMORY():
         # This is solc's convention. It tells a callee contract to use memory[0x80] for returndata
         0x40: SVT(0x80),
         # Dummy mem item
+        0x80: SVT(2),  # for swap trace
+        0xa0: SVT("path[0]"), # for swap trace
+        0xc0: SVT("path[1]"), # for swap trace
         0x10000000000: SVT(0)
     }
     MEMORIES.append(init_MEM)

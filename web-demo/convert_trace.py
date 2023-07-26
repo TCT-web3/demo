@@ -86,7 +86,7 @@ def main():
     # TRACE_FNAME = ARGS[1]
 
     # Call method
-    output_trace("trace-0x301b7d4d8899059aebcaec2c4f9e0613307518d9f5d466e170a961df8273de72.json", "0x301b7d4d8899059aebcaec2c4f9e0613307518d9f5d466e170a961df8273de72", "deployment_info.json", "theorem-0x301b7d4d8899059aebcaec2c4f9e0613307518d9f5d466e170a961df8273de72.json")
+    output_trace("trace-0xca0198bcc6d7c92c5537480f94880abeda053a992e3bc661785099ef8318c954.json", "0xca0198bcc6d7c92c5537480f94880abeda053a992e3bc661785099ef8318c954", "deployment_info.json", "theorem-0xca0198bcc6d7c92c5537480f94880abeda053a992e3bc661785099ef8318c954.json")
     
 
 if __name__ == "__main__":

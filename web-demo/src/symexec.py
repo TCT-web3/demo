@@ -81,7 +81,7 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        # print(instr)
+        print(instr)
         # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
         #     print("===========")
         #     for n in self._stacks[-1]:
@@ -281,6 +281,8 @@ class EVM:
                     node = SVT((self._stacks[-1].pop().value + self._stacks[-1].pop().value)%2**256) 
                 elif opcode == "SUB":
                     node = SVT((self._stacks[-1].pop().value - self._stacks[-1].pop().value)%2**256)
+                elif opcode == "MUL":
+                    node = SVT((self._stacks[-1].pop().value * self._stacks[-1].pop().value)%2**256)
                 elif opcode == "DIV":
                     node = SVT((self._stacks[-1].pop().value // self._stacks[-1].pop().value)%2**256)
                 elif opcode == "EXP":
@@ -332,13 +334,23 @@ class EVM:
                 self._stacks[-1].append(SVT(0xdeadbeef))
         elif opcode=="ADDRESS":
             self._stacks[-1].append(self._sym_this_addresses[-1])
+        elif opcode=="CALLDATACOPY": # for swap trace
+            destOffset  = self._stacks[-1].pop()
+            offset      = self._stacks[-1].pop()
+            size        = self._stacks[-1].pop()
+        elif opcode=="CALLDATASIZE":
+            self._stacks[-1].append(SVT("CALLDATASIZE"))
         else:
-            print('[!]',str(instr), 'not supported yet')  
+            print('[!]',str(instr), 'not supported yet')
+            self.inspect("currstack")
+            self.inspect("currmemory")
             raise Exception("not handled") 
             # sys.exit()
-
+        # self.inspect("currstack")
+        # self.inspect("currmemory")
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
+        print(node)
         to_return = ""
         if not node.children:
             return node.value
