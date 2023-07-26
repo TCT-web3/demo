@@ -364,13 +364,13 @@ contract UniswapV2Router is IUniswapV2Router {
         uint256 amountIn,
         uint256 amountOutMin,
         address[] calldata path,
-        address to,
-        uint256 deadline
+        address to /*,
+        uint256 deadline*/
     )
         external
         virtual
         override
-        ensure(deadline)
+        //ensure(deadline)
         returns (uint256[] memory amounts)
     {
         amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
@@ -378,12 +378,13 @@ contract UniswapV2Router is IUniswapV2Router {
             amounts[amounts.length - 1] >= amountOutMin,
             "UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT"
         );
-        TransferHelper.safeTransferFrom(
+        /*TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
             UniswapV2Library.pairFor(factory, path[0], path[1]),
             amounts[0]
-        );
+        );*/
+        IERC20(path[0]).transfer(UniswapV2Library.pairFor(factory, path[0], path[1]),amounts[0]);
         _swap(amounts, path, to);
     }
 

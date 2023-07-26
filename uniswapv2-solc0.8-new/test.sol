@@ -83,6 +83,25 @@ contract Test {
             address(this)
         );
     }
+
+    function call_swapExactTokensForTokens() public
+    {
+
+        /*uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to
+        */
+        address[] memory path = new address[](2);
+        path[0] = address(_tokenA);
+        path[1] = address(_tokenB);
+        _router.swapExactTokensForTokens(
+            10,
+            1,
+            path,
+            msg.sender
+        );
+    }
     
     // function get_pair_hash() public pure returns (bytes32)
     // {
