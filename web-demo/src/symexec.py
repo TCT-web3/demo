@@ -177,6 +177,8 @@ class EVM:
                     pos_src+=32
                     pos_dst+=32
                     count-=32
+            elif opcode=="STOP":
+                self._return_data_size = 0
             # print(self._call_stack)
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
@@ -191,13 +193,13 @@ class EVM:
         elif opcode=="GAS":
             self._stacks[-1].append(SVT("GAS"))  
         elif opcode=="RETURNDATASIZE":
-            for elmt in self._abi_info["contracts"][self._curr_contract]["abi"]:
-                if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
-                    return_count = len(elmt["outputs"])
-                    if(return_count == 0):
-                        self._stacks[-1].append(SVT(0))
-                    else:
-                        self._stacks[-1].append(SVT(self._return_data_size))
+            # for elmt in self._abi_info["contracts"][self._curr_contract]["abi"]:
+                # if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
+                #     return_count = len(elmt["outputs"])
+                #     if(return_count == 0):
+                #         self._stacks[-1].append(SVT(0))
+                #     else:
+            self._stacks[-1].append(SVT(self._return_data_size))
         elif opcode=="TIMESTAMP":
             self._stacks[-1].append(SVT("BLOCKTIME"))
         elif opcode=="EXTCODESIZE":
@@ -252,10 +254,10 @@ class EVM:
         elif opcode=="ISZERO":
             if isinstance(self._stacks[-1][-1].value, int):
                 val = self._stacks[-1].pop().value
-                if val == 0:
-                    self._stacks[-1].append(SVT(1))
-                else:
-                    self._stacks[-1].append(SVT(0))
+                # if val == 0:
+                self._stacks[-1].append(SVT(1 if val==0 else 0))
+                # else:
+                #     self._stacks[-1].append(SVT(0))
             else:
                 node = SVT(opcode)
                 node.children.append(self._stacks[-1].pop())
@@ -278,15 +280,25 @@ class EVM:
         elif opcode=="ADD" or opcode=="LT" or opcode=="GT" or opcode=="EQ" or opcode=="SUB" or opcode=="DIV" or opcode=="EXP" or opcode=="SHL" or opcode=="SLT" or opcode=="MUL" or opcode=="SHR" or opcode=="MOD":            
             if isinstance(self._stacks[-1][-1].value, int) and isinstance(self._stacks[-1][-2].value, int):
                 if opcode == "ADD":
-                    node = SVT((self._stacks[-1].pop().value + self._stacks[-1].pop().value)%2**256) 
+                    val1 = self._stacks[-1].pop().value
+                    val2 = self._stacks[-1].pop().value
+                    node = SVT((val1 + val2)%2**256) 
                 elif opcode == "SUB":
-                    node = SVT((self._stacks[-1].pop().value - self._stacks[-1].pop().value)%2**256)
+                    val1 = self._stacks[-1].pop().value
+                    val2 = self._stacks[-1].pop().value
+                    node = SVT((val1 - val2)%2**256)
                 elif opcode == "MUL":
-                    node = SVT((self._stacks[-1].pop().value * self._stacks[-1].pop().value)%2**256)
+                    val1 = self._stacks[-1].pop().value
+                    val2 = self._stacks[-1].pop().value
+                    node = SVT((val1 * val2)%2**256)
                 elif opcode == "DIV":
-                    node = SVT((self._stacks[-1].pop().value // self._stacks[-1].pop().value)%2**256)
+                    val1 = self._stacks[-1].pop().value
+                    val2 = self._stacks[-1].pop().value
+                    node = SVT((val1 // val2)%2**256)
                 elif opcode == "EXP":
-                    node = SVT((self._stacks[-1].pop().value ** self._stacks[-1].pop().value)%2**256)
+                    val1 = self._stacks[-1].pop().value
+                    val2 = self._stacks[-1].pop().value
+                    node = SVT((val1 ** val2)%2**256)
                 elif opcode == "SHL":
                     shift= self._stacks[-1].pop().value
                     base = self._stacks[-1].pop().value
@@ -299,10 +311,21 @@ class EVM:
                     val1 = self._stacks[-1].pop().value
                     val2 = self._stacks[-1].pop().value
                     node = SVT(val1 % val2)
-                elif opcode == "LT" or opcode == "GT" or opcode == "EQ" or opcode=="SLT" or opcode=="MUL":
-                    node = SVT(opcode)
-                    node.children.append(self._stacks[-1].pop())
-                    node.children.append(self._stacks[-1].pop())
+                elif opcode == "LT" or opcode == "SLT":
+                    val1 = self._stacks[-1].pop().value
+                    val2 = self._stacks[-1].pop().value
+                    result = val1 < val2
+                    node = SVT(1) if result else SVT(0)
+                elif opcode == "GT":
+                    val1 = self._stacks[-1].pop().value
+                    val2 = self._stacks[-1].pop().value
+                    result = val1 > val2
+                    node = SVT(1) if result else SVT(0)
+                elif opcode == "EQ":
+                    val1 = self._stacks[-1].pop().value
+                    val2 = self._stacks[-1].pop().value
+                    result = val1 == val2
+                    node = SVT(1) if result else SVT(0)
             else:
                 if opcode == "DIV" and self._stacks[-1][-2].value == 1:
                     node = self._stacks[-1].pop() # actual address
