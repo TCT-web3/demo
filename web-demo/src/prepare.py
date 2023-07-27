@@ -85,7 +85,7 @@ def gen_init_MEMORY():
     MEMORIES = []
     init_MEM = {
         # This is solc's convention. It tells a callee contract to use memory[0x80] for returndata
-        0x40: SVT(0x80),
+        0x40: SVT(0xe0),
         # Dummy mem item
         0x80: SVT(2),  # for swap trace
         0xa0: SVT("path[0]"), # for swap trace
