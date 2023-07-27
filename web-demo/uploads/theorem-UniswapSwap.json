@@ -1,0 +1,7 @@
+{
+	"entry-for-test":"UniswapV2Router::swapExactTokensForTokens(uint256,uint256,address[],address)",
+	"entry-for-real":"0xa5a9def940e95acd7c4131dc7fadf3f0e32b767a::0x472b43f3",
+	"hypothesis":"1==1",
+	"path-hash-for-test": "*",
+	"path-hash-for-real": "the real hash (not implemented yet)"
+}
