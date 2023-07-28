@@ -356,7 +356,7 @@ contract UniswapV2Router is IUniswapV2Router {
                 ? UniswapV2Library.pairFor(factory, output, path[i + 2])
                 : _to;
             IUniswapV2Pair(UniswapV2Library.pairFor(factory, input, output))
-                .swap(amount0Out, amount1Out, to, new bytes(0));
+                .swap(amount0Out, amount1Out, to/*, new bytes(0)*/);
         }
     }
 
@@ -384,7 +384,7 @@ contract UniswapV2Router is IUniswapV2Router {
             UniswapV2Library.pairFor(factory, path[0], path[1]),
             amounts[0]
         );*/
-        IERC20(path[0]).transfer(UniswapV2Library.pairFor(factory, path[0], path[1]),amounts[0]);
+        IERC20(path[0]).transferFrom(msg.sender,UniswapV2Library.pairFor(factory, path[0], path[1]),amounts[0]);
         _swap(amounts, path, to);
     }
 
@@ -535,7 +535,7 @@ contract UniswapV2Router is IUniswapV2Router {
         if (msg.value > amounts[0])
             TransferHelper.safeTransferETH(msg.sender, msg.value - amounts[0]);
     }
-    */
+    
     // **** SWAP (supporting fee-on-transfer tokens) ****
     // requires the initial amount to have already been sent to the first pair
     function _swapSupportingFeeOnTransferTokens(
@@ -571,10 +571,10 @@ contract UniswapV2Router is IUniswapV2Router {
             address to = i < path.length - 2
                 ? UniswapV2Library.pairFor(factory, output, path[i + 2])
                 : _to;
-            pair.swap(amount0Out, amount1Out, to, new bytes(0));
+            pair.swap(amount0Out, amount1Out, to);
         }
     }
-    /*
+    
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
         uint256 amountIn,
         uint256 amountOutMin,
@@ -653,7 +653,7 @@ contract UniswapV2Router is IUniswapV2Router {
     ) public pure virtual override returns (uint256 amountB) {
         return UniswapV2Library.quote(amountA, reserveA, reserveB);
     }
-
+/*
     function getAmountOut(
         uint256 amountIn,
         uint256 reserveIn,
@@ -669,7 +669,7 @@ contract UniswapV2Router is IUniswapV2Router {
     ) public pure virtual override returns (uint256 amountIn) {
         return UniswapV2Library.getAmountIn(amountOut, reserveIn, reserveOut);
     }
-
+*/
     function getAmountsOut(
         uint256 amountIn,
         address[] memory path

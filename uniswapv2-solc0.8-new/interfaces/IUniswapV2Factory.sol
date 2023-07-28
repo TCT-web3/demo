@@ -32,4 +32,6 @@ interface IUniswapV2Factory {
     function setFeeTo(address) external;
 
     function setFeeToSetter(address) external;
+
+    function swapFeeRate() external view returns (uint256);
 }

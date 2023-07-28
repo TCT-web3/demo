@@ -33,6 +33,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     uint256 public override kLast; // reserve0 * reserve1, as of immediately after the most recent liquidity event
 
     uint256 private unlocked = 1;
+    uint256 private swapFeeRate;
     modifier lock() {
         require(unlocked == 1, "UniswapV2: LOCKED");
         unlocked = 0;
@@ -67,6 +68,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
 
     constructor() {
         factory = msg.sender;
+        swapFeeRate = IUniswapV2Factory(factory).swapFeeRate();
     }
 
     // called once by the factory at time of deployment
@@ -200,8 +202,8 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     function swap(
         uint256 amount0Out,
         uint256 amount1Out,
-        address to,
-        bytes calldata data
+        address to/*,
+        bytes calldata data*/
     ) external override lock {
         require(
             amount0Out > 0 || amount1Out > 0,
@@ -226,6 +228,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
                 IERC20(_token0).transfer(to,amount0Out);
             if (amount1Out > 0)
                 IERC20(_token0).transfer(to,amount1Out);
+            /*
             if (data.length > 0)
                 IUniswapV2Callee(to).uniswapV2Call(
                     msg.sender,
@@ -233,6 +236,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
                     amount1Out,
                     data
                 );
+            */
             balance0 = IERC20(_token0).balanceOf(address(this));
             balance1 = IERC20(_token1).balanceOf(address(this));
         }
@@ -248,8 +252,8 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
         );
         {
             // scope for reserve{0,1}Adjusted, avoids stack too deep errors
-            uint256 balance0Adjusted = balance0 * 1000 - amount0In * 3;
-            uint256 balance1Adjusted = balance1 * 1000 - amount1In * 3;
+            uint256 balance0Adjusted = balance0 * 1000 - amount0In * swapFeeRate;
+            uint256 balance1Adjusted = balance1 * 1000 - amount1In * swapFeeRate;
             require(
                 balance0Adjusted * balance1Adjusted >=
                     uint256(_reserve0) * _reserve1 * 1e6,

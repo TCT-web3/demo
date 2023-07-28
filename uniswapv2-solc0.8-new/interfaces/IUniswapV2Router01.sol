@@ -129,7 +129,7 @@ interface IUniswapV2Router01 {
         uint256 reserveA,
         uint256 reserveB
     ) external pure returns (uint256 amountB);
-
+/*
     function getAmountOut(
         uint256 amountIn,
         uint256 reserveIn,
@@ -141,7 +141,7 @@ interface IUniswapV2Router01 {
         uint256 reserveIn,
         uint256 reserveOut
     ) external pure returns (uint256 amountIn);
-
+*/
     function getAmountsOut(
         uint256 amountIn,
         address[] calldata path

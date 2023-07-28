@@ -14,9 +14,11 @@ contract UniswapV2Factory is IUniswapV2Factory {
 
     mapping(address => mapping(address => address)) public override getPair;
     address[] public override allPairs;
+    uint256 public override swapFeeRate;
 
     constructor(address _feeToSetter) {
         feeToSetter = _feeToSetter;
+        swapFeeRate = 3;
     }
 
     function allPairsLength() external view override returns (uint256) {

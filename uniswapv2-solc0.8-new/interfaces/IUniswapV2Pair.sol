@@ -53,8 +53,8 @@ interface IUniswapV2Pair is IUniswapV2ERC20 {
     function swap(
         uint256 amount0Out,
         uint256 amount1Out,
-        address to,
-        bytes calldata data
+        address to/*,
+        bytes calldata data*/
     ) external;
 
     function skim(address to) external;
