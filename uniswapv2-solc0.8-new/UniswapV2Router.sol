@@ -363,7 +363,7 @@ contract UniswapV2Router is IUniswapV2Router {
     function swapExactTokensForTokens(
         uint256 amountIn,
         uint256 amountOutMin,
-        address[] calldata path,
+        address[] memory path,
         address to /*,
         uint256 deadline*/
     )

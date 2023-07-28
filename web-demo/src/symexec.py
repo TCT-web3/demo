@@ -90,10 +90,10 @@ class EVM:
         #     print("\n")
         #     print(instr)
         #     print(hex(self._stacks[-1][-1].value), self._stacks[-1][-2])
-        # if isinstance(PC, int) and opcode=="STATICCALL": #and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  
-        #     self.inspect("currstack")
-        #     self.inspect("currmemory")
-        #     #sys.exit()
+        if isinstance(PC, int) and opcode=="JUMPDEST": #and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  
+            self.inspect("currstack")
+            self.inspect("currmemory")
+            #sys.exit()
 
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
@@ -357,10 +357,6 @@ class EVM:
                 self._stacks[-1].append(SVT(0xdeadbeef))
         elif opcode=="ADDRESS":
             self._stacks[-1].append(self._sym_this_addresses[-1])
-        elif opcode=="CALLDATACOPY": # for swap trace
-            destOffset  = self._stacks[-1].pop()
-            offset      = self._stacks[-1].pop()
-            size        = self._stacks[-1].pop()
         elif opcode=="CALLDATASIZE":
             self._stacks[-1].append(SVT("CALLDATASIZE"))
         else:
