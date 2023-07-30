@@ -65,9 +65,9 @@ get the variable prefix
 '''
 def get_var_prefix(instr):
     L = instr.find(" ")
-    R = instr.find("::")
-    name = instr[L+27:R] 
-    return 'c_' + name[0:5]
+    #R = instr.find("::")
+    #name = instr[L+27:R] 
+    return 'c_' + instr[L+3:L+8]
 
 '''
 get the storage map

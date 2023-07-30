@@ -357,6 +357,10 @@ class EVM:
                 self._stacks[-1].append(SVT(0xdeadbeef))
         elif opcode=="ADDRESS":
             self._stacks[-1].append(self._sym_this_addresses[-1])
+        elif opcode=="CALLDATACOPY": # for swap trace
+            destOffset  = self._stacks[-1].pop()
+            offset      = self._stacks[-1].pop()
+            size        = self._stacks[-1].pop()
         elif opcode=="CALLDATASIZE":
             self._stacks[-1].append(SVT("CALLDATASIZE"))
         else:

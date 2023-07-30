@@ -1,7 +1,7 @@
 {
   "contracts":
   {
-    "/home/tzuhan/demo/uniswapv2-solc0.8/UniswapV2ERC20.sol:UniswapV2ERC20":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/UniswapV2ERC20.sol:UniswapV2ERC20":
     {
       "hashes":
       {
@@ -20,7 +20,7 @@
         "transferFrom(address,address,uint256)": "23b872dd"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/UniswapV2Factory.sol:UniswapV2Factory":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/UniswapV2Factory.sol:UniswapV2Factory":
     {
       "hashes":
       {
@@ -35,7 +35,7 @@
         "setFeeToSetter(address)": "a2e74af6"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/UniswapV2Pair.sol:UniswapV2Pair":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/UniswapV2Pair.sol:UniswapV2Pair":
     {
       "hashes":
       {
@@ -68,7 +68,7 @@
         "transferFrom(address,address,uint256)": "23b872dd"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/UniswapV2Router.sol:UniswapV2Router":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/UniswapV2Router.sol:UniswapV2Router":
     {
       "hashes":
       {
@@ -84,11 +84,7 @@
         "swapTokensForExactTokens(uint256,uint256,address[],address,uint256)": "8803dbee"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/contract_everything.sol:Dummy":
-    {
-      "hashes": {}
-    },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/interfaces/IERC20.sol:IERC20":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/interfaces/IERC20.sol:IERC20":
     {
       "hashes":
       {
@@ -103,14 +99,14 @@
         "transferFrom(address,address,uint256)": "23b872dd"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/interfaces/IUniswapV2Callee.sol:IUniswapV2Callee":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/interfaces/IUniswapV2Callee.sol:IUniswapV2Callee":
     {
       "hashes":
       {
         "uniswapV2Call(address,uint256,uint256,bytes)": "10d1e85c"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/interfaces/IUniswapV2ERC20.sol:IUniswapV2ERC20":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/interfaces/IUniswapV2ERC20.sol:IUniswapV2ERC20":
     {
       "hashes":
       {
@@ -129,7 +125,7 @@
         "transferFrom(address,address,uint256)": "23b872dd"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/interfaces/IUniswapV2Factory.sol:IUniswapV2Factory":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/interfaces/IUniswapV2Factory.sol:IUniswapV2Factory":
     {
       "hashes":
       {
@@ -143,7 +139,7 @@
         "setFeeToSetter(address)": "a2e74af6"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/interfaces/IUniswapV2Pair.sol:IUniswapV2Pair":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/interfaces/IUniswapV2Pair.sol:IUniswapV2Pair":
     {
       "hashes":
       {
@@ -176,7 +172,7 @@
         "transferFrom(address,address,uint256)": "23b872dd"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/interfaces/IUniswapV2Router.sol:IUniswapV2Router":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/interfaces/IUniswapV2Router.sol:IUniswapV2Router":
     {
       "hashes":
       {
@@ -192,7 +188,7 @@
         "swapTokensForExactTokens(uint256,uint256,address[],address,uint256)": "8803dbee"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/interfaces/IUniswapV2Router01.sol:IUniswapV2Router01":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/interfaces/IUniswapV2Router01.sol:IUniswapV2Router01":
     {
       "hashes":
       {
@@ -208,7 +204,7 @@
         "swapTokensForExactTokens(uint256,uint256,address[],address,uint256)": "8803dbee"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/interfaces/IWETH.sol:IWETH":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/interfaces/IWETH.sol:IWETH":
     {
       "hashes":
       {
@@ -217,30 +213,30 @@
         "withdraw(uint256)": "2e1a7d4d"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/libraries/Math.sol:Math":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/libraries/Math.sol:Math":
     {
       "hashes": {}
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/libraries/TransferHelper.sol:TransferHelper":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/libraries/TransferHelper.sol:TransferHelper":
     {
       "hashes": {}
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/libraries/UQ112x112.sol:UQ112x112":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/libraries/UQ112x112.sol:UQ112x112":
     {
       "hashes": {}
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/libraries/UniswapV2Library.sol:UniswapV2Library":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/libraries/UniswapV2Library.sol:UniswapV2Library":
     {
       "hashes": {}
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/test.sol:Test":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/test.sol:Test":
     {
       "hashes":
       {
         "call_addLiquidity()": "b46d9667"
       }
     },
-    "/home/tzuhan/demo/uniswapv2-solc0.8/tokens/FancyToken.sol:FancyToken":
+    "/Users/shuochen/source/repos/demo/uniswapv2-solc0.8-new/tokens/FancyToken.sol:FancyToken":
     {
       "hashes":
       {
@@ -258,5 +254,5 @@
       }
     }
   },
-  "version": "0.8.18+commit.87f61d96.Linux.g++"
+  "version": "0.8.18+commit.87f61d96.Windows.msvc"
 }
