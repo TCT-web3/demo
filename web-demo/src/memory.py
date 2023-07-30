@@ -204,7 +204,7 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
     k_to_delete=None
     for k,v in self._memories[depth].items():
         curr_len=self.mem_item_len(self._memories[depth],k)
-        if k > offset and k+curr_len<offset+content_to_store_len:
+        if k >= offset and k+curr_len<=offset+content_to_store_len:
         # This mem item is completely overwrittn by the MSTORE
             k_to_delete = k
             break

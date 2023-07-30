@@ -94,7 +94,6 @@ class EVM:
             self.inspect("currstack")
             self.inspect("currmemory")
             #sys.exit()
-
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
         elif instr[0]==(">"):
