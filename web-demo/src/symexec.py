@@ -372,7 +372,6 @@ class EVM:
         # self.inspect("currmemory")
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
-        print(node)
         to_return = ""
         if not node.children:
             return node.value
@@ -463,7 +462,7 @@ class EVM:
                     node.children = []
                     self._final_vars[to_return] = 'bool'
                     self._final_path.append(to_boogie) 
-        elif node.value == "ADD" or node.value == "SUB" or node.value == "AND" or node.value == "OR" or node.value == "MUL" or node.value == "DIV": # DIV, MUL
+        elif node.value == "ADD" or node.value == "SUB" or node.value == "AND" or node.value == "OR" or node.value == "MUL" or node.value == "DIV" or node.value == "MOD": # DIV, MUL
             val1=self.postorder_traversal(node.children[0])
             val2=self.postorder_traversal(node.children[1])
             if isinstance(val1, int) and isinstance(val2, int):
@@ -506,6 +505,8 @@ class EVM:
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmmul("+str(val1)+","+str(val2)+");\n"
                     elif node.value == "DIV":
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmdiv("+str(val1)+","+str(val2)+");\n"
+                    if node.value == "MOD":
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmmod("+str(val1)+","+str(val2)+");\n"
                     self._final_vars[to_return] = 'uint256'
                 node.value = to_return
                 node.children = []
