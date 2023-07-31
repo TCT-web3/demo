@@ -19,33 +19,7 @@ library UniswapV2Library {
             : (tokenB, tokenA);
         require(token0 != address(0), "UniswapV2Library: ZERO_ADDRESS");
     }
-    /*
-    // calculates the CREATE2 address for a pair without making any external calls
-    function pairFor(
-        address factory,
-        address tokenA,
-        address tokenB
-    ) internal pure returns (address pair) {
-        (address token0, address token1) = sortTokens(tokenA, tokenB);
-        pair = address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            bytes1(0xff),
-                            factory,
-                            keccak256(abi.encodePacked(token0, token1)),
-                            //hex"1906638f5a6211d2efd44c01fd149a15dde4ed958aa1dceb9be01284250c2604" //Thi one is for online remix
-                            //hex"13c61f62af0ad0360f71b787e8345515a68e8b31c39b8b44b20aca1644e8edaa"   //This one is for vs code remix
-                            //hex"aea1c7cd9847756cf4209feb5fba95b644e6d05f5e9bbbe6aa59e708ec89968e"   //local remix 0.8.18
-                            hex"85342e9923466c45d46657457b4dab55226523bd3a1f944265589f886b4facdb"
-                        )
-                    )
-                )
-            )
-        );
-    }*/
-
+    
     function pairFor(
         address factory,
         address tokenA,

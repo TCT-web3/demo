@@ -4,10 +4,6 @@ pragma solidity >=0.8.4;
 
 import "./interfaces/IUniswapV2ERC20.sol";
 
-//solhint-disable var-name-mixedcase
-//solhint-disable reason-string
-//solhint-disable const-name-snakecase
-
 contract UniswapV2ERC20 is IUniswapV2ERC20 {
     string public constant override name = "Uniswap V2";
     string public constant override symbol = "UNI-V2";

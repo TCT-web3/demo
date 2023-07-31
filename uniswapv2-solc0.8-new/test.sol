@@ -1,19 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.8.4;
 
-//solhint-disable not-rely-on-time
-//solhint-disable var-name-mixedcase
-//solhint-disable reason-string
-
-// import "./interfaces/IUniswapV2Factory.sol";
-// import "./libraries/TransferHelper.sol";
-
-// import "./interfaces/IUniswapV2Router.sol";
 import "./libraries/UniswapV2Library.sol";
-// import "./interfaces/IERC20.sol";
-// import "./interfaces/IWETH.sol";
-
-
 import "./UniswapV2Factory.sol";
 import "./UniswapV2Router.sol";
 import "./tokens/FancyToken.sol";
@@ -86,12 +74,6 @@ contract Test {
 
     function call_swapExactTokensForTokens() public
     {
-
-        /*uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address to
-        */
         address[] memory path = new address[](2);
         path[0] = address(_tokenA);
         path[1] = address(_tokenB);
@@ -102,12 +84,4 @@ contract Test {
             msg.sender
         );
     }
-    
-    // function get_pair_hash() public pure returns (bytes32)
-    // {
-    //     bytes32 r=keccak256(type(UniswapV2Pair).creationCode);
-    //     return r;
-    // }
-    
-    
 }

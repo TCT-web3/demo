@@ -6,8 +6,6 @@ import "./interfaces/IUniswapV2Factory.sol";
 import "./UniswapV2Pair.sol";
 
 contract UniswapV2Factory is IUniswapV2Factory {
-    bytes32 public constant PAIR_HASH =
-        keccak256(type(UniswapV2Pair).creationCode);
 
     address public override feeTo;
     address public override feeToSetter;

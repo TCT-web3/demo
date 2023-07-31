@@ -10,11 +10,6 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IUniswapV2Factory.sol";
 import "./interfaces/IUniswapV2Callee.sol";
 
-//solhint-disable func-name-mixedcase
-//solhint-disable avoid-low-level-calls
-//solhint-disable reason-string
-//solhint-disable not-rely-on-time
-
 contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     using UQ112x112 for uint224;
 
@@ -90,8 +85,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
             "UniswapV2: OVERFLOW"
         );
         uint256 blockTimestamp = uint32(block.timestamp % 2 ** 32);
-        /*unchecked {
-            uint256 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+        /*  uint256 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
             if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
                 // * never overflows, and + overflow is desired
                 price0CumulativeLast +=
@@ -100,7 +94,6 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
                 price1CumulativeLast +=
                     uint256(UQ112x112.encode(_reserve0).uqdiv(_reserve1)) *
                     timeElapsed;
-            }
         }*/
         //the two lines are used to silence the compiler warning
         _reserve0+=0;
@@ -202,8 +195,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     function swap(
         uint256 amount0Out,
         uint256 amount1Out,
-        address to/*,
-        bytes calldata data*/
+        address to
     ) external override lock {
         require(
             amount0Out > 0 || amount1Out > 0,
@@ -228,15 +220,7 @@ contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
                 IERC20(_token0).transfer(to,amount0Out);
             if (amount1Out > 0)
                 IERC20(_token0).transfer(to,amount1Out);
-            /*
-            if (data.length > 0)
-                IUniswapV2Callee(to).uniswapV2Call(
-                    msg.sender,
-                    amount0Out,
-                    amount1Out,
-                    data
-                );
-            */
+ 
             balance0 = IERC20(_token0).balanceOf(address(this));
             balance1 = IERC20(_token1).balanceOf(address(this));
         }
