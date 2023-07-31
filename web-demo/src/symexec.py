@@ -744,7 +744,8 @@ def main():
     evm.sym_exec(TRACE)
 
     ''' write Boogie output '''
-    BOOGIE_OUT.write(MACROS.PREAMBLE)
+    BOOGIE_OUT.write(MACROS.PREAMBLE_REAL)
+    # BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs 
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
