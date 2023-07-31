@@ -10,7 +10,7 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
     theorem = json.load(theorem_file)
     with open(deployment_fname, "r") as deploy_info_file:
         deploy_info = json.load(deploy_info_file)
-    output = open("trace-" + tx_hash + ".txt", "w")
+    output = open("trace_" + tx_hash + ".txt", "w")
     # output = open("trace_UniswapAddLiquidity2.txt", "w")
 
     # Map entry point to deployment file
@@ -37,8 +37,8 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
         pc = str(trace[i]["pc"])
         opcode = trace[i]["op"]
 
-        if len(pc) < 4:
-            pc = "0" * (4-len(pc)) + pc
+        # if len(pc) < 4:
+        #     pc = "0" * (4-len(pc)) + pc
         line += pc + " "
         line += opcode + " "
 
@@ -62,7 +62,7 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
             print(contract_address, func_selector)
             if not enter and func_selector == function_hash:
                 output.close()
-                output = open("trace-" + tx_hash + ".txt", "w")
+                output = open("trace_" + tx_hash + ".txt", "w")
                 output.write("======================================Begin==========================================\n")
                 line = ">>call 0x" + contract_hash + "::0x" + function_hash + " (" + deploy_info[contract_hash] + "::" + deploy_info[function_hash] + ") "
                 enter = True
@@ -86,7 +86,7 @@ def main():
     # TRACE_FNAME = ARGS[1]
 
     # Call method
-    output_trace("trace-0x688148b3c98bbd0d8622ea67df9405c752c12cc00819b018ed143ace73e12632.json", "0x688148b3c98bbd0d8622ea67df9405c752c12cc00819b018ed143ace73e12632", "deployment_info.json", "theorem-UniswapSwap.json")
+    output_trace("trace_removeLiquidity.json", "removeLiquidity", "deployment_info.json", "theorem_removeLiquidity.json")
     
 
 if __name__ == "__main__":

@@ -178,11 +178,12 @@ def gen_trace_essential():
     lines = [line.rstrip() for line in TRACE_file]
     essential_end = 9999
     start = False
+    depth = 0
     PRE_start = 0
     for i in range(0, len(lines)-1):
-        # print(lines[i])
         if lines[i].startswith(">>"):
             # matches = re.search(r"\(([^:]+)::([^()]+)\(.*?\)\)", lines[i])
+            depth += 1
             matches = re.search(r"\(([^:]+)::([^()]+)\(.*?\)\)", lines[i])
             # print(line[1])
             # print(matches.group(1))
@@ -197,22 +198,24 @@ def gen_trace_essential():
                 entry_address   = matches.group(1)
                 entry_func_hash = matches.group(2)
         elif lines[i].startswith("<<"):
+            depth -= 1
             TRACE_essential.write(lines[i] + '\n')
         elif not lines[i][0:1].isnumeric():
             continue
         else:
-            if lines[i][0:1].isnumeric() and int(lines[i][0:4]) == essential_end:
+            PC = int(lines[i].split(" ")[0])
+            if PC == essential_end and depth == 1:
+                print(depth)
                 break
-            if start and lines[i][0:1].isnumeric():
+            if start:
                 TRACE_essential.write(lines[i]+'\n')
-            if (int(lines[i][0:4]) == int(essential_start)):
+            if PC == essential_start:
                 if essential_end == 9999:
                     essential_end = PRE_start+1
                 TRACE_essential.write(lines[i]+"\n")
                 start = True
             else:
-                PRE_start = int(lines[i][0:4])
-        
+                PRE_start = PC
     return int(entry_address, 16), int(entry_func_hash, 16)
 '''
 get ABI information as a JSON
