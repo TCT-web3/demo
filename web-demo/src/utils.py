@@ -407,7 +407,11 @@ def write_params(abi_info, var_prefix):
     for elmt in abi_info['contracts'][MACROS.CONTRACT_NAME]['abi']:
         if ("name" in elmt.keys() and elmt["name"] == MACROS.FUNCTION_NAME):
             for input in elmt["inputs"]:
-                rt = rt + "\tvar " +input["name"] + ":\t" + input["type"]+';\n'
+                if ('[]' in input["type"]):
+                    # if it's a simple array
+                    rt = rt + "\tvar " +input["name"] + ":\t" + "[int] " + (input["type"]).replace("[]", "")+';\n'
+                else:
+                    rt = rt + "\tvar " +input["name"] + ":\t" + input["type"]+';\n'
     return rt + '\n'
 
 

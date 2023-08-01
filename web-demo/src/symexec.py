@@ -74,25 +74,16 @@ class EVM:
             #     self.write_paths()
             #     sys.exit()
 
-
     '''run each EVM instruction with PC, operator, and operand'''        
     def run_instruction(self, instr, branch_taken):
         PC      = instr[0]
         opcode  = instr[1]
         operand = instr[2]
 
-        print(instr)
-        # if isinstance(PC, int) and (PC >= 9745 and PC <= 9749):
-        #     print("===========")
-        #     for n in self._stacks[-1]:
-        #         print(n, type(n))
-        # if opcode == "MSTORE":
-        #     print("\n")
-        #     print(instr)
-        #     print(hex(self._stacks[-1][-1].value), self._stacks[-1][-2])
-        if isinstance(PC, int) and opcode=="JUMPDEST": #and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  
-            self.inspect("currstack")
-            self.inspect("currmemory")
+        # print(instr)
+        # if isinstance(PC, int) and opcode=="JUMPDEST": #and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  
+            # self.inspect("currstack")
+            # self.inspect("currmemory")
             #sys.exit()
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             pass # no-op
@@ -112,15 +103,10 @@ class EVM:
                 func_selector//=0x100**28
             else:
                 func_selector = (self.find_key(self._memories[-1][calldata_pos].children[1].children[1]))
-            # print(func_selector)
             callee_stack.append(SVT(func_selector))
             callee_stack.append(SVT("AConstantBySolc"))
             calldata_len -=4
             calldata_pos +=4
-            # print(calldata_pos)
-            # print(calldata_len)
-            # self.inspect("currstack")
-            # self.inspect("currmemory")
 
             for i in range(calldata_len//0x20):
                 # if calldata_pos in self._memories[-1]:
