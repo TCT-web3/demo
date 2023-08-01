@@ -15,6 +15,14 @@ BOOGIE=boogie
 
 
 # python3 src/symexec.py ../uniswapv2-solc0.8-new/test.sol uploads/theorem_addLiquidity.json trace_addLiquidity.txt
+# python3 web-demo/src/symexec.py uniswapv2-solc0.8-new/test.sol web-demo/uploads/theorem_addLiquidity.json web-demo/trace_addLiquidity.txt
+# python3 web-demo/src/symexec.py uniswapv2-solc0.8-new/test.sol web-demo/uploads/theorem_removeLiquidity.json web-demo/trace_removeLiquidity.txt
+# python3 web-demo/src/symexec.py single-token/Demo.sol web-demo/uploads/theorem_integerOverflow.json web-demo/trace_integerOverflow.txt
+# python3 web-demo/src/symexec.py single-token/Demo.sol web-demo/uploads/theorem_noReentrancy.json web-demo/trace_noReentrancy.txt
+# python3 web-demo/src/symexec.py single-token/Demo.sol web-demo/uploads/theorem_reentrancy.json web-demo/trace_reentrancy.txt
+
+
+
 # ${BOOGIE} /proverOpt O:smt.arith.solver=2 addLiqTest.bpl
 # ${BOOGIE} /proverOpt O:smt.arith.solver=2 trace_addLiquidity.bpl
 
