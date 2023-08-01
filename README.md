@@ -115,4 +115,4 @@ python3 trace_process.py --trace_file trace.json --output trace1.txt
 ```
 
 ### How to get the trace of a reverted transaction?
-More details are [here](get_trace/get_revert_trace.md).
+More details are [here](get-trace/getRevertTrace.md).
