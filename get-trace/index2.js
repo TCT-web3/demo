@@ -77,11 +77,11 @@ const functionSignature = web3.eth.abi.encodeFunctionSignature(contractABI.find(
 
 // 2. Create account variables
 const accountFrom = {
-    privateKey: '0x3a3a5a560064da8fe89e51c9b7e1b6386eb960ff42dbfa768f30d86e8d11d7e3',
-    address: '0x84A7B1b8094ff18c6a058BEbcA62236316BbE539',
+    privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+    address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 };
 
-const addressTo = '0xa3950FF01e378f2A237A3C13a74eFE67C9726D67'; // Change addressTo
+const addressTo = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; // Change addressTo
 
 console.log("sender addr:", accountFrom.address, " to addr: ", addressTo)
 
