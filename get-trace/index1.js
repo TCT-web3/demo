@@ -70,7 +70,7 @@ const contractABI = [
 	}
 ]
 
-const contract_address = "0xfE534D7658b233E35bCB5d230F263C3BB4fF0753"
+const contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 
 var Web3Contract = new web3.eth.Contract(contractABI, contract_address)
 

@@ -77,11 +77,11 @@ console.log(functionSignature)
 
 // 2. Create account variables
 const accountFrom = {
-    privateKey: '0xa2c28995f93af6f9ca02bb1082dfa55fab1d0c7945e7c09b7594d82b83a06f79',
-    address: '0x0e6322d1B8b3d57D6f96fA3f529892fE77c3daE8',
+    privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+    address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 };
 
-const contractAddress = '0x93B1eC1655303B81F5D00b888854eD3674966B14'; // Change addressTo
+const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; // Change addressTo
 
 
 async function send() {

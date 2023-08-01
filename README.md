@@ -113,3 +113,6 @@ then you will get a json file `trace.json` which contains the execution trace. A
 ```bash
 python3 trace_process.py --trace_file trace.json --output trace1.txt
 ```
+
+### How to get the trace of a reverted transaction?
+More details are [here](get_trace/get_revert_trace.md).

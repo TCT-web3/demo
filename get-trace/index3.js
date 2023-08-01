@@ -83,19 +83,16 @@ async function traceRevertedTransaction() {
 			method: 'debug_traceCall',
 			params: [
 				{
-					from: "0xd0f9295EA2A0a26E5D0A57F4A8a77CC42F91d19d",
-					to: "0xf0d527df89411Fb2149e629C010D31fBEe337698", //contract addr
+					from: "0xe4E341401D7904c4C78db2De8bd7d923150DF980",
+					to: "0x1c16dADF903f6B25f79c8c8038341053371Fc15b", //contract addr
 					data: functionSignature,
 				},
 				"latest",
-				{
-					"tracer": "callTracer"
-				}
 			],
 			id: 1,
 		});
 
-		console.log('Transaction trace:', response.data.result);
+		console.log('Transaction EVM trace:', response.data.result);
 	} catch (error) {
 		console.error('Error:', error);
 	}
