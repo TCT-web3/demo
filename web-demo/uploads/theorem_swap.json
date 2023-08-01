@@ -4,5 +4,5 @@
 	"hypothesis":"1==1",
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",
-	"type": "use-real"
+	"numerical-type": "real"
 }
