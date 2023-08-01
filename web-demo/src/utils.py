@@ -106,6 +106,9 @@ def get_types(storage_info):
                     pass
                 elif ("contract" in t_type):
                     pass # TODO: contract address as a type
+                    var_type = "address"
+                    rt = rt + ("\tvar " + contract+'.'+label + ': ' + var_type + ';\n')
+                    types[label] = var_type
                 elif "t_mapping" in t_type:
                     var_type = get_boogie_type(t_type)
                     # t_type = t_type.replace("t_", "")
@@ -125,7 +128,6 @@ def get_types(storage_info):
         # print(types)
         TYPES[contract] = types
 
-        # print(TYPES)
     return TYPES
 
 '''
@@ -205,7 +207,6 @@ def gen_trace_essential():
         else:
             PC = int(lines[i].split(" ")[0])
             if PC == essential_end and depth == 1:
-                print(depth)
                 break
             if start:
                 TRACE_essential.write(lines[i]+'\n')
@@ -289,34 +290,58 @@ def get_STORAGE_info():
 '''
 get proof invariant from AST file
 '''
-def get_invariant():
+def get_invariant():    
     ast_file = open(MACROS.AST, 'r')
     AST_INFO = json.load(ast_file)
-    # print(MACROS.CONTRACT_NAME)
-    for source_name in AST_INFO["sources"]:
-        if('/'+MACROS.CONTRACT_NAME in source_name):
-            # print(source_name)
-            nodes = AST_INFO["sources"][source_name]["AST"]["nodes"]
-            break
-    # print(nodes)
-    # nodes = AST_INFO["sources"][MACROS.CONTRACT_NAME]["AST"]["nodes"]     
-    # Sources->AST->nodes->[contracts: token, standard token, multivulntoken, reentrancy attack, demo]
-    invariants = {}
+    astNode_dict = {}
+    natSpec_dict = {}
+    
+    for contract in AST_INFO["contracts"]:
+        matches = re.findall(r"(.*?):(.*$)", contract)[0]
+        sourceName = matches[0]
+        contractName = matches[1]
+        astNode_dict[contractName] = sourceName
+        if MACROS.CONTRACT_NAME == contractName:
+            nodes = AST_INFO["sources"][sourceName]["AST"]["nodes"]
+
+    def natSpec_build(node):
+        contractName = node["name"]
+        if contractName in natSpec_dict and natSpec_dict[contractName] is not None:
+            return
+        if "documentation" in node and "text" in node["documentation"]:
+            my_natSpec = node["documentation"]["text"] + "\n"
+        else:
+            my_natSpec = ""
+        if "baseContracts" in node:
+            for parent in node["baseContracts"]:
+                parentName = parent["baseName"]["name"]
+                parentNode = AST_INFO["sources"][astNode_dict[parentName]]["AST"]["nodes"]
+                for node in parentNode:
+                    if node["nodeType"] == "ContractDefinition":
+                        natSpec_build(node)
+                
+                if parentName in natSpec_dict and natSpec_dict[parentName] is not None:
+                    my_natSpec += natSpec_dict[parentName]
+                else:
+                    my_natSpec += ""
+        
+                if my_natSpec:
+                    natSpec_dict[contractName] = my_natSpec
+    
     for node in nodes:
         if node["nodeType"] == "ContractDefinition":
-            if node["name"] not in invariants:
-                invariants[node["name"]] = []
-            if "documentation" in node:
-                if "text" in node["documentation"]:
-                    inv_list = node["documentation"]["text"].split("\n")
-                    for i in range(len(inv_list)):
-                        inv_list[i] = inv_list[i].replace("@custom:tct invariant: ", "")
-                    invariants[node["name"]] = inv_list
-                    
-            if "baseContracts" in node:
-                for b in node["baseContracts"]:
-                    if b["baseName"]["name"] in invariants:
-                        invariants[node["name"]] += invariants[b["baseName"]["name"]]
+            natSpec_build(node)
+    
+    
+    invariants = {}
+    for name, natSpec in natSpec_dict.items():
+        invariants[name] = []
+        inv_list = natSpec.split("\n")
+        for inv in inv_list:
+            inv = inv.strip()
+            inv = inv.replace("@custom:tct invariant: ", "")
+            if inv:
+                invariants[name].append(inv)
     
     return invariants
 
@@ -371,8 +396,8 @@ def get_dest_contract_and_function(instr):
 write hypothesis to Boogie
 '''
 def write_hypothesis(hypothesis, var_prefix):
-        hypothesis = hypothesis.replace("this", var_prefix)
-        return("\tassume(" + hypothesis + ");\n")
+    hypothesis = hypothesis.replace("this", var_prefix)
+    return("\tassume(" + hypothesis + ");\n")
 
 '''
 write invariant to Boogie
