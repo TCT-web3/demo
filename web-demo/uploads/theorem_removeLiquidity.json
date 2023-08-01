@@ -3,5 +3,6 @@
 	"entry-for-real":"0x14bf3d65dcd2832638558f9301fc91e11be5f505::0xc0e3ee6b",
 	"hypothesis":"1==1",
 	"path-hash-for-test": "*",
-	"path-hash-for-real": "the real hash (not implemented yet)"
+	"path-hash-for-real": "the real hash (not implemented yet)",
+	"numerical-type": "real"
 }
