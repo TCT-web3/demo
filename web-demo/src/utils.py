@@ -64,10 +64,11 @@ def get_curr_address(instr):
 get the variable prefix
 '''
 def get_var_prefix(instr):
-    L = instr.find(" ")
-    #R = instr.find("::")
-    #name = instr[L+27:R] 
-    return 'c_' + instr[L+3:L+8]
+    # L = instr.find(" ") 
+    # c_name = 'c_' + instr[L+3:L+8]
+    c_name = re.search("\(.*::", instr)[0][1:-2]
+    # print(test)
+    return c_name
 
 '''
 get the storage map

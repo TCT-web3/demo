@@ -14,15 +14,16 @@ BOOGIE=boogie
 # echo ""
 
 
-# python3 web-demo/src/symexec.py uniswapv2-solc0.8-new/test.sol web-demo/uploads/theorem_addLiquidity.json web-demo/trace_addLiquidity.txt
-# python3 web-demo/src/symexec.py uniswapv2-solc0.8-new/test.sol web-demo/uploads/theorem_removeLiquidity.json web-demo/trace_removeLiquidity.txt
-
-
+# python3 src/symexec.py ../uniswapv2-solc0.8-new/test.sol uploads/theorem_addLiquidity.json trace_addLiquidity.txt
 # ${BOOGIE} /proverOpt O:smt.arith.solver=2 addLiqTest.bpl
-# ${BOOGIE} /proverOpt O:smt.arith.solver=2 removeLiqTest.bpl
+# ${BOOGIE} /proverOpt O:smt.arith.solver=2 trace_addLiquidity.bpl
 
-python3 src/symexec.py ../uniswapv2-solc0.8-new/test.sol uploads/theorem_swap.json trace_swap.txt
-${BOOGIE} /proverOpt O:smt.arith.solver=2 swapTest.bpl
+python3 src/symexec.py ../uniswapv2-solc0.8-new/test.sol uploads/theorem_removeLiquidity.json trace_removeLiquidity.txt
+${BOOGIE} /proverOpt O:smt.arith.solver=2 removeLiqTest.bpl
+${BOOGIE} /proverOpt O:smt.arith.solver=2 trace_removeLiquidity.bpl
 
+# python3 src/symexec.py ../uniswapv2-solc0.8-new/test.sol uploads/theorem_swap.json trace_swap.txt
+# ${BOOGIE} /proverOpt O:smt.arith.solver=2 swapTest.bpl
+# ${BOOGIE} /proverOpt O:smt.arith.solver=2 trace_swap.bpl
 
 
