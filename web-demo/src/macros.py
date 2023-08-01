@@ -15,6 +15,7 @@ class MACROS:
     CONTRACT_NAME   = ""
     FUNCTION_NAME   = ""
     VAR_TYPES       = {}
+    NUM_TYPE        = ""
 
 
     PREAMBLE_INT    =   """type address = int;

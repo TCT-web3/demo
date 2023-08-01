@@ -356,6 +356,7 @@ class EVM:
             # sys.exit()
         # self.inspect("currstack")
         # self.inspect("currmemory")
+    
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
         to_return = ""
@@ -425,6 +426,10 @@ class EVM:
             else:
                 val1 = self.postorder_traversal(node.children[0])
                 val2 = self.postorder_traversal(node.children[1])
+                if (str(val1).isdigit() and MACROS.NUM_TYPE == "real"):
+                     val1 = str(val1)+'.0'
+                if (str(val2).isdigit() and MACROS.NUM_TYPE == "real"):
+                     val2 = str(val2)+'.0'
                 if isinstance(val1, int) and isinstance(val2, int):
                     to_return = ""
                     if node.value == "LT" or node.value == "SLT": #TODO: SLT implementation
@@ -451,6 +456,10 @@ class EVM:
         elif node.value == "ADD" or node.value == "SUB" or node.value == "AND" or node.value == "OR" or node.value == "MUL" or node.value == "DIV" or node.value == "MOD": # DIV, MUL
             val1=self.postorder_traversal(node.children[0])
             val2=self.postorder_traversal(node.children[1])
+            if (str(val1).isdigit() and MACROS.NUM_TYPE == "real"):
+                     val1 = str(val1)+'.0'
+            if (str(val2).isdigit() and MACROS.NUM_TYPE == "real"):
+                     val2 = str(val2)+'.0'
             if isinstance(val1, int) and isinstance(val2, int):
                 if node.value == "ADD":
                     to_return = val1 + val2
@@ -569,10 +578,17 @@ class EVM:
             else:
                 path = "\tassume(!"+ var +");\n\n" 
         elif(self._final_vars[var]=='uint256'):
-            if (isNotZero):
-                path = "\tassume("+ var +"!=0);\n\n"
-            else:    
-                path = "\tassume("+ var +"==0);\n\n"
+            if (MACROS.NUM_TYPE=="int"):
+                if (isNotZero):
+                    path = "\tassume("+ var +"!=0);\n\n"
+                else:    
+                    path = "\tassume("+ var +"==0);\n\n"
+            elif (MACROS.NUM_TYPE=="real"):
+                if (isNotZero):
+                    path = "\tassume("+ var +"!=0.0);\n\n"
+                else:    
+                    path = "\tassume("+ var +"==0.0);\n\n"
+
         else:
             raise Exception("JUMPI stack[-1] is_not_zero error")
         self._final_path.append(path)
@@ -721,7 +737,7 @@ def main():
     TRACE       = gen_path()
     MAP         = get_MAPS(STOR_INFO)
     MACROS.VAR_TYPES = get_types(STOR_INFO)
-   
+    MACROS.NUM_TYPE  = get_numerical_type()
 
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX)
@@ -731,8 +747,11 @@ def main():
     evm.sym_exec(TRACE)
 
     ''' write Boogie output '''
-    BOOGIE_OUT.write(MACROS.PREAMBLE_REAL)
-    # BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
+    if (MACROS.NUM_TYPE == 'real'):
+        BOOGIE_OUT.write(MACROS.PREAMBLE_REAL)
+    elif (MACROS.NUM_TYPE == 'int'):
+        BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
+
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs 
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))

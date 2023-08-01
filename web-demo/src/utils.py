@@ -328,6 +328,12 @@ def get_hypothesis():
     theorem = json.load(theorem_file)
     return theorem["hypothesis"]
 
+
+def get_numerical_type():
+    theorem_file = open(MACROS.THEOREM_FNAME, )
+    theorem = json.load(theorem_file)
+    return theorem["numerical-type"]
+
 '''
 check if given trace has correct starting entry point
 '''
