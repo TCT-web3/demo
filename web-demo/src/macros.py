@@ -41,8 +41,6 @@ function evmmod(a,b:uint256) returns (uint256);
 
 function evmmul(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: evmmul(a,b) == a*b);
-function evmdiv(a,b: uint256) returns (uint256);
-axiom (forall a, b : uint256:: evmdiv(a,b) == a / b); 
 
 function sum(m: [address] uint256) returns (uint256);
 axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(m) - m[a] + v);
