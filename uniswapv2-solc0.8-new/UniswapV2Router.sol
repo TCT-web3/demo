@@ -70,6 +70,9 @@ contract UniswapV2Router is IUniswapV2Router {
         }
     }
 
+    /// @custom:tct declaration: var factory1, pair1: address; factory1:=this._factory; pair1:=factory1.getPair[tokenA][tokenB];
+    /// @custom:tct postcondition: tokenA.balanceOf[pair1] / old(tokenA.balanceOf[pair1]) ==  tokenB.balanceOf[pair1] / old(tokenB.balanceOf[pair1]);
+    /// @custom:tct postcondition: tokenB.balanceOf[pair1] / old(tokenB.balanceOf[pair1]) ==  pair1.totalSupply / old(pair1.totalSupply);
     function addLiquidity(
         address tokenA,
         address tokenB,
@@ -99,7 +102,9 @@ contract UniswapV2Router is IUniswapV2Router {
         liquidity = IUniswapV2Pair(pair).mint(to);
     }
 
-    // **** REMOVE LIQUIDITY ****
+    /// @custom:tct declaration: var factory2, pair2: address; factory2:=this._factory; pair2:=factory2.getPair[tokenA][tokenB];
+    /// @custom:tct postcondition: tokenA.balanceOf[pair2] / old(tokenA.balanceOf[pair2]) ==  tokenB.balanceOf[pair2] / old(tokenB.balanceOf[pair2]);
+    /// @custom:tct postcondition: tokenB.balanceOf[pair2] / old(tokenB.balanceOf[pair2]) ==  pair2.totalSupply / old(pair2.totalSupply);
     function removeLiquidity(
         address tokenA,
         address tokenB,
@@ -152,6 +157,8 @@ contract UniswapV2Router is IUniswapV2Router {
         }
     }
 
+    /// @custom:tct declaration: var factory3, pair3: address; factory3:=this._factory; pair3:=factory3.getPair[path[0]][path[1]];
+    /// @custom:tct postcondition: old(path[0].balanceOf[pair3]) * old(path[1].balanceOf[pair3]) ==  path[0].balanceOf[pair3] * path[1].balanceOf[pair3];
     function swapExactTokensForTokens(
         uint256 amountIn,
         uint256 amountOutMin,
