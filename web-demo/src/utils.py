@@ -410,7 +410,7 @@ def get_dest_contract_and_function(instr):
 
 
 def write_defvars(var_prefix):
-    rt = ""
+    rt = "\n\t// def-vars\n"
     THEOREM_file = open(MACROS.THEOREM_FNAME, )
     THEOREM = json.load(THEOREM_file)
     vars = THEOREM["def-vars"]
@@ -421,13 +421,54 @@ def write_defvars(var_prefix):
         rt = rt + "\t" + var + ":= " + vars[var][1].replace("this.", var_prefix) + ";\n"
     return(rt) 
 
-# def try_substitution():
-#     rt = ""
-#     THEOREM_file = open(MACROS.THEOREM_FNAME, )
-#     THEOREM = json.load(THEOREM_file)
-#     vars = THEOREM["def-vars"]
-#     for var in vars:
-#         if (len(vars[var][0])==0):
+def try_substitution(init_prefix):
+    rt = ""
+    THEOREM_file = open(MACROS.THEOREM_FNAME, )
+    THEOREM = json.load(THEOREM_file)
+    defvars = THEOREM["def-vars"]
+    hypos = THEOREM["hypothesis"]
+    # print(MACROS.ALL_VARS.keys())
+    print("name: \n")
+    find_realname("pair", init_prefix, defvars)
+
+    # for hypo in hypos:
+    #     hypo = hypo.split(" ")
+    #     print(hypo)
+    #     for elmt in hypo:
+    #         if elmt in MACROS.ALL_VARS.keys():
+    #             print("existing variable: " + elmt)
+    #         elif elmt in defvars:
+    #             print("to substitue: " + elmt)
+    #         elif (elmt[:elmt.find(".")] in defvars):
+    #             print("to substitue: " + elmt[:elmt.find(".")])
+
+def find_realname(var, init_prefix, defvars):
+    print(var)
+    if var in MACROS.ALL_VARS.keys():
+        print("existing variable: " + var)
+        return var
+    elif var in defvars.keys():
+        return defvars[var][1]
+    elif "this." in var:
+        print(var.replace("this._", init_prefix+"."))
+        var = var.replace("this._", init_prefix+".")
+        return var
+    elif (var[:var.find(".")] in defvars):
+        print("to substitue: " + var[:var.find(".")])
+        to_sub = var[:var.find(".")]
+        var = var.replace(to_sub, find_realname(to_sub, init_prefix, defvars))
+        return var
+    else:
+        find_realname(defvars[var][1], init_prefix, defvars)
+
+
+    
+
+
+def get_address_name(add):
+    # if (add.startswith("Partial32B")):
+        # get_address_name()
+    return (str(add).replace("Partial32B", "").replace("(12, 31),", "").replace(",", "").replace("SLOAD", "").replace("MapElement", ""))
 
             
 '''
@@ -435,10 +476,12 @@ write hypothesis to Boogie
 '''
 def write_hypothesis(hypothesis, var_prefix):
     # hypothesis = hypothesis.replace("this", var_prefix)
-    rt = ""
+    rt = "\n\t// hypothesis \n"
     for hypo in hypothesis:
         hypo = hypo.replace("this.", var_prefix)
         rt += "\tassume(" + hypo + ");\n"
+    
+    rt += "\n"
     return(rt)
 
 '''
@@ -474,6 +517,7 @@ def write_params(abi_info, var_prefix):
     for elmt in abi_info['contracts'][MACROS.CONTRACT_NAME]['abi']:
         if ("name" in elmt.keys() and elmt["name"] == MACROS.FUNCTION_NAME):
             for input in elmt["inputs"]:
+                MACROS.ALL_VARS[input["name"]] = input["type"]
                 if ('[]' in input["type"]):
                     # if it's a simple array
                     rt = rt + "\tvar " +input["name"] + ":\t" + "[int] " + (input["type"]).replace("[]", "")+';\n'
