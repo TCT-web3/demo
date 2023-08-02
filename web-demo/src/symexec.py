@@ -755,8 +755,7 @@ def main():
     evm.write_vars() # aux vars for Boogie Proofs 
     BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
-    print(INVARIANTS)
-    BOOGIE_OUT.write(write_invariants(INVARIANTS,VAR_PREFIX))
+    # BOOGIE_OUT.write(write_invariants(INVARIANTS,VAR_PREFIX))
     evm.write_paths() # codegen for Boogie proofs
     BOOGIE_OUT.write(write_epilogue(INVARIANTS,VAR_PREFIX))
  

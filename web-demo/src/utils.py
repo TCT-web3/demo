@@ -303,8 +303,8 @@ def get_invariant():
         sourceName = matches[0]
         contractName = matches[1]
         astNode_dict[contractName] = sourceName
-        if MACROS.CONTRACT_NAME == contractName:
-            nodes = AST_INFO["sources"][sourceName]["AST"]["nodes"]
+    #     if MACROS.CONTRACT_NAME == contractName:
+    #         nodes = AST_INFO["sources"][sourceName]["AST"]["nodes"]
 
     def natSpec_build(node):
         contractName = node["name"]
@@ -330,10 +330,15 @@ def get_invariant():
                 if my_natSpec:
                     natSpec_dict[contractName] = my_natSpec
     
-    for node in nodes:
-        if node["nodeType"] == "ContractDefinition":
-            natSpec_build(node)
+    # for node in nodes:
+    #     if node["nodeType"] == "ContractDefinition":
+    #         natSpec_build(node)
     
+    for sources in AST_INFO["sources"]:
+        nodes = AST_INFO["sources"][sources]["AST"]["nodes"]
+        for node in nodes:
+            if node["nodeType"] == "ContractDefinition":
+                natSpec_build(node)
     
     invariants = {}
     for name, natSpec in natSpec_dict.items():
@@ -411,9 +416,9 @@ def write_defvars(var_prefix):
     vars = THEOREM["def-vars"]
     for var in vars: 
         if (len(vars[var][0])!=0):
-            rt += "\tvar " + var + ":  " + vars[var][0] + ";\n"
+            rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
 
-        rt += "\t" + var + ":= " + vars[var][1].replace("this.", var_prefix) + ";\n"
+        rt = rt + "\t" + var + ":= " + vars[var][1].replace("this.", var_prefix) + ";\n"
     return(rt) 
 
 # def try_substitution():
@@ -454,10 +459,10 @@ write epilogue to Boogie
 '''
 def write_epilogue(invariants,var_prefix):
     rt = ""
-    trace_invariants = invariants[MACROS.CONTRACT_NAME]
-    for inv in trace_invariants:
-        rt = rt + ("\tassert(" + inv + ");\n")
-        rt = rt.replace("this", var_prefix )
+    # trace_invariants = invariants[MACROS.CONTRACT_NAME]
+    # for inv in trace_invariants:
+    #     rt = rt + ("\tassert(" + inv + ");\n")
+    #     rt = rt.replace("this", var_prefix )
     rt = rt + ('}')
     return rt
 
