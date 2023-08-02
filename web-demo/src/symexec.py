@@ -721,7 +721,6 @@ def main():
     entry_contract_address=gen_trace_essential()[0]
     ABI_INFO    = get_ABI_info()
     STOR_INFO   = get_STORAGE_info()
-    
 
     ''' parameters setup ''' 
     STACKS      = gen_init_STACK(VAR_PREFIX, ABI_INFO)
@@ -754,6 +753,7 @@ def main():
 
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs 
+    BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
     BOOGIE_OUT.write(write_invariants(INVARIANTS,VAR_PREFIX))
     evm.write_paths() # codegen for Boogie proofs

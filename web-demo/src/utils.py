@@ -64,9 +64,10 @@ def get_curr_address(instr):
 get the variable prefix
 '''
 def get_var_prefix(instr):
-    # L = instr.find(" ") 
-    # c_name = 'c_' + instr[L+3:L+8]
+    L = instr.find(" ") 
     c_name = re.search("\(.*::", instr)[0][1:-2]
+    c_name += '_c' + instr[L+3:L+8] + '_'
+    # print(c_name)
     # print(test)
     return c_name
 
@@ -336,6 +337,8 @@ def get_invariant():
     
     invariants = {}
     for name, natSpec in natSpec_dict.items():
+        print(name)
+        print(natSpec)
         invariants[name] = []
         inv_list = natSpec.split("\n")
         for inv in inv_list:
@@ -354,7 +357,9 @@ def get_hypothesis():
     theorem = json.load(theorem_file)
     return theorem["hypothesis"]
 
-
+'''
+get numerical type from the theorem file, either int or real
+'''
 def get_numerical_type():
     theorem_file = open(MACROS.THEOREM_FNAME, )
     theorem = json.load(theorem_file)
@@ -398,13 +403,38 @@ def get_dest_contract_and_function(instr):
     dest_function = dest_function[:dest_function.find('(')]
     return dest_contract, dest_function
 
+
+def write_defvars(var_prefix):
+    rt = ""
+    THEOREM_file = open(MACROS.THEOREM_FNAME, )
+    THEOREM = json.load(THEOREM_file)
+    vars = THEOREM["def-vars"]
+    for var in vars: 
+        if (len(vars[var][0])!=0):
+            rt += "\tvar " + var + ":  " + vars[var][0] + ";\n"
+
+        rt += "\t" + var + ":= " + vars[var][1].replace("this.", var_prefix) + ";\n"
+    return(rt) 
+
+# def try_substitution():
+#     rt = ""
+#     THEOREM_file = open(MACROS.THEOREM_FNAME, )
+#     THEOREM = json.load(THEOREM_file)
+#     vars = THEOREM["def-vars"]
+#     for var in vars:
+#         if (len(vars[var][0])==0):
+
             
 '''
 write hypothesis to Boogie
 '''
 def write_hypothesis(hypothesis, var_prefix):
-    hypothesis = hypothesis.replace("this", var_prefix)
-    return("\tassume(" + hypothesis + ");\n")
+    # hypothesis = hypothesis.replace("this", var_prefix)
+    rt = ""
+    for hypo in hypothesis:
+        hypo = hypo.replace("this.", var_prefix)
+        rt += "\tassume(" + hypo + ");\n"
+    return(rt)
 
 '''
 write invariant to Boogie
