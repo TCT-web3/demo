@@ -15,6 +15,7 @@ def gen_solc():
     os.system('solc --combined-json function-debug-runtime --pretty-json ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.RUNTIME)
     os.system('solc --combined-json abi --pretty-json ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.ABI)
     os.system('solc --pretty-json --combined-json ast ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.AST)
+    os.system('solc --pretty-json --combined-json devdoc ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.DEVDOC)
     os.system('solc --pretty-json --combined-json hashes ' + MACROS.SOLIDITY_FNAME + ' > ' + 'hashes.txt')
 
 '''
