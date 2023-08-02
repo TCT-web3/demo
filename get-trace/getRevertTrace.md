@@ -31,7 +31,12 @@ geth --datadir node1 --networkid 13756 --http --http.corsdomain https://remix.et
 ```
 
 ## 2. framework
-the second approach is to use development framework that supports `debug_traceCall`. Here I recommend to use [foundry](https://book.getfoundry.sh/).
+the second approach is to use development framework that supports `debug_traceCall`. Here I recommend to use [foundry](https://book.getfoundry.sh/). 
+
+Install foundry
+```shell
+$ curl -L https://foundry.paradigm.xyz | bash
+```
 
 After you sucessfully install foundry, use the command to install latest forge, cast, anvil, and chisel.
 ```shell
