@@ -57,7 +57,7 @@ def get_trace(theorem_fname, tx_hash):
     output_trace("client_trace.json", tx_hash, "deployment_info.json", theorem_fname)
     # Get boogie output
     os.system("python3 src/symexec.py ../single-token/Demo.sol uploads/" + theorem_fname + " trace-" + tx_hash + ".txt") # specify solidity file
-    os.system("boogie /proverOpt O:smt.arith.solver=2 trace_" + tx_hash + ".bpl > result.txt")
+    os.system("boogie /proverOpt O:smt.arith.solver=2 trace-" + tx_hash + ".bpl > result.txt")
 
 '''
 Display contents of any file
@@ -65,9 +65,10 @@ Display contents of any file
 @app.route('/display')
 def display_file():
     filename = request.args.get('file', default="default.txt", type=str)
+    title = request.args.get('title', default="page", type=str).title()
     with codecs.open(filename, 'r', encoding='utf-8') as f:
         file_content = f.read()
-    return render_template('display.html', file_content=file_content)
+    return render_template('display.html', file_content=file_content, title=title)
 
 if __name__ == '__main__':
     app.run(debug=True)
