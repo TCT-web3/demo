@@ -17,11 +17,6 @@ button, input::file-selector-button {
     cursor: pointer;
 }
 
-#confetti-gif {
-    height: 20%;
-    width: 20%;
-}
-
 h1 {
     padding: 60px 60px 0;
     font-family: 'Montserrat', sans-serif;
@@ -37,9 +32,11 @@ pre {
     background-color: #c0d0ff80;
     border-radius: 20px;
     box-shadow: inset 0px 0px 5px 6px #ffffff40;
-    /*display: flex;*/
-    /*flex-direction: column;*/
     margin: 60px;
-    /* min-height: 380px; */
     padding: 60px;
+}
+
+#confetti-gif {
+    height: 20%;
+    width: 20%;
 }

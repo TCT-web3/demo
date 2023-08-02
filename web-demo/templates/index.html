@@ -2,59 +2,9 @@
 
 <head>
     <title>TCT Demo</title>
-    <link href="/static/styles.css" rel="stylesheet" />
+    <link href="../static/styles.css" rel="stylesheet" />
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-
-    <script>
-        function viewTheorem() {
-            var xhttp = new XMLHttpRequest();
-            var input = document.getElementById('upload');
-            var upload = input.files[0]
-            var theorem = upload.name;
-            xhttp.onreadystatechange = function () {
-                if (this.readyState == 4 && this.status == 200) {
-                    var fileContent = this.responseText;
-                    localStorage.setItem('fileContent', fileContent);
-                    var url = "/display?file=uploads/" + theorem;
-                    window.open(url, "_blank");
-                }
-            }
-            xhttp.open("GET", "/display?file=uploads/" + theorem, true);
-            xhttp.send();
-
-        }
-        function loadTrace() {
-            var xhttp = new XMLHttpRequest();
-            var txHash = document.getElementById('tx-hash').value;
-            var fileName = 'trace-' + txHash + '.txt';
-            var tx_hash = document.getElementById('tx-hash');
-            xhttp.onreadystatechange = function () {
-                if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("content").innerHTML = this.responseText;
-                }
-            };
-
-            url = "/display?file=" + encodeURIComponent(fileName);
-            var newWindow = window.open(url, '_blank');
-            newWindow.focus();
-        }
-
-        function boogieOutput() {
-            var xhttp = new XMLHttpRequest();
-            var txHash = document.getElementById('tx-hash').value;
-            var fileName = 'trace-' + txHash + '.bpl';
-            var tx_hash = document.getElementById('tx-hash');
-            xhttp.onreadystatechange = function () {
-                if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("content").innerHTML = this.responseText;
-                }
-            };
-
-            url = "/display?file=" + encodeURIComponent(fileName);
-            var newWindow = window.open(url, '_blank');
-            newWindow.focus();
-        }
-    </script>
+    <script src="../static/scripts.js"></script>
 </head>
 
 <body>
@@ -77,55 +27,4 @@
         <button onclick="boogieOutput()">Boogie Output</button>
     </div>
 
-    <div class="form-container">
-        <div id="boogie-result"></div>
-        <img id="confetti-gif">
-    </div>
-
-    <script>
-        function uploadFile() {
-            var input = document.getElementById("upload");
-            var file = input.files[0];
-
-            var txHash = document.getElementById("tx-hash").value;
-
-            if (file && txHash) {
-                if (file.type != "application/json") {
-                    console.log("File is not a JSON file.");
-                    return;
-                }
-
-                var formData = new FormData();
-                formData.append('file', file);
-                formData.append('tx-hash', txHash);
-
-                fetch('/trace', {
-                    method: 'POST',
-                    body: formData
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        getBoogieResult(data);
-                    })
-                    .catch((error) => {
-                        console.error('Error:', error);
-                    });
-            } else {
-                console.log("No file selected or text field empty!");
-            }
-        }
-
-        function getBoogieResult(data) {
-            var boogie_result = document.getElementById("boogie-result");
-            // var response = JSON.parse(data);
-            // console.log(data);
-            var text = document.createElement("pre");
-            text.innerHTML = data["boogie-output"];
-            boogie_result.appendChild(text);
-            if (data["boogie-output"].indexOf("0 errors") != -1) {
-                var gif = document.getElementById("confetti-gif");
-                gif.src = 'static/confetti.gif';
-            }
-        }
-    </script>
 </body>
