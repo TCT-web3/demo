@@ -141,6 +141,8 @@ class EVM:
 
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
             
+
+            ### TODO: make "this" as the correct mapping to the vars
             if(len(self._non_static_calls)>0 and self._non_static_calls[-1] == "non-static"):
                 self._non_static_calls[-1] = self._var_prefix
                 for contract in MACROS.INVARIANTS:
