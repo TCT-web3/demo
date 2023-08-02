@@ -58,6 +58,7 @@ class EVM:
         self._abi_info          = abi_info
         self._var_prefix        = var_prefix
         self._return_data_size  = 0
+        self._postcondition     = get_postcondition()
 
     '''perform symbolic execution'''
     def sym_exec(self, code_trace):
@@ -132,6 +133,10 @@ class EVM:
             self._call_stack.append((dest_contract, dest_function, dest_address))
             self._curr_contract = dest_contract
             self._curr_function = dest_function
+            MACROS.CONTRACT_NAME = self._curr_contract
+            MACROS.FUNCTION_NAME = self._curr_function
+            for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
+                self._final_path.append("\t" + asgmt.strip() + "\n")
             self._var_prefix = get_var_prefix(instr)
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
@@ -165,9 +170,13 @@ class EVM:
             elif opcode=="STOP":
                 self._return_data_size = 0
             # print(self._call_stack)
+            for postcon in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", []):
+                self._final_path.append("\t" + postcon.strip() + "\n")
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
-            self._curr_function = self._call_stack[-1][1]     
+            self._curr_function = self._call_stack[-1][1]
+            MACROS.CONTRACT_NAME = self._curr_contract
+            MACROS.FUNCTION_NAME = self._curr_function
             self._var_prefix = self._call_stack[-1][2]
             self._stacks.pop()
             self._memories.pop()   
@@ -601,6 +610,28 @@ class EVM:
             self._output_file.write("\tvar " + var + ":  " + self._final_vars[var] + ";\n")
         self._output_file.write("\n")
 
+    '''write declared vars to Boogie'''
+    def write_declared_vars(self):
+        for pc in self._postcondition:
+            if self._postcondition[pc]:
+                for method in self._postcondition[pc]:
+                    declaration = self._postcondition[pc][method].get("declaration", [])
+                    for decl in declaration:
+                        self._output_file.write("\t" + decl + "\n")
+        self._output_file.write("\n")
+
+    '''write entry assignment to Boogie'''
+    def write_entry_assignment(self):
+        for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
+            self._output_file.write("\t" + asgmt.strip() + "\n")
+        self._output_file.write("\n")
+    
+    '''write entry postcondition to Boogie'''
+    def write_entry_postcondition(self):
+        for postcon in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", []):
+            self._output_file.write("\tassert(" + postcon.strip().strip(";") + ");\n")
+        self._output_file.write("\n")
+
     '''write all generated code to Boogie'''
     def write_paths(self):
         for path in self._final_path:
@@ -752,12 +783,15 @@ def main():
         BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
 
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
-    evm.write_vars() # aux vars for Boogie Proofs 
-    BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
+    evm.write_vars() # aux vars for Boogie Proofs
+    evm.write_declared_vars() # postcondition vars for Boogie proofs
+    # BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
-    print(INVARIANTS)
+    # print(INVARIANTS)
     BOOGIE_OUT.write(write_invariants(INVARIANTS,VAR_PREFIX))
+    evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs
+    evm.write_entry_postcondition() # from AST file
     BOOGIE_OUT.write(write_epilogue(INVARIANTS,VAR_PREFIX))
  
 if __name__ == '__main__':

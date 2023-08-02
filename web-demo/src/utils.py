@@ -350,6 +350,27 @@ def get_invariant():
     return invariants
 
 '''
+get postconditions from devdoc file
+'''
+def get_postcondition():
+    devdoc_file = open(MACROS.DEVDOC, )
+    devdoc = json.load(devdoc_file)
+    postconditions = {}
+    for contract in devdoc["contracts"]:
+        contract_name = contract[contract.find(":")+1:]
+        postconditions[contract_name] = {}
+        methods = devdoc["contracts"][contract]["devdoc"].get("methods", [])
+        for method in methods:
+            method_name = method[:method.find("(")]
+            postconditions[contract_name][method_name] = {}
+            for natspec in methods[method]:
+                natspec_name = natspec.replace("custom:", "") # TODO: "this" name resolution use write_defvars
+                d = ";"
+                spec = [e+d for e in methods[method][natspec].split(d) if e]
+                postconditions[contract_name][method_name][natspec_name] = spec
+
+    return postconditions
+'''
 get proof hypothesis from the the theorem file
 '''
 def get_hypothesis():
@@ -442,7 +463,7 @@ write invariant to Boogie
 def write_invariants(invariants, var_prefix):
     # get from ast
     rt = ""
-    trace_invariants = invariants[MACROS.CONTRACT_NAME]
+    trace_invariants = invariants.get(MACROS.CONTRACT_NAME, [])
     for inv in trace_invariants:
         rt = rt + ("\tassume(" + inv + ");\n")
         rt = rt.replace("this", var_prefix )
@@ -454,7 +475,7 @@ write epilogue to Boogie
 '''
 def write_epilogue(invariants,var_prefix):
     rt = ""
-    trace_invariants = invariants[MACROS.CONTRACT_NAME]
+    trace_invariants = invariants.get(MACROS.CONTRACT_NAME, [])
     for inv in trace_invariants:
         rt = rt + ("\tassert(" + inv + ");\n")
         rt = rt.replace("this", var_prefix )
