@@ -7,11 +7,11 @@ function viewTheorem() {
         if (this.readyState == 4 && this.status == 200) {
             var fileContent = this.responseText;
             localStorage.setItem('fileContent', fileContent);
-            var url = "/display?file=uploads/" + theorem;
+            var url = "/display?title=theorem&file=uploads/" + theorem;
             window.open(url, "_blank");
         }
     }
-    xhttp.open("GET", "/display?file=uploads/" + theorem, true);
+    xhttp.open("GET", "/display?title=theorem&file=uploads/" + theorem, true);
     xhttp.send();
 
 }
@@ -19,14 +19,13 @@ function loadTrace() {
     var xhttp = new XMLHttpRequest();
     var txHash = document.getElementById('tx-hash').value;
     var fileName = 'trace-' + txHash + '.txt';
-    var tx_hash = document.getElementById('tx-hash');
     xhttp.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
             document.getElementById("content").innerHTML = this.responseText;
         }
     };
 
-    url = "/display?file=" + encodeURIComponent(fileName);
+    url = "/display?title=trace&file=" + encodeURIComponent(fileName);
     var newWindow = window.open(url, '_blank');
     newWindow.focus();
 }
@@ -35,14 +34,13 @@ function boogieOutput() {
     var xhttp = new XMLHttpRequest();
     var txHash = document.getElementById('tx-hash').value;
     var fileName = 'trace-' + txHash + '.bpl';
-    var tx_hash = document.getElementById('tx-hash');
     xhttp.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
             document.getElementById("content").innerHTML = this.responseText;
         }
     };
 
-    url = "/display?file=" + encodeURIComponent(fileName);
+    url = "/display?title=boogie&file=" + encodeURIComponent(fileName);
     var newWindow = window.open(url, '_blank');
     newWindow.focus();
 }
@@ -50,7 +48,6 @@ function boogieOutput() {
 function uploadFile() {
     var input = document.getElementById("upload");
     var file = input.files[0];
-
     var txHash = document.getElementById("tx-hash").value;
 
     if (file && txHash) {
@@ -80,23 +77,24 @@ function uploadFile() {
 }
 
 function getBoogieResult(data) {
-
     var text = document.createElement("pre");
     text.innerHTML = data["boogie-output"];
-
+    
     var form_container = document.createElement("div");
     form_container.setAttribute("class", "form-container")
+    
     var boogie_result = document.createElement("div");
     boogie_result.setAttribute("id", "boogie-result");
+    
     boogie_result.appendChild(text);
     form_container.appendChild(boogie_result);
+    
     if (data["boogie-output"].indexOf("0 errors") != -1) {
         var gif = document.createElement("img");
-        form_container.setAttribute("id", "confetti-gif")
+        gif.setAttribute("id", "confetti-gif")
         gif.src = 'static/confetti.gif';
         form_container.appendChild(gif);
     }
-
+    
     document.body.appendChild(form_container);
-
 }
