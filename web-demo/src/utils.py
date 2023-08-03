@@ -442,50 +442,6 @@ def write_defvars(var_prefix):
         rt = rt + "\t" + var + ":= " + vars[var][1].replace("this.", var_prefix) + ";\n"
     return(rt) 
 
-def try_substitution(init_prefix):
-    rt = ""
-    THEOREM_file = open(MACROS.THEOREM_FNAME, )
-    THEOREM = json.load(THEOREM_file)
-    defvars = THEOREM["def-vars"]
-    hypos = THEOREM["hypothesis"]
-    # print(MACROS.ALL_VARS.keys())
-    print("name: \n")
-    find_realname("pair", init_prefix, defvars)
-
-    # for hypo in hypos:
-    #     hypo = hypo.split(" ")
-    #     print(hypo)
-    #     for elmt in hypo:
-    #         if elmt in MACROS.ALL_VARS.keys():
-    #             print("existing variable: " + elmt)
-    #         elif elmt in defvars:
-    #             print("to substitue: " + elmt)
-    #         elif (elmt[:elmt.find(".")] in defvars):
-    #             print("to substitue: " + elmt[:elmt.find(".")])
-
-def find_realname(var, init_prefix, defvars):
-    print(var)
-    if var in MACROS.ALL_VARS.keys():
-        print("existing variable: " + var)
-        return var
-    elif var in defvars.keys():
-        return defvars[var][1]
-    elif "this." in var:
-        print(var.replace("this._", init_prefix+"."))
-        var = var.replace("this._", init_prefix+".")
-        return var
-    elif (var[:var.find(".")] in defvars):
-        print("to substitue: " + var[:var.find(".")])
-        to_sub = var[:var.find(".")]
-        var = var.replace(to_sub, find_realname(to_sub, init_prefix, defvars))
-        return var
-    else:
-        find_realname(defvars[var][1], init_prefix, defvars)
-
-
-    
-
-
 def get_address_name(add):
     # if (add.startswith("Partial32B")):
         # get_address_name()
@@ -550,6 +506,53 @@ def write_params(abi_info, var_prefix):
                     rt = rt + "\tvar " +input["name"] + ":\t" + input["type"]+';\n'
     return rt + '\n'
 
+
+def try_substitution(c_prefix, ):
+    rt = ""
+    THEOREM_file = open(MACROS.THEOREM_FNAME, )
+    THEOREM = json.load(THEOREM_file)
+    defvars = THEOREM["def-vars"]
+    hypos = THEOREM["hypothesis"]
+    # print(MACROS.ALL_VARS.keys())
+
+    for hypo in hypos:
+        print('\n',hypo)
+        parts = hypo.split(" ")
+        new_parts = []
+        for elmt in parts:
+            if elmt in MACROS.ALL_VARS.keys():
+                new_parts.append(elmt)
+                print("existing variable: " + elmt)
+            elif ('=' in elmt or '>' in elmt or '<' in elmt or isfloat(elmt) or elmt.isdigit()):
+                new_parts.append(elmt)
+            else:
+                print('find name: ', elmt)
+                new_elmt = (find_realname(elmt, c_prefix, defvars))
+                new_parts.append(new_elmt)
+        print(new_parts)
+        realhypo = ''.join(new_parts)
+        print("realhypo: ", realhypo)
+        
+def isfloat(num):
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
+
+def find_realname(var, c_prefix, defvars):
+    if var in MACROS.ALL_VARS.keys():
+        return var
+    elif var in defvars.keys():
+        return find_realname(defvars[var][1], c_prefix, defvars)
+    elif "this." in var:
+        return var.replace("this._", c_prefix+".")
+    elif (var[:var.find(".")] in defvars):
+        to_sub = var[:var.find(".")]
+        var = var.replace(to_sub, find_realname(to_sub, c_prefix, defvars))
+        return find_realname(var, c_prefix, defvars)
+    else:
+        return var
 
 # '''
 # write local variables from storage file to Boogie

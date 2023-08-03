@@ -126,7 +126,7 @@ class EVM:
             self._stacks[-1].append(SVT(1)) # CALL successed
             dest_address = get_var_prefix(instr)
             self._full_address = get_curr_address(instr)
-            dict.push{self._full_address:self._sym_this_addresses[-1]}
+            # dict.push{self._full_address:self._sym_this_addresses[-1]}
             self._var_prefix = dest_address
             self._call_stack.append((dest_contract, dest_function, dest_address))
             self._curr_contract = dest_contract
@@ -811,12 +811,15 @@ def main():
     elif (MACROS.NUM_TYPE == 'int'):
         BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
 
+    
+
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs
     evm.write_declared_vars() # postcondition vars for Boogie proofs
     # BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
-    # print(INVARIANTS)
+
+    try_substitution(get_init_var_prefix())
     # BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
     evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs

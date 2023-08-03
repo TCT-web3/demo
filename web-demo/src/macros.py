@@ -18,7 +18,8 @@ class MACROS:
     VAR_TYPES       = {}
     NUM_TYPE        = ""
     INVARIANTS      = {}
-    ALL_VARS        = {}
+    ALL_VARS        = {"tx_origin": ""}
+    DEF_VARS        = {}
 
 
     PREAMBLE_INT    =   """type address = int;
