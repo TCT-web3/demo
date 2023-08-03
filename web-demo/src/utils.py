@@ -453,8 +453,9 @@ def write_hypothesis(hypothesis, var_prefix):
     rt = "\n\t// hypothesis \n"
     for hypo in hypothesis:
         # hypo = hypo.replace("this.", var_prefix)
-        hypo = name_substitution(var_prefix, hypo)
-        rt += "\tassume(" + hypo + ");\n"
+        out = name_substitution(var_prefix, hypo)
+        rt += "\tassume(" + out + ");\n" 
+        
     
     rt += "\n"
     return(rt)
@@ -506,30 +507,30 @@ def write_params(abi_info, var_prefix):
 
 
 def name_substitution(c_prefix, expression):
-    rt = ""
-    THEOREM_file = open(MACROS.THEOREM_FNAME, )
-    THEOREM = json.load(THEOREM_file)
-    defvars = THEOREM["def-vars"]
-    hypos = THEOREM["hypothesis"]
+    # rt = ""
+    # THEOREM_file = open(MACROS.THEOREM_FNAME, )
+    # THEOREM = json.load(THEOREM_file)
+    # defvars = THEOREM["def-vars"]
+    # hypos = THEOREM["hypothesis"]
     # print(MACROS.ALL_VARS.keys())
-
-    for hypo in hypos:
-        print('\n',hypo)
-        parts = hypo.split(" ")
-        new_parts = []
-        for elmt in parts:
-            if elmt in MACROS.ALL_VARS.keys():
-                new_parts.append(elmt)
-                print("existing variable: " + elmt)
-            elif ('=' in elmt or '>' in elmt or '<' in elmt or isfloat(elmt) or elmt.isdigit()):
-                new_parts.append(elmt)
-            else:
-                print('find name: ', elmt)
-                new_elmt = (find_realname(elmt, c_prefix, defvars))
-                new_parts.append(new_elmt)
-        print(new_parts)
-        realhypo = ''.join(new_parts)
-        print("realhypo: ", realhypo)
+    # for hypo in hypos:
+    #     print('\n',hypo)
+    parts = expression.split(" ")
+    new_parts = []
+    for elmt in parts:
+        if elmt in MACROS.ALL_VARS.keys():
+            new_parts.append(elmt)
+            # print("existing variable: " + elmt)
+        elif ('=' in elmt or '>' in elmt or '<' in elmt or isfloat(elmt) or elmt.isdigit()):
+            new_parts.append(elmt)
+        else:
+            # print('find name: ', elmt)
+            new_elmt = (find_realname(elmt, c_prefix, MACROS.DEF_VARS))
+            new_parts.append(new_elmt)
+    # print(new_parts)
+    actual_val = ''.join(new_parts)
+    return actual_val
+    # print("realhypo: ", realhypo)
         
 def isfloat(num):
     try:

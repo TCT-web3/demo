@@ -1,7 +1,18 @@
 {
 	"entry-for-test":"UniswapV2Router::swapExactTokensForTokens(uint256,uint256,address[],address)",
 	"entry-for-real":"0x14bf3d65dcd2832638558f9301fc91e11be5f505::0x472b43f3",
-	"hypothesis":"1==1",
+	"def-vars":
+		{
+			"factory": ["", "this._factory"],
+			"pair": ["map-item", "factory.getPair[path[0]][path[1]]"]
+		},
+	"hypothesis":
+		[
+			"to != pair",
+			"tx_origin != pair",
+			"factory.swapFeeRate == 0.0",
+			"pair.swapFeeRate == 0.0"
+		],
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",
 	"numerical-type": "real"

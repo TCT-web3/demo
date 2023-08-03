@@ -839,12 +839,12 @@ def main():
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs
     # evm.write_declared_vars() # postcondition vars for Boogie proofs
-    # BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
-    # BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
+
+    BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
     # name_substitution(get_init_var_prefix())
 
-    BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
+    # BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
 
     evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs
