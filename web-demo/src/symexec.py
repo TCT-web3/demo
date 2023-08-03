@@ -128,7 +128,7 @@ class EVM:
             self._full_address = get_curr_address(instr)
             #dict.push{self._full_address:self._sym_this_addresses[-1]}
 
-            self._var_prefix = dest_address
+            # self._var_prefix = dest_address
             self._call_stack.append((dest_contract, dest_function, dest_address))
             self._curr_contract = dest_contract
             self._curr_function = dest_function
@@ -136,7 +136,7 @@ class EVM:
             MACROS.FUNCTION_NAME = self._curr_function
             for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
                 self._final_path.append("\t" + asgmt.strip() + "\n")
-            self._var_prefix = get_var_prefix(instr)
+            self._var_prefix = self._curr_contract # get_var_prefix(instr)
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
 
@@ -207,10 +207,11 @@ class EVM:
             self._curr_function = self._call_stack[-1][1]
             MACROS.CONTRACT_NAME = self._curr_contract
             MACROS.FUNCTION_NAME = self._curr_function
-            self._var_prefix = self._call_stack[-1][2]
+            # self._var_prefix = self._call_stack[-1][2]
             self._stacks.pop()
             self._memories.pop()   
-            self._sym_this_addresses.pop()            
+            self._sym_this_addresses.pop()     
+            self._var_prefix = self._curr_contract
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
             
 
@@ -685,11 +686,13 @@ class EVM:
     def add_new_vars(self, var_name):
         mapping = re.findall(r'\[(.*?)\]', var_name)
         var_name = var_name.split('[')[0]
+        # print(var_name)
         var_type = ""
 
         if var_name in self._final_vars:
             return
         else:
+            var_type += "[address] "
             for i in range(len(mapping)):
                 var_type += "[" + self._final_vars[mapping[i]] + "] "
             # elif ('][' in var_name):
@@ -828,8 +831,8 @@ def main():
     # BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
-    try_substitution(get_init_var_prefix())
-    # BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
+    # try_substitution(get_init_var_prefix())
+    BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
     evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs
     evm.write_entry_postcondition() # from AST file
