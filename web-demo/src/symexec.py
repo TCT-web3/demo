@@ -126,7 +126,7 @@ class EVM:
             self._stacks[-1].append(SVT(1)) # CALL successed
             dest_address = get_var_prefix(instr)
             self._full_address = get_curr_address(instr)
-            dict.push{self._full_address:self._sym_this_addresses[-1]}
+            #dict.push{self._full_address:self._sym_this_addresses[-1]}
             self._var_prefix = dest_address
             self._call_stack.append((dest_contract, dest_function, dest_address))
             self._curr_contract = dest_contract
@@ -176,7 +176,7 @@ class EVM:
                         self._final_path.append("\t// (post) insert invariant of " + contract + '\n')
                         for inv in MACROS.INVARIANTS[contract]:
                             inv = inv.replace("this", self._var_prefix)
-                            self._final_path.append("\tassume("+inv+");\n")
+                            self._final_path.append("\tassert("+inv+");\n")
                         self._final_path.append("\n")
 
             if opcode=="RETURN":
