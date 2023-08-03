@@ -42,7 +42,6 @@ EVM core trace analysis
 '''
 class EVM:
     from memory import recognize_32B_mask, mem_item_len, content_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR, memory_write
-    from utils import get_address_name
     def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, var_prefix, non_static_calls): 
         self._stacks            = stacks  
         self._storage           = storage
@@ -806,6 +805,7 @@ def main():
     MAP         = get_MAPS(STOR_INFO)
     MACROS.VAR_TYPES = get_types(STOR_INFO)
     MACROS.NUM_TYPE  = get_numerical_type()
+    MACROS.DEF_VARS  = get_defvars()
 
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX, [])
@@ -824,11 +824,11 @@ def main():
 
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs
-    evm.write_declared_vars() # postcondition vars for Boogie proofs
+    # evm.write_declared_vars() # postcondition vars for Boogie proofs
     # BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
-    BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
+    # BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
-    try_substitution(get_init_var_prefix())
+    # name_substitution(get_init_var_prefix())
     # BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
     evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs

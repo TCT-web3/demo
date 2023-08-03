@@ -426,6 +426,11 @@ def get_dest_contract_and_function(instr):
     dest_function = dest_function[:dest_function.find('(')]
     return dest_contract, dest_function
 
+def get_defvars():
+    THEOREM_file = open(MACROS.THEOREM_FNAME, )
+    THEOREM = json.load(THEOREM_file)
+    vars = THEOREM["def-vars"]
+    return vars
 
 def write_defvars(var_prefix):
     rt = "\n\t// def-vars\n"
@@ -439,12 +444,7 @@ def write_defvars(var_prefix):
         rt = rt + "\t" + var + ":= " + vars[var][1].replace("this.", var_prefix) + ";\n"
     return(rt) 
 
-def get_address_name(add):
-    # if (add.startswith("Partial32B")):
-        # get_address_name()
-    return (str(add).replace("Partial32B", "").replace("(12, 31),", "").replace(",", "").replace("SLOAD", "").replace("MapElement", ""))
-
-            
+        
 '''
 write hypothesis to Boogie
 '''
@@ -452,7 +452,8 @@ def write_hypothesis(hypothesis, var_prefix):
     # hypothesis = hypothesis.replace("this", var_prefix)
     rt = "\n\t// hypothesis \n"
     for hypo in hypothesis:
-        hypo = hypo.replace("this.", var_prefix)
+        # hypo = hypo.replace("this.", var_prefix)
+        hypo = name_substitution(var_prefix, hypo)
         rt += "\tassume(" + hypo + ");\n"
     
     rt += "\n"
@@ -504,7 +505,7 @@ def write_params(abi_info, var_prefix):
     return rt + '\n'
 
 
-def try_substitution(c_prefix, ):
+def name_substitution(c_prefix, expression):
     rt = ""
     THEOREM_file = open(MACROS.THEOREM_FNAME, )
     THEOREM = json.load(THEOREM_file)
