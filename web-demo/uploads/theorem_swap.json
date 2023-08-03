@@ -3,8 +3,10 @@
 	"entry-for-real":"0x14bf3d65dcd2832638558f9301fc91e11be5f505::0x472b43f3",
 	"def-vars":
 		{
-			"factory": ["", "this._factory"],
-			"pair": ["map-item", "factory.getPair[path[0]][path[1]]"]
+			"factory": ["address", "this.factory"],
+			"tokenA" : ["", "path[0]"], 
+			"tokenB" : ["", "path[1]"],
+			"pair": ["map-item", "factory.getPair[tokenA][tokenB]"]
 		},
 	"hypothesis":
 		[

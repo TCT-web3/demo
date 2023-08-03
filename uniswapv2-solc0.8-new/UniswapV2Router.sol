@@ -72,8 +72,8 @@ contract UniswapV2Router is IUniswapV2Router {
 
     /// @custom:declaration var factory, pair: address;
     /// @custom:assignment factory:=this.factory; pair:=factory.getPair[tokenA][tokenB];
-    /// @custom:postcondition tokenA.balanceOf[pair] / old(tokenA.balanceOf[pair]) ==  tokenB.balanceOf[pair] / old(tokenB.balanceOf[pair]);
-    /// @custom:postcondition tokenB.balanceOf[pair] / old(tokenB.balanceOf[pair]) ==  pair.totalSupply / old(pair.totalSupply);
+    /// @custom:postcondition tokenA.balanceOf[pair] / old( tokenA.balanceOf[pair] ) ==  tokenB.balanceOf[pair] / old( tokenB.balanceOf[pair] );
+    /// @custom:postcondition tokenB.balanceOf[pair] / old( tokenB.balanceOf[pair] ) ==  pair.totalSupply / old( pair.totalSupply );
     function addLiquidity(
         address tokenA,
         address tokenB,
@@ -161,7 +161,7 @@ contract UniswapV2Router is IUniswapV2Router {
 
     /// @custom:declaration var factory, pair: address;
     /// @custom:assignment factory:=this.factory; pair:=factory.getPair[path[0]][path[1]];
-    /// @custom:postcondition old(path[0].balanceOf[pair]) * old(path[1].balanceOf[pair]) ==  path[0].balanceOf[pair] * path[1].balanceOf[pair];
+    /// @custom:postcondition old( path[0].balanceOf[pair] ) * old( path[1].balanceOf[pair] ) ==  path[0].balanceOf[pair] * path[1].balanceOf[pair];
     function swapExactTokensForTokens(
         uint256 amountIn,
         uint256 amountOutMin,

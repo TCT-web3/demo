@@ -147,9 +147,15 @@ class EVM:
                 self._non_static_calls[-1] = self._var_prefix
                 for contract in MACROS.INVARIANTS:
                     if (contract == dest_contract):
-                        self._final_path.append("\t// (pre) insert invariant of " + dest_contract + '\n')
+                        self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
                         for inv in MACROS.INVARIANTS[dest_contract]:
+                            
                             inv = inv.replace("this", self._var_prefix)
+
+                            print(">>>>>", inv)
+                            # expr = name_substitution(self._var_prefix, inv)
+                            # print(">>>>>>>", expr)
+
                             self._final_path.append("\tassume("+inv+");\n")
                         self._final_path.append("\n")
 
@@ -675,7 +681,12 @@ class EVM:
         if postcons:
             self._output_file.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
             for postcon in postcons:
-                self._output_file.write("\tassert(" + postcon.strip().strip(";") + ");\n")
+                # expression = postcon.strip(";")
+                print(postcon)
+                expression = name_substitution(self._curr_contract, postcon)
+                print(expression)
+                # self._output_file.write("\tassert(" + postcon.strip().strip(";") + ");\n")
+                self._output_file.write("\tassert(" + expression + ");\n")
             self._output_file.write("\n")
 
     '''write all generated code to Boogie'''
@@ -838,7 +849,7 @@ def main():
 
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs
-    # evm.write_declared_vars() # postcondition vars for Boogie proofs
+    evm.write_declared_vars() # postcondition vars for Boogie proofs
 
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 

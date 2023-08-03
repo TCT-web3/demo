@@ -507,14 +507,7 @@ def write_params(abi_info, var_prefix):
 
 
 def name_substitution(c_prefix, expression):
-    # rt = ""
-    # THEOREM_file = open(MACROS.THEOREM_FNAME, )
-    # THEOREM = json.load(THEOREM_file)
-    # defvars = THEOREM["def-vars"]
-    # hypos = THEOREM["hypothesis"]
-    # print(MACROS.ALL_VARS.keys())
-    # for hypo in hypos:
-    #     print('\n',hypo)
+
     parts = expression.split(" ")
     new_parts = []
     for elmt in parts:
@@ -543,15 +536,68 @@ def find_realname(var, c_prefix, defvars):
     if var in MACROS.ALL_VARS.keys():
         return var
     elif var in defvars.keys():
+        # print(var)
         return find_realname(defvars[var][1], c_prefix, defvars)
+    elif var=="this":
+        return c_prefix
     elif "this." in var:
-        return var.replace("this._", c_prefix+".")
-    elif (var[:var.find(".")] in defvars):
+        var = var.replace("this", c_prefix)
+        # return c_prefix
+        return var
+    # elif (var[:var.find(".")] in defvars):
+    elif '.' in var:
+        if(var in MACROS.ALL_VARS.keys()):
+            return var
         to_sub = var[:var.find(".")]
-        var = var.replace(to_sub, find_realname(to_sub, c_prefix, defvars))
-        return find_realname(var, c_prefix, defvars)
+        rest = var[var.find(".")+1:]
+        # print(var)
+        # print('to_sub', to_sub)
+        # print(rest)
+        # print(MACROS.ALL_VARS)
+        # if (MACROS.VAR_TYPES[get_varname(to_sub)] == "address"):
+        # print('rest: ', rest)
+        if('[' in rest):
+            return find_realname(rest, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'
+        else:
+            return get_fullname(rest)+'['+find_realname(to_sub, c_prefix, defvars)+']'
+        # else:
+    elif '[' in var:
+        name = var[:var.find("[")]
+        print(name)
+        if name in MACROS.ALL_VARS.keys():
+            name_type = MACROS.ALL_VARS[name]
+        else:
+            name_type = MACROS.ALL_VARS[get_fullname(name)]
+        
+        if("[]" in name_type or name_type=="[address]"):
+            # print("simplae array: ", var)
+            # if name in MACROS.ALL_VARS.keys():
+            return var
+            # else:
+            # return get_fullname(var)
+        else:
+            # print(var)
+            # print(name_type)
+            mapkeys=re.search("\[.*\]", var)[0]
+            mapkeys=mapkeys.split(']')[:-1]
+            # print(mapkeys)
+            # rt = find_realname(name,c_prefix,defvars)
+            rt = get_fullname(name)
+            for key in mapkeys:
+                rt += '[' + find_realname(key[1:], c_prefix, defvars)+ ']'
+            return rt
     else:
         return var
+
+
+def get_fullname(name):
+    for var in MACROS.ALL_VARS:
+        if('.'+name in var):
+            return var
+
+
+
+
 
 # '''
 # write local variables from storage file to Boogie
