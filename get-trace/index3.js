@@ -1,5 +1,7 @@
 const axios = require('axios');
-
+// Requiring fs module in which
+// writeFile function is defined.
+const fs = require('fs')
 const {Web3} = require('web3');
 var web3 = new Web3('http://localhost:8545');
 
@@ -83,16 +85,23 @@ async function traceRevertedTransaction() {
 			method: 'debug_traceCall',
 			params: [
 				{
-					from: "0xe4E341401D7904c4C78db2De8bd7d923150DF980",
-					to: "0x1c16dADF903f6B25f79c8c8038341053371Fc15b", //contract addr
+					from: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+					to: "0x5FbDB2315678afecb367f032d93F642f64180aa3", //contract addr
 					data: functionSignature,
 				},
 				"latest",
+				{ tracer: "callTracer"},
 			],
 			id: 1,
 		});
 
 		console.log('Transaction EVM trace:', response.data.result);
+		// Write data in 'Output.txt'
+		const jsonData = JSON.stringify(response.data.result);
+		fs.writeFile('EVM_trace_1.json', jsonData, (err) => {
+			// In case of a error throw err.
+			if (err) throw err;
+		})
 	} catch (error) {
 		console.error('Error:', error);
 	}
