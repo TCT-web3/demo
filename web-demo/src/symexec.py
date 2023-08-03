@@ -126,7 +126,8 @@ class EVM:
             self._stacks[-1].append(SVT(1)) # CALL successed
             dest_address = get_var_prefix(instr)
             self._full_address = get_curr_address(instr)
-            # dict.push{self._full_address:self._sym_this_addresses[-1]}
+            #dict.push{self._full_address:self._sym_this_addresses[-1]}
+
             self._var_prefix = dest_address
             self._call_stack.append((dest_contract, dest_function, dest_address))
             self._curr_contract = dest_contract
@@ -170,14 +171,20 @@ class EVM:
             if(len(self._non_static_calls)>0 and self._non_static_calls[-1] == "static"):
                 self._non_static_calls.pop()
             else:
-                for contract in MACROS.INVARIANTS:
-                    if (contract == self._curr_contract):
+                # for contract in MACROS.INVARIANTS:
+                #     if (contract == self._curr_contract):
                         # print(MACROS.INVARIANTS[contract])
-                        self._final_path.append("\t// (post) insert invariant of " + contract + '\n')
-                        for inv in MACROS.INVARIANTS[contract]:
-                            inv = inv.replace("this", self._var_prefix)
-                            self._final_path.append("\tassume("+inv+");\n")
-                        self._final_path.append("\n")
+                self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
+                for inv in MACROS.INVARIANTS.get(self._curr_contract, []):
+                    inv = inv.replace("this", self._var_prefix)
+                    self._final_path.append("\tassert("+inv+");\n")
+                self._final_path.append("\n")
+
+            postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
+            if postcons:
+                self._final_path.append("\t// (post) insert postcondition of " + self._curr_function + '\n')
+                for postcon in postcons:
+                    self._final_path.append("\t" + postcon.strip() + "\n")
 
             if opcode=="RETURN":
                 return_data_start = self._stacks[-1][-1].value
@@ -194,8 +201,7 @@ class EVM:
             elif opcode=="STOP":
                 self._return_data_size = 0
             # print(self._call_stack)
-            for postcon in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", []):
-                self._final_path.append("\t" + postcon.strip() + "\n")
+            
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]
@@ -657,9 +663,12 @@ class EVM:
     
     '''write entry postcondition to Boogie'''
     def write_entry_postcondition(self):
-        for postcon in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", []):
-            self._output_file.write("\tassert(" + postcon.strip().strip(";") + ");\n")
-        self._output_file.write("\n")
+        postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
+        if postcons:
+            self._output_file.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
+            for postcon in postcons:
+                self._output_file.write("\tassert(" + postcon.strip().strip(";") + ");\n")
+            self._output_file.write("\n")
 
     '''write all generated code to Boogie'''
     def write_paths(self):

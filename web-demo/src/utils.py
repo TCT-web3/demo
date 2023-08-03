@@ -342,16 +342,13 @@ def get_invariant():
     
     invariants = {}
     for name, natSpec in natSpec_dict.items():
-        print(name)
-        print(natSpec)
         invariants[name] = []
         inv_list = natSpec.split("\n")
         for inv in inv_list:
             inv = inv.strip()
-            inv = inv.replace("@custom:tct invariant: ", "")
-            if inv:
-                invariants[name].append(inv)
-    
+            inv = inv.replace("@custom:tct ", "")
+            if inv.startswith("invariant: "):
+                invariants[name].append(inv.replace("invariant: ", ""))
     return invariants
 
 '''
