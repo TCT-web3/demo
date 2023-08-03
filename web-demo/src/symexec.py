@@ -42,8 +42,8 @@ EVM core trace analysis
 '''
 class EVM:
     from memory import recognize_32B_mask, mem_item_len, content_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR, memory_write
-
-    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, var_prefix): 
+    from utils import get_address_name
+    def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, var_prefix, non_static_calls): 
         self._stacks            = stacks  
         self._storage           = storage
         self._memories          = memories
@@ -58,6 +58,7 @@ class EVM:
         self._abi_info          = abi_info
         self._var_prefix        = var_prefix
         self._return_data_size  = 0
+        self._non_static_calls  = non_static_calls
         self._postcondition     = get_postcondition()
 
     '''perform symbolic execution'''
@@ -87,6 +88,10 @@ class EVM:
             # self.inspect("currmemory")
             #sys.exit()
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
+            if (opcode=="CALL"):
+                self._non_static_calls.append("non-static")
+            elif (opcode=="STATICCALL"):
+                self._non_static_calls.append("static")
             pass # no-op
         elif instr[0]==(">"):
             dest_contract, dest_function = get_dest_contract_and_function(instr)
@@ -96,10 +101,8 @@ class EVM:
             ### calling a new contract, set up calle stack
             callee_stack    = []
             calldata_pos    = self._stacks[-1][-4+static_idx_diff].value
-            # print(calldata_pos)
             calldata_len    = self._stacks[-1][-5+static_idx_diff].value
             func_selector   = self._memories[-1][calldata_pos].children[1].value
-            # print(self._memories[-1][calldata_pos].children[1].value)
             if(isinstance(func_selector, int)):
                 func_selector//=0x100**28
             else:
@@ -114,21 +117,16 @@ class EVM:
                 callee_stack.append(self._memories[-1][calldata_pos])
                 calldata_pos += 0x20
 
-            # for elmt in callee_stack:
-            #     if (isinstance(self.find_key(elmt), str) and '.' in str(elmt)):
-            #         elmt = self.find_key(elmt)
-            #         print("ELMT:", elmt)
-            #         # var_name = elmt[elmt.find('.')+1: ]
-            #         self.add_new_vars(elmt)
-            
-            self._sym_this_addresses.append(self._stacks[-1][-2])  
-            
+            this_address = self._stacks[-1][-2]
+            self._sym_this_addresses.append(this_address)
+
             ### switch to a new contract and pops out the operands for a successful CALL operation
             for i in range(7-static_idx_diff):
                 self._stacks[-1].pop()
             self._stacks[-1].append(SVT(1)) # CALL successed
             dest_address = get_var_prefix(instr)
             self._full_address = get_curr_address(instr)
+            dict.push{self._full_address:self._sym_this_addresses[-1]}
             self._var_prefix = dest_address
             self._call_stack.append((dest_contract, dest_function, dest_address))
             self._curr_contract = dest_contract
@@ -140,7 +138,21 @@ class EVM:
             self._var_prefix = get_var_prefix(instr)
             self._stacks.append(callee_stack)
             self._memories.append({0x40: SVT(0x80),0x10000000000: SVT(0)}) # temp
+
             print(">>CALL,  switched to contract: ", self._call_stack[-1][0])
+            
+
+            ### TODO: make "this" as the correct mapping to the vars
+            if(len(self._non_static_calls)>0 and self._non_static_calls[-1] == "non-static"):
+                self._non_static_calls[-1] = self._var_prefix
+                for contract in MACROS.INVARIANTS:
+                    if (contract == dest_contract):
+                        self._final_path.append("\t// (pre) insert invariant of " + dest_contract + '\n')
+                        for inv in MACROS.INVARIANTS[dest_contract]:
+                            inv = inv.replace("this", self._var_prefix)
+                            self._final_path.append("\tassume("+inv+");\n")
+                        self._final_path.append("\n")
+
             # print("----AFTER----")
             # self.inspect("currstack")
             # self.inspect("currmemory")
@@ -154,6 +166,18 @@ class EVM:
             # self.inspect("currstack")
             # self.inspect("currmemory")
             self._return_data_size =0
+
+            if(len(self._non_static_calls)>0 and self._non_static_calls[-1] == "static"):
+                self._non_static_calls.pop()
+            else:
+                for contract in MACROS.INVARIANTS:
+                    if (contract == self._curr_contract):
+                        # print(MACROS.INVARIANTS[contract])
+                        self._final_path.append("\t// (post) insert invariant of " + contract + '\n')
+                        for inv in MACROS.INVARIANTS[contract]:
+                            inv = inv.replace("this", self._var_prefix)
+                            self._final_path.append("\tassume("+inv+");\n")
+                        self._final_path.append("\n")
 
             if opcode=="RETURN":
                 return_data_start = self._stacks[-1][-1].value
@@ -182,6 +206,9 @@ class EVM:
             self._memories.pop()   
             self._sym_this_addresses.pop()            
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
+            
+
+            
             # print("----AFTER----")
             # self.inspect("currmemory")
         elif opcode=="GAS":
@@ -607,8 +634,10 @@ class EVM:
     '''wrote aux vars to Boogie'''
     def write_vars(self):
         for var in self._final_vars.keys():
+            MACROS.ALL_VARS[var] = self._final_vars[var]
             self._output_file.write("\tvar " + var + ":  " + self._final_vars[var] + ";\n")
         self._output_file.write("\n")
+        
 
     '''write declared vars to Boogie'''
     def write_declared_vars(self):
@@ -762,7 +791,7 @@ def main():
     CALL_STACK  = gen_init_CALL_STACK(VAR_PREFIX)
     
     HYPOTHESIS  = get_hypothesis()
-    INVARIANTS  = get_invariant()
+    MACROS.INVARIANTS  = get_invariant()
     VARS        = get_init_vars(STOR_INFO, ABI_INFO, VAR_PREFIX)
     TRACE       = gen_path()
     MAP         = get_MAPS(STOR_INFO)
@@ -770,7 +799,7 @@ def main():
     MACROS.NUM_TYPE  = get_numerical_type()
 
     ''' run EVM trace instructions '''
-    evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX)
+    evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX, [])
     evm._sym_this_addresses  = [SVT("tx_origin"),SVT(entry_contract_address)]
     print('inputs: ', MACROS.SOLIDITY_FNAME, MACROS.THEOREM_FNAME, MACROS.TRACE_FNAME)
     print('\n(executing instructions...)')
@@ -788,11 +817,11 @@ def main():
     # BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
     # print(INVARIANTS)
-    BOOGIE_OUT.write(write_invariants(INVARIANTS,VAR_PREFIX))
+    # BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
     evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs
     evm.write_entry_postcondition() # from AST file
-    BOOGIE_OUT.write(write_epilogue(INVARIANTS,VAR_PREFIX))
+    BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
  
 if __name__ == '__main__':
     main()

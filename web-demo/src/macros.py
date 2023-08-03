@@ -17,6 +17,8 @@ class MACROS:
     FUNCTION_NAME   = ""
     VAR_TYPES       = {}
     NUM_TYPE        = ""
+    INVARIANTS      = {}
+    ALL_VARS        = {}
 
 
     PREAMBLE_INT    =   """type address = int;
