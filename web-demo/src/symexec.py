@@ -638,13 +638,21 @@ class EVM:
         # self.write_paths()
         # sys.exit()
 
-    '''wrote aux vars to Boogie'''
+    '''write aux vars to Boogie'''
     def write_vars(self):
         for var in self._final_vars.keys():
             MACROS.ALL_VARS[var] = self._final_vars[var]
-            self._output_file.write("\tvar " + var + ":  " + self._final_vars[var] + ";\n")
+            if var.startswith("tmp"):
+                self._output_file.write("\tvar " + var + ":  " + self._final_vars[var] + ";\n")
         self._output_file.write("\n")
-        
+    
+    '''write global vars to Boogie'''
+    def write_global_vars(self):    
+        for var in self._final_vars.keys():
+            MACROS.ALL_VARS[var] = self._final_vars[var]
+            if not var.startswith("tmp"):
+                self._output_file.write("var " + var + ":  " + self._final_vars[var] + ";\n")
+        self._output_file.write("\n")
 
     '''write declared vars to Boogie'''
     def write_declared_vars(self):
@@ -788,7 +796,7 @@ def main():
     CONTRACT_NAME,FUNCTION_NAME = get_contract_and_function_names()
     MACROS.CONTRACT_NAME    = CONTRACT_NAME
     MACROS.FUNCTION_NAME    = FUNCTION_NAME
-    VAR_PREFIX              = get_init_var_prefix() 
+    VAR_PREFIX              = CONTRACT_NAME # get_init_var_prefix() 
     check_entrypoint()
     entry_contract_address=gen_trace_essential()[0]
     ABI_INFO    = get_ABI_info()
@@ -824,7 +832,8 @@ def main():
         BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
 
     
-
+    evm.write_global_vars()
+    BOOGIE_OUT.write(MACROS.PROCEDURE)
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs
     evm.write_declared_vars() # postcondition vars for Boogie proofs
