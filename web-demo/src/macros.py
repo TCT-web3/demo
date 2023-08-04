@@ -83,13 +83,6 @@ axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(
 axiom (forall m: [address] uint256 :: ((forall a:address :: 0<=m[a]) ==> (forall a:address :: m[a]<=sum(m))));
 
 """
-    PROCEDURE = """procedure straightline_code ()
-{  
-    var tx_origin: address;
-    var entry_contract: address;
-    var BLOCKTIME: uint256;
-"""
-
 
 
 
