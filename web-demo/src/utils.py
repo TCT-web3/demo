@@ -33,11 +33,7 @@ def get_init_vars(storage_info, abi_info, var_prefix):
                 vars[var_prefix+'.'+label] = '['+t_type[0]+'] ' + t_type[1] 
             else:
                 vars[var_prefix+'.'+label] = t_type[2:]
-    
-    # for elmt in abi_info['contracts'][MACROS.CONTRACT_NAME]['abi']:
-    #     if ("name" in elmt.keys() and elmt["name"] == MACROS.FUNCTION_NAME):
-    #         for input in elmt["inputs"]:
-    #             vars[input["name"]] = input["type"]
+                
     return vars
 
 '''
@@ -366,7 +362,7 @@ def get_postcondition():
             method_name = method[:method.find("(")]
             postconditions[contract_name][method_name] = {}
             for natspec in methods[method]:
-                natspec_name = natspec.replace("custom:", "") # TODO: "this" name resolution use write_defvars
+                natspec_name = natspec.replace("custom:", "") # TODO: "this" name resolution use name_substitution need var prefix
                 d = ";"
                 spec = [e+d for e in methods[method][natspec].split(d) if e]
                 postconditions[contract_name][method_name][natspec_name] = spec
@@ -599,6 +595,26 @@ def get_fullname(name):
 
 
 
+def get_var_mapping(var):
+    mapping = []
+    word = ""
+    openBr = 0
+    for ltr in var:
+        if ltr == "[":
+            if openBr == 1:
+                word += ltr
+            openBr += 1
+        elif ltr == "]":
+            openBr -= 1
+            if openBr >= 1:
+                word += ltr
+            elif openBr == 0:
+                mapping.append(word)
+                word = ""
+        elif openBr >= 1:
+            word += ltr
+    
+    return(mapping)
 # '''
 # write local variables from storage file to Boogie
 # '''
