@@ -8,7 +8,7 @@ const TwoE255 : uint256;
 axiom TwoE255 == TwoE64 * TwoE64 * TwoE64 * TwoE16 * TwoE16 * TwoE16 *32768.0;
 const TwoE256 : uint256; 
 axiom TwoE256 == TwoE64 * TwoE64 * TwoE64 * TwoE64;
-
+/*
 function evmadd(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0.0 ==> evmadd(a,b) == a+b);
 axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0.0 ==> evmadd(a,b) == a+b-TwoE256);
@@ -23,6 +23,19 @@ function evmmul(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: /*evmdiv(evmmul(a,b),a)==b ==>*/ evmmul(a,b) == a*b);
 function evmdiv(a,b: uint256) returns (uint256);
 axiom (forall a, b : uint256:: evmdiv(a,b) == a / b); 
+*/
+
+
+function evmadd(a,b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: evmadd(a,b) == a+b);
+function evmsub(a,b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: evmsub(a,b) == a-b);
+
+function evmmul(a,b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: evmmul(a,b) == a*b);
+function evmdiv(a,b: uint256) returns (uint256);
+axiom (forall a, b : uint256:: evmdiv(a,b) == a / b);    
+
 
 function evmmod(a,b:uint256) returns (uint256);
 
@@ -221,19 +234,20 @@ modifies FancyToken.balanceOf;
 	assume FancyToken.totalSupply[path[1]]<TwoE255;
 	assume to != pair;    
 	assume tx_origin != pair;   
-	assume(UniswapV2Pair.token0[pair]==path[0] && UniswapV2Pair.token1[pair]==path[1]);
+	assume(UniswapV2Pair.token0[pair]==path[1] && UniswapV2Pair.token1[pair]==path[0]);
 	assume UniswapV2Pair.swapFeeRate[pair] == 0.0;
 	assume UniswapV2Factory.swapFeeRate[factory] == 0.0;
 //////////////////////////////////////////////////////
 
 
+	assume UniswapV2Pair.reserve0[pair] == FancyToken.balanceOf[path[1]][pair];
+	assume UniswapV2Pair.reserve1[pair] == FancyToken.balanceOf[path[0]][pair];
 
 	assume(path[0]!=path[1]);
 
 	assume(path[0]>=path[1]);
 
 	assume(path[1]!=0);
-
 
 	tmp5:= (amountIn>0.0);
 	assume(tmp5);
@@ -251,25 +265,16 @@ modifies FancyToken.balanceOf;
 	assume(tmp11);
 
 	tmp12:=!tmp11;
-	tmp13:=evmmul(amountIn,tmp9);
-	tmp14:=evmdiv(tmp13,amountIn);
-	tmp15:= (tmp9==tmp14);
-	tmp16:=tmp12||tmp15;
-	assume(tmp16);
+	tmp13:=evmmul(amountIn,1000.0);
+
 
 	tmp17:=!tmp16;
 	tmp18:=evmmul(tmp13,UniswapV2Pair.reserve0[pair]);
-	tmp19:=evmdiv(tmp18,tmp13);
-	tmp20:= (UniswapV2Pair.reserve0[pair]==tmp19);
-	tmp21:=tmp17||tmp20;
-	assume(tmp21);
+
 
 	tmp22:=!tmp21;
 	tmp23:=evmmul(UniswapV2Pair.reserve1[pair],1000.0);
-	tmp24:=evmdiv(tmp23,UniswapV2Pair.reserve1[pair]);
-	tmp25:= (1000.0==tmp24);
-	tmp26:=tmp22||tmp25;
-	assume(tmp26);
+
 
 	tmp27:=evmadd(tmp23,tmp13);
 	tmp28:= (tmp23>tmp27);
@@ -279,81 +284,25 @@ modifies FancyToken.balanceOf;
 	assume(tmp27!=0.0);
 
 	tmp30:=evmdiv(tmp18,tmp27);
-	tmp31:= (tmp30<amountOutMin);
-	tmp32:=!tmp31;
-	assume(tmp32);
 
-	// (pre) insert invariant of FancyToken
-	assume(forall x:address :: 0.0 <= FancyToken.balanceOf[path[0]][x] && FancyToken.balanceOf[path[0]][x] <= FancyToken.totalSupply[path[0]]);
-	assume(sum(FancyToken.balanceOf[path[0]]) == FancyToken.totalSupply[path[0]]);
-
-	tmp33:=FancyToken.allowance[path[0]][tx_origin][118444606260880237331263110611323922401840198917];
-	tmp34:=evmsub(tmp33,amountIn);
-	FancyToken.allowance[path[0]][tx_origin][118444606260880237331263110611323922401840198917]:=tmp34;
-
-	tmp35:=FancyToken.balanceOf[path[0]][tx_origin];
-	assume(tmp35>=amountIn);
-	tmp36:=evmsub(tmp35,amountIn);
-
-//	FancyToken.balanceOf[path[0]][tx_origin]:=tmp36;
 
 	tmp37:=UniswapV2Factory.getPair[factory][path[0]][path[1]];
 	tmp38:=FancyToken.balanceOf[path[0]][tmp37];
 	tmp39:=tmp38+amountIn;
 	FancyToken.balanceOf[path[0]][tmp37]:=tmp39;
 
-	// (post) insert invariant of FancyToken
-//	assert(forall x:address :: 0.0 <= FancyToken.balanceOf[path[0]][x] && FancyToken.balanceOf[path[0]][x] <= FancyToken.totalSupply[path[0]]);
-//	assert(sum(FancyToken.balanceOf[path[0]]) == FancyToken.totalSupply[path[0]]);
-
-	assume(path[0]!=path[1]);
-
-	tmp41:= (path[0]<path[1]);
-	assume(path[0]>=path[1]);
-
-	tmp43:= (path[0]==path[1]);
-	assume(!tmp43);
-
+//ok
 	// (pre) insert invariant of UniswapV2Pair
 	token0:=UniswapV2Pair.token0[pair]; 
 	token1:=UniswapV2Pair.token1[pair];
-	assume((token0 < token1) ==> (UniswapV2Pair.reserve0[pair] == FancyToken.balanceOf[token0][pair] && UniswapV2Pair.reserve1[pair] == FancyToken.balanceOf[token1][pair]));
-	assume((token0 >= token1) ==> (UniswapV2Pair.reserve0[pair] == FancyToken.balanceOf[token1][pair] && UniswapV2Pair.reserve1[pair] == FancyToken.balanceOf[token0][pair]));
+
+	assume(UniswapV2Pair.reserve0[pair] == FancyToken.balanceOf[token0][pair] && UniswapV2Pair.reserve1[pair] == FancyToken.balanceOf[token1][pair]);
 //ok
-assert(token0>=token1);
-	tmp46:= (UniswapV2Pair.unlocked[pair]==1.0);
-	assume(tmp46);
 
-	UniswapV2Pair.unlocked[pair]:=0.0;
 
-	tmp47:= (tmp30>0.0);
-	assume(tmp47);
 
-	assume(tmp47);
+	assume token0==path[1] && token1==path[0];
 
-	tmp48:= (tmp30<UniswapV2Pair.reserve0[pair]);
-	tmp49:=!tmp48;
-	assume(!tmp49);
-
-	tmp50:= (0.0<UniswapV2Pair.reserve1[pair]);
-	assume(tmp50);
-
-	tmp51:= (to==UniswapV2Pair.token0[pair]);
-	tmp52:=!tmp51;
-	tmp53:=!tmp52;
-	assume(!tmp53);
-//ok
-	tmp54:= (to==UniswapV2Pair.token1[pair]);
-	tmp55:=!tmp54;
-	assume(tmp55);
-
-	tmp56:= (tmp30>0.0);
-	tmp57:=!tmp56;
-	assume(!tmp57);
-
-	// (pre) insert invariant of FancyToken
-	assume(forall x:address :: 0.0 <= FancyToken.balanceOf[path[1]][x] && FancyToken.balanceOf[path[1]][x] <= FancyToken.totalSupply[path[1]]);
-	assume(sum(FancyToken.balanceOf[path[1]]) == FancyToken.totalSupply[path[1]]);
 
 	tmp58:=UniswapV2Factory.getPair[factory][path[0]][path[1]];
 	tmp59:=FancyToken.balanceOf[path[1]][tmp58];
@@ -361,22 +310,12 @@ assert(token0>=token1);
 	tmp60:=evmsub(tmp59,tmp30);
 	FancyToken.balanceOf[path[1]][tmp58]:=tmp60;
 
-	tmp61:=FancyToken.balanceOf[path[1]][to];
-	tmp62:=evmadd(tmp61,tmp30);
-//	FancyToken.balanceOf[path[1]][to]:=tmp62;
-
-	// (post) insert invariant of FancyToken
-//	assert(forall x:address :: 0.0 <= FancyToken.balanceOf[path[1]][x] && FancyToken.balanceOf[path[1]][x] <= FancyToken.totalSupply[path[1]]);
-//	assert(sum(FancyToken.balanceOf[path[1]]) == FancyToken.totalSupply[path[1]]);
-	
-	
-	
 	
 	
 	assert(old0 * old1 ==  FancyToken.balanceOf[path[0]][pair] * FancyToken.balanceOf[path[1]][pair]);
+
 	
-	
-	
+
 //ok
 	tmp63:=evmsub(UniswapV2Pair.reserve0[pair],tmp30);
 	tmp64:= (tmp63>UniswapV2Pair.reserve0[pair]);
