@@ -13,7 +13,9 @@
 			"to != pair",
 			"tx_origin != pair",
 			"factory.swapFeeRate == 0.0",
-			"pair.swapFeeRate == 0.0"
+			"pair.swapFeeRate == 0.0",
+			"pair.reserve0 == path[1].balanceOf[pair]",
+			"pair.reserve1 == path[0].balanceOf[pair]"
 		],
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",

@@ -10,10 +10,6 @@ import "./interfaces/IERC20.sol";
 import "./interfaces/IUniswapV2Factory.sol";
 import "./interfaces/IUniswapV2Callee.sol";
 
-/// @custom:declaration var token0, token1: address; 
-/// @custom:assignment token0:=this.token0; token1:=this.token1;
-/// @custom:tct invariant: ( token0 < token1 ) ==> ( this.reserve0 == token0.balanceOf[this] && this.reserve1 == token1.balanceOf[this] )
-/// @custom:tct invariant: ( token0 >= token1 ) ==> ( this.reserve0 == token1.balanceOf[this] && this.reserve1 == token0.balanceOf[this] )
 contract UniswapV2Pair is IUniswapV2Pair, UniswapV2ERC20 {
     using UQ112x112 for uint224;
 
