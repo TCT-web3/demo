@@ -8,33 +8,23 @@ const TwoE255 : uint256;
 axiom TwoE255 == TwoE64 * TwoE64 * TwoE64 * TwoE16 * TwoE16 * TwoE16 *32768.0;
 const TwoE256 : uint256; 
 axiom TwoE256 == TwoE64 * TwoE64 * TwoE64 * TwoE64;
-/*
+
 function evmadd(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0.0 ==> evmadd(a,b) == a+b);
 axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0.0 ==> evmadd(a,b) == a+b-TwoE256);
 axiom (forall a,b: uint256 :: evmadd(a,b)>=a ==> evmadd(a,b) == a+b);
 
 function evmsub(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: /*a-b < TwoE256 &&*/ a>=b ==> evmsub(a,b) == a-b);
-axiom (forall a,b: uint256 :: /*a-b < TwoE256 &&*/ a<b ==> evmsub(a,b) == a-b+TwoE256);
+axiom (forall a,b: uint256 :: a-b < TwoE256 && a>=b ==> evmsub(a,b) == a-b);
+axiom (forall a,b: uint256 :: a-b < TwoE256 && a<b ==> evmsub(a,b) == a-b+TwoE256);
 axiom (forall a,b: uint256 :: evmsub(a,b)<=a ==> evmsub(a,b) == a-b);
 
 function evmmul(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: /*evmdiv(evmmul(a,b),a)==b ==>*/ evmmul(a,b) == a*b);
+axiom (forall a,b: uint256 :: /*evmdiv(evmmul(a,b),a)==b ==> */evmmul(a,b) == a*b);
 function evmdiv(a,b: uint256) returns (uint256);
 axiom (forall a, b : uint256:: evmdiv(a,b) == a / b); 
-*/
 
 
-function evmadd(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: evmadd(a,b) == a+b);
-function evmsub(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: evmsub(a,b) == a-b);
-
-function evmmul(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: evmmul(a,b) == a*b);
-function evmdiv(a,b: uint256) returns (uint256);
-axiom (forall a, b : uint256:: evmdiv(a,b) == a / b);    
 
 
 function evmmod(a,b:uint256) returns (uint256);
@@ -223,12 +213,11 @@ modifies FancyToken.balanceOf;
 	
 	var factory, pair: address;
 	var token0, token1: address;
-	var old0,old1: uint256;
+
 	
 	factory:=UniswapV2Router.factory[entry_contract];
 	pair:=UniswapV2Factory.getPair[factory][path[0]][path[1]];
-	old0:=FancyToken.balanceOf[path[0]][pair];
-	old1:=FancyToken.balanceOf[path[1]][pair];
+	
 //Hypothesis
 	assume FancyToken.totalSupply[path[0]]<TwoE255;
 	assume FancyToken.totalSupply[path[1]]<TwoE255;
@@ -265,16 +254,26 @@ modifies FancyToken.balanceOf;
 	assume(tmp11);
 
 	tmp12:=!tmp11;
-	tmp13:=evmmul(amountIn,1000.0);
+	tmp13:=evmmul(amountIn,tmp9);
+	tmp14:=evmdiv(tmp13,amountIn);
+	tmp15:= (tmp9==tmp14);
+	tmp16:=tmp12||tmp15;
+	assume(tmp16);
 
 
 	tmp17:=!tmp16;
 	tmp18:=evmmul(tmp13,UniswapV2Pair.reserve0[pair]);
-
+	tmp19:=evmdiv(tmp18,tmp13);
+	tmp20:= (UniswapV2Pair.reserve0[pair]==tmp19);
+	tmp21:=tmp17||tmp20;
+	assume(tmp21);
 
 	tmp22:=!tmp21;
 	tmp23:=evmmul(UniswapV2Pair.reserve1[pair],1000.0);
-
+	tmp24:=evmdiv(tmp23,UniswapV2Pair.reserve1[pair]);
+	tmp25:= (1000.0==tmp24);
+	tmp26:=tmp22||tmp25;
+	assume(tmp26);
 
 	tmp27:=evmadd(tmp23,tmp13);
 	tmp28:= (tmp23>tmp27);
@@ -291,15 +290,6 @@ modifies FancyToken.balanceOf;
 	tmp39:=tmp38+amountIn;
 	FancyToken.balanceOf[path[0]][tmp37]:=tmp39;
 
-//ok
-	// (pre) insert invariant of UniswapV2Pair
-	token0:=UniswapV2Pair.token0[pair]; 
-	token1:=UniswapV2Pair.token1[pair];
-
-	assume(UniswapV2Pair.reserve0[pair] == FancyToken.balanceOf[token0][pair] && UniswapV2Pair.reserve1[pair] == FancyToken.balanceOf[token1][pair]);
-//ok
-
-
 
 	assume token0==path[1] && token1==path[0];
 
@@ -312,7 +302,6 @@ modifies FancyToken.balanceOf;
 
 	
 	
-	assert(old0 * old1 ==  FancyToken.balanceOf[path[0]][pair] * FancyToken.balanceOf[path[1]][pair]);
 
 	
 
@@ -440,12 +429,10 @@ modifies FancyToken.balanceOf;
 	UniswapV2Pair.unlocked[pair]:=1.0;
 
 	// (post) insert invariant of UniswapV2Pair
-	assert((token0 < token1) ==> (UniswapV2Pair.reserve0[pair] == FancyToken.balanceOf[token0][pair] && UniswapV2Pair.reserve1[pair] == FancyToken.balanceOf[token1][pair]));
-	assert((token0 >= token1) ==> (UniswapV2Pair.reserve0[pair] == FancyToken.balanceOf[token1][pair] && UniswapV2Pair.reserve1[pair] == FancyToken.balanceOf[token0][pair]));
+	assert(UniswapV2Pair.reserve0[pair] == FancyToken.balanceOf[path[1]][pair] && UniswapV2Pair.reserve1[pair] == FancyToken.balanceOf[path[0]][pair]);
 
 	// postcondition
-	//assert evmmul(old(FancyToken.balanceOf[path[0]][pair]) , old(FancyToken.balanceOf[path[1]][pair])) ==  evmmul(FancyToken.balanceOf[path[0]][pair] , FancyToken.balanceOf[path[1]][pair]);
-
-	//assert(old(FancyToken.balanceOf[path[0]][pair]) * old(FancyToken.balanceOf[path[1]][pair]) ==  FancyToken.balanceOf[path[0]][pair] * FancyToken.balanceOf[path[1]][pair]);
+	
+	assert(old(FancyToken.balanceOf[path[0]][pair]) * old(FancyToken.balanceOf[path[1]][pair]) ==  FancyToken.balanceOf[path[0]][pair] * FancyToken.balanceOf[path[1]][pair]);
 assert(false);
 }
