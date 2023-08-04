@@ -117,7 +117,9 @@ class EVM:
                 calldata_pos += 0x20
 
             this_address = self._stacks[-1][-2]
-            self._sym_this_addresses.append(this_address)
+            this_address = self.postorder_traversal(this_address)
+            print(this_address)
+            self._sym_this_addresses.append(SVT(this_address))
 
             ### switch to a new contract and pops out the operands for a successful CALL operation
             for i in range(7-static_idx_diff):
@@ -259,8 +261,7 @@ class EVM:
                 node.children.append(to_load)
                 self._stacks[-1].append(node)
             else:
-                sym_this = self.postorder_traversal(self._sym_this_addresses[-1])
-                stored_value = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(to_load.value)]+"["+sym_this+"]"
+                stored_value = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
                 self.add_new_vars(stored_value)
                 self._stacks[-1].append(SVT(stored_value))
         elif opcode=="PC":
@@ -377,7 +378,7 @@ class EVM:
                 node = SVT("MapElement")
                 mapID = self._memories[-1][start_offset+32]
                 if(mapID.value!="MapElement"):
-                    var_name = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(mapID.value)]+"["+str(self.postorder_traversal(self._sym_this_addresses[-1]))+"]"
+                    var_name = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(mapID.value)]
                     self.add_new_vars(var_name)
                     node.children.append(SVT(var_name))
                 else:
@@ -436,7 +437,7 @@ class EVM:
                 self._final_vars[to_return] = 'bool'
                 self._final_path.append(to_boogie)
         elif node.value == "SLOAD":
-            # sym_this = self.postorder_traversal(self._sym_this_addresses[-1])
+            sym_this = self.postorder_traversal(self._sym_this_addresses[-1])
             if node.children[0].value=="MapElement":
                 if node.children[0].children[0].value=="MapElement": 
                     map_ID = node.children[0].children[0].children[0].value
@@ -444,13 +445,13 @@ class EVM:
                     self.postorder_traversal(node.children[0].children[1])
                     map_key1 = self.find_key(node.children[0].children[0].children[1])
                     map_key2 = self.find_key(node.children[0].children[1])
-                    key_for_boogie = f"[{str(map_key1)}][{str(map_key2)}]"
+                    key_for_boogie = f"[{sym_this}][{str(map_key1)}][{str(map_key2)}]"
                     var_name = map_ID+key_for_boogie
                 else:
                     map_ID  = node.children[0].children[0].value
                     self.postorder_traversal(node.children[0].children[1])
                     map_key = self.find_key(node.children[0].children[1])
-                    key_for_boogie = f"[{str(map_key)}]"
+                    key_for_boogie = f"[{sym_this}][{str(map_key)}]"
                     var_name = map_ID + key_for_boogie
             # else:
             #     map_ID = node.children[0].value
@@ -651,13 +652,27 @@ class EVM:
         self._output_file.write("\n")
     
     '''write global vars to Boogie'''
-    def write_global_vars(self):    
+    def write_global_vars(self):
+        modified = []
         for var in self._final_vars.keys():
             macros_var = var[:var.find("[")]
             MACROS.ALL_VARS[macros_var] = self._final_vars[var]
             if not var.startswith("tmp"):
+                modified.append(var)
                 self._output_file.write("var " + var + ":  " + self._final_vars[var] + ";\n")
         self._output_file.write("\n")
+
+        self._output_file.write("""procedure straightline_code ()
+modifies """)
+        print(modified)
+        for i in range(len(modified)-1):
+            self._output_file.write(modified[i] + ", ")
+        self._output_file.write(modified[-1] + ";\n")
+        self._output_file.write("""{
+var tx_origin: address;
+var entry_contract: address;
+var BLOCKTIME: uint256;
+""")
 
     '''write declared vars to Boogie'''
     def write_declared_vars(self):
@@ -702,7 +717,7 @@ class EVM:
         mapping = get_var_mapping(var_name)
         var_name = var_name.split('[')[0]
         var_type = ""
-        if var_name+"["+mapping[0]+"]" in self._final_vars:
+        if var_name in self._final_vars:
             return
         else:
             var_type += "[address] "
@@ -714,9 +729,9 @@ class EVM:
             #     self._final_vars[var_name] = 'address' # patch
 
             if ('.' in var_name):
-                self._final_vars[var_name+"["+mapping[0]+"]"] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name[var_name.find('.')+1:]]
+                self._final_vars[var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name[var_name.find('.')+1:]]
             else:
-                self._final_vars[self._var_prefix+'.'+var_name+"["+mapping[0]+"]"] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name]
+                self._final_vars[self._var_prefix+'.'+var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name]
 
     '''helper to find the key of a node'''
     def find_key(self, node):
@@ -842,7 +857,7 @@ def main():
 
     
     evm.write_global_vars()
-    BOOGIE_OUT.write(MACROS.PROCEDURE)
+    # BOOGIE_OUT.write(MACROS.PROCEDURE)
 
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs

@@ -33,7 +33,7 @@ def get_init_vars(storage_info, abi_info, var_prefix):
                 vars[var_prefix+'.'+label] = '['+t_type[0]+'] ' + t_type[1] 
             else:
                 vars[var_prefix+'.'+label] = t_type[2:]
-                
+
     return vars
 
 '''
@@ -559,7 +559,7 @@ def find_realname(var, c_prefix, defvars):
         # else:
     elif '[' in var:
         name = var[:var.find("[")]
-        print(name)
+        # print(name)
         if name in MACROS.ALL_VARS.keys():
             name_type = MACROS.ALL_VARS[name]
         else:
