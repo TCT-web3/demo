@@ -147,17 +147,16 @@ class EVM:
                 self._non_static_calls[-1] = self._var_prefix
                 for contract in MACROS.INVARIANTS:
                     if (contract == dest_contract):
-                        self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
-                        for inv in MACROS.INVARIANTS[dest_contract]:
-                            
-                            inv = inv.replace("this", self._var_prefix)
+                        if (len(MACROS.INVARIANTS[dest_contract])>0):
+                            self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
+                            for inv in MACROS.INVARIANTS[dest_contract]:
+                                inv = inv.replace("this", self._var_prefix)
+                                # print(">>>>>", inv)
+                                # expr = name_substitution(self._var_prefix, inv)
+                                # print(">>>>>>>", expr)
 
-                            print(">>>>>", inv)
-                            # expr = name_substitution(self._var_prefix, inv)
-                            # print(">>>>>>>", expr)
-
-                            self._final_path.append("\tassume("+inv+");\n")
-                        self._final_path.append("\n")
+                                self._final_path.append("\tassume("+inv+");\n")
+                            self._final_path.append("\n")
 
             # print("----AFTER----")
             # self.inspect("currstack")
@@ -176,14 +175,16 @@ class EVM:
             if(len(self._non_static_calls)>0 and self._non_static_calls[-1] == "static"):
                 self._non_static_calls.pop()
             else:
+                print(MACROS.INVARIANTS)
                 # for contract in MACROS.INVARIANTS:
                 #     if (contract == self._curr_contract):
                         # print(MACROS.INVARIANTS[contract])
+                # if (len(MACROS.INVARIANTS.get(self._curr_contract, []))>0):
                 self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
                 for inv in MACROS.INVARIANTS.get(self._curr_contract, []):
                     inv = inv.replace("this", self._var_prefix)
                     self._final_path.append("\tassert("+inv+");\n")
-                self._final_path.append("\n")
+                    self._final_path.append("\n")
 
             postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
             if postcons:
@@ -849,12 +850,12 @@ def main():
     evm.write_declared_vars() # postcondition vars for Boogie proofs
 
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
-
+    
     # name_substitution(get_init_var_prefix())
 
     # BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
 
-    evm.write_entry_assignment() # from AST file
+    # evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs
     evm.write_entry_postcondition() # from AST file
     BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
