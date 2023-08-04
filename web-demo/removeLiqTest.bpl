@@ -125,8 +125,8 @@ modifies c_66795.totalSupply,c_83c71.balanceOf,c_969fd.balanceOf;
 	var tmp70:  bool;
 	var tmp71:  bool;
 	
-	var old_totalSupply: uint256;
-	var old_reserveB: uint256;
+	// var old_totalSupply: uint256;
+	// var old_reserveB: uint256;
 	
 	//---------------- MANUALLY ENTERED
 	assume to != c_6a5c4.getPair[tokenA][tokenB];    //I didn't think of this condition until Boogie returned negative result.
@@ -137,8 +137,8 @@ modifies c_66795.totalSupply,c_83c71.balanceOf,c_969fd.balanceOf;
 	assume (c_66795.reserve0 == c_83c71.balanceOf[c_6a5c4.getPair[tokenA][tokenB]]);
 	assume (c_66795.reserve1 == c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]]);
 	//========================================================================================
-	old_totalSupply := c_66795.totalSupply;
-	old_reserveB:= c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]];
+	// old_totalSupply := c_66795.totalSupply;
+	// old_reserveB:= c_969fd.balanceOf[c_6a5c4.getPair[tokenA][tokenB]];
 	
 	tmp1:=c_66795.allowance[tx_origin][256577013454289827829678403807674012776083424995];
 	tmp2:= (tmp1==115792089237316195423570985008687907853269984665640564039457584007913129639935.0);

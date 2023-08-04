@@ -88,10 +88,10 @@ def main():
     # Call method
     # output_trace("trace_addLiquidity.json", "addLiquidity", "deployment_info.json", "theorem_addLiquidity.json")
     # output_trace("trace_removeLiquidity.json", "removeLiquidity", "deployment_info.json", "theorem_removeLiquidity.json")
-    # output_trace("trace_swap.json", "addLiquidity", "deployment_info.json", "theorem_swap.json")
+    output_trace("trace_swap_temp.json", "swap", "deployment_info.json", "theorem_swap.json")
     # output_trace("trace_integerOverflow.json", "integerOverflow", "deployment_info.json", "theorem_integerOverflow.json")
     # output_trace("trace_noReentrancy.json", "noReentrancy", "deployment_info.json", "theorem_noReentrancy.json")
-    output_trace("trace_reentrancy.json", "reentrancy", "deployment_info.json", "theorem_reentrancy.json")
+    # output_trace("trace_reentrancy.json", "reentrancy", "deployment_info.json", "theorem_reentrancy.json")
     
 
 if __name__ == "__main__":
