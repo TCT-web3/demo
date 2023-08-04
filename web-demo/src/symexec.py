@@ -411,6 +411,8 @@ class EVM:
     def postorder_traversal(self, node):
         to_return = ""
         if not node.children:
+            if isinstance(node.value, int) and MACROS.NUM_TYPE == "real":
+                return float(node.value)
             return node.value
 
         if node.value == "ISZERO":
@@ -431,7 +433,7 @@ class EVM:
                 if (self._final_vars["tmp"+str(val1)] == 'bool'):
                     to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
                 elif (self._final_vars["tmp"+str(val1)] == 'uint256'):
-                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==0;\n"
+                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==Zero;\n"
                 node.value = to_return
                 node.children = []
                 self._final_vars[to_return] = 'bool'
@@ -562,6 +564,14 @@ class EVM:
             to_return = val << shift
             node.value = to_return
             node.children = []
+        elif node.value == "ACCOUNT_CODESIZE":
+            self._tmp_var_count+=1
+            to_return =  "tmp" + str(self._tmp_var_count)
+            to_boogie ="\ttmp"+str(self._tmp_var_count)+":=nondet(); //EXTCODESIZE\n"
+            self._final_vars[to_return] = 'uint256'
+            node.value = to_return
+            node.children = []
+            self._final_path.append(to_boogie)
         else:
             return str(node)
         return to_return
@@ -615,7 +625,7 @@ class EVM:
                 path = "\tassume(false);\n\n"
             else:
                 return
-        elif(isinstance(var, int)):
+        elif(isinstance(var, int) or isinstance(var, float)):
             if (isNotZero and var==0) or (not isNotZero and var!=0):
                 raise Exception("JUMPI condition exception")
             else:
@@ -626,17 +636,10 @@ class EVM:
             else:
                 path = "\tassume(!"+ var +");\n\n" 
         elif(self._final_vars[var]=='uint256'):
-            if (MACROS.NUM_TYPE=="int"):
-                if (isNotZero):
-                    path = "\tassume("+ var +"!=0);\n\n"
-                else:    
-                    path = "\tassume("+ var +"==0);\n\n"
-            elif (MACROS.NUM_TYPE=="real"):
-                if (isNotZero):
-                    path = "\tassume("+ var +"!=0.0);\n\n"
-                else:    
-                    path = "\tassume("+ var +"==0.0);\n\n"
-
+            if (isNotZero):
+                path = "\tassume("+ var +"!=Zero);\n\n"
+            else:    
+                path = "\tassume("+ var +"==Zero);\n\n"
         else:
             raise Exception("JUMPI stack[-1] is_not_zero error")
         self._final_path.append(path)
@@ -668,9 +671,9 @@ modifies """)
             self._output_file.write(modified[i] + ", ")
         self._output_file.write(modified[-1] + ";\n")
         self._output_file.write("""{
-var tx_origin: address;
-var entry_contract: address;
-var BLOCKTIME: uint256;
+    var tx_origin: address;
+    var entry_contract: address;
+    var BLOCKTIME: uint256;
 """)
 
     '''write declared vars to Boogie'''
