@@ -263,7 +263,7 @@ class EVM:
             else:
                 stored_value = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
                 self.add_new_vars(stored_value)
-                self._stacks[-1].append(SVT(stored_value))
+                self._stacks[-1].append(SVT(stored_value+"["+self.postorder_traversal(self._sym_this_addresses[-1])+"]"))
         elif opcode=="PC":
             self._stacks[-1].append(SVT(PC))
         elif opcode.startswith("LOG"):
@@ -655,8 +655,7 @@ class EVM:
     def write_global_vars(self):
         modified = []
         for var in self._final_vars.keys():
-            macros_var = var[:var.find("[")]
-            MACROS.ALL_VARS[macros_var] = self._final_vars[var]
+            MACROS.ALL_VARS[var] = self._final_vars[var]
             if not var.startswith("tmp"):
                 modified.append(var)
                 self._output_file.write("var " + var + ":  " + self._final_vars[var] + ";\n")
@@ -854,11 +853,7 @@ def main():
     elif (MACROS.NUM_TYPE == 'int'):
         BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
 
-
-    
     evm.write_global_vars()
-    # BOOGIE_OUT.write(MACROS.PROCEDURE)
-
     BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs
     evm.write_declared_vars() # postcondition vars for Boogie proofs
