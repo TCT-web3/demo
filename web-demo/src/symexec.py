@@ -118,7 +118,6 @@ class EVM:
 
             this_address = self._stacks[-1][-2]
             this_address = self.postorder_traversal(this_address)
-            print(this_address)
             self._sym_this_addresses.append(SVT(this_address))
 
             ### switch to a new contract and pops out the operands for a successful CALL operation
@@ -663,7 +662,6 @@ class EVM:
 
         self._output_file.write("""procedure straightline_code ()
 modifies """)
-        print(modified)
         for i in range(len(modified)-1):
             self._output_file.write(modified[i] + ", ")
         self._output_file.write(modified[-1] + ";\n")
@@ -693,9 +691,9 @@ var BLOCKTIME: uint256;
             self._output_file.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
             for postcon in postcons:
                 # expression = postcon.strip(";")
-                print(postcon)
+                # print(postcon)
                 expression = name_substitution(self._curr_contract, postcon)
-                print(expression)
+                # print(expression)
                 # self._output_file.write("\tassert(" + postcon.strip().strip(";") + ");\n")
                 self._output_file.write("\tassert(" + expression + ");\n")
             self._output_file.write("\n")
