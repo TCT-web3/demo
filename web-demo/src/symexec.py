@@ -708,28 +708,42 @@ modifies """)
 
     '''write declared vars to Boogie'''
     def write_declared_vars(self):
+        self._output_file.write("\t// declare-vars\n")
         declaration = self._postcondition.get(self._curr_contract, []).get(self._curr_function, []).get("declaration", [])
         for decl in declaration:
             decl = decl.strip()
-            decl_name = re.search("var (.*):", decl)[0].strip('var').strip(':').strip()
-            print(decl_name)
+            original_name = re.search("var (.*):", decl)[0].strip('var').strip(':').strip()
+            # print(original_name)
+            decl_name = "decl_"+original_name
+            # print(decl_name)
             decl_type = decl.strip('var').strip(':').strip(';').strip(decl_name).strip()
-            print(decl_type)
+            # print(decl_type)
+            
+            MACROS.DECL_SUBS[original_name] = decl_name
+            MACROS.DECL_VARS[original_name] = decl_type
 
-            self._output_file.write("\t" + decl + "\n")
+            self._output_file.write("\t" + decl.replace(original_name, decl_name) + "\n")
         self._output_file.write("\n")
 
     '''write entry assignment to Boogie'''
     def write_entry_assignment(self):
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
-            # asgmt = asgmt.replace("this", self._curr_contract).strip()
+            asgmt = asgmt.replace("this", self._curr_contract).strip()
             # asgmt = asgmt.replace(":=",)
             asgmt = asgmt.strip()
             asgmt = asgmt.strip(";")
-            print(self._var_prefix)
-            print(asgmt)
-            asgmt = name_substitution(self._var_prefix, asgmt)
-            self._output_file.write("\t" + asgmt.strip() + ";\n")
+            # print(self._var_prefix + "???")
+
+            test = asgmt.split(":=")
+            name = (test[0])
+            expr = (test[1])
+
+            # print(MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
+            # asgmt = name_substitution(self._var_prefix, asgmt)
+            # self._output_file.write("\t" + asgmt.strip() + ";\n")
+
+            self._output_file.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
+
         self._output_file.write("\n")
     
     '''write entry postcondition to Boogie'''
@@ -740,7 +754,7 @@ modifies """)
             for postcon in postcons:
                 postcon = postcon.strip(";")
                 expression = name_substitution(self._curr_contract, postcon)
-                self._output_file.write("\tassert(" + expression + ");\n")
+                self._output_file.write("\tassert( " + expression + " );\n")
             self._output_file.write("\n")
 
     '''write all generated code to Boogie'''

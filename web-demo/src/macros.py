@@ -21,6 +21,7 @@ class MACROS:
     ALL_VARS        = {"tx_origin": ""}
     DEF_VARS        = {}
     DECL_VARS       = {}
+    DECL_SUBS       = {}
 
 
 

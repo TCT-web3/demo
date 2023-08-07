@@ -437,7 +437,7 @@ def get_defvars():
     return vars
 
 def write_defvars(var_prefix):
-    rt = "\n\t// def-vars\n"
+    rt = ""
     THEOREM_file = open(MACROS.THEOREM_FNAME, )
     THEOREM = json.load(THEOREM_file)
     vars = THEOREM["def-vars"]
@@ -450,8 +450,7 @@ def write_defvars(var_prefix):
         expr = vars[var][1]
         rt = rt + "\t" + var + ":= " + name_substitution(var_prefix, expr) + ";\n"
 
-    # for var in vars:
-        # rt += rt + "\t" + var + ":= " + vars[var][1].replace("this", var_prefix) + ";\n"
+    rt = "\n\t// def-vars\n" + rt
     return(rt) 
 
         
