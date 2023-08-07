@@ -527,7 +527,7 @@ def name_substitution(c_prefix, expression):
             # print('find name: ', elmt)
             new_elmt = (find_realname(elmt, c_prefix, MACROS.DEF_VARS))
             new_parts.append(new_elmt)
-    actual_val = ''.join(new_parts)
+    actual_val = ' '.join(new_parts)
     return actual_val
     # print("realhypo: ", realhypo)
         

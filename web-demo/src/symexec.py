@@ -165,9 +165,9 @@ class EVM:
                         # if (len(MACROS.INVARIANTS[dest_contract])>0):
                         self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
                         for inv in MACROS.INVARIANTS[dest_contract]:
-                            inv = inv.replace("this", self._var_prefix)
+                            # inv = inv.replace("this", self._var_prefix)
                             # print(">>>>>", inv)
-                            # expr = name_substitution(self._var_prefix, inv)
+                            inv = name_substitution(self._var_prefix, inv)
                             # print(">>>>>>>", expr)
                             self._final_path.append("\tassume("+inv+");\n")
                         self._final_path.append("\n")
@@ -191,11 +191,13 @@ class EVM:
                 #     if (contract == self._curr_contract):
                         # print(MACROS.INVARIANTS[contract])
                 # if (len(MACROS.INVARIANTS.get(self._curr_contract, []))>0):
-                self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
+                # self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
                 for inv in MACROS.INVARIANTS.get(self._curr_contract, []):
-                    inv = inv.replace("this", self._var_prefix)
-                    self._final_path.append("\tassert("+inv+");\n")
-                    self._final_path.append("\n")
+                    # inv = inv.replace("this", self._var_prefix)
+                    # print(">>>>>>?" + inv)
+                    inv = name_substitution(self._var_prefix, inv)
+                    self._final_path.append("\tassert("+inv+");")
+                    self._final_path.append("\n\n")
 
             postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
             if postcons:
