@@ -16,20 +16,16 @@ contract FancyToken is IERC20 {
         balanceOf[msg.sender] = totalSupply;
     }
     function transfer(address recipient, uint amount) external override returns (bool) {
-        unchecked {
-            balanceOf[msg.sender] -= amount;
-            balanceOf[recipient] += amount;
-            //emit Transfer(msg.sender, recipient, amount);
-            return true;
-        }
+        balanceOf[msg.sender] -= amount;
+        balanceOf[recipient] += amount;
+        //emit Transfer(msg.sender, recipient, amount);
+        return true;
     }
 
     function approve(address spender, uint amount) external override returns (bool) {
-        unchecked {
-            allowance[msg.sender][spender] = amount;
-            //emit Approval(msg.sender, spender, amount);
-            return true;
-        }
+        allowance[msg.sender][spender] = amount;
+        //emit Approval(msg.sender, spender, amount);
+        return true;
     }
 
     function transferFrom(
@@ -37,29 +33,22 @@ contract FancyToken is IERC20 {
         address recipient,
         uint amount
     ) external override returns (bool) {
-        unchecked {
-            allowance[sender][msg.sender] -= amount;
-            balanceOf[sender] -= amount;
-            balanceOf[recipient] += amount;
-            //emit Transfer(sender, recipient, amount);
-            return true;
-        }
+        allowance[sender][msg.sender] -= amount;
+        balanceOf[sender] -= amount;
+        balanceOf[recipient] += amount;
+        //emit Transfer(sender, recipient, amount);
+        return true;
     }
 
     function mint(uint amount) external {
-        unchecked {
-            balanceOf[msg.sender] += amount;
-            totalSupply += amount;
-            //emit Transfer(address(0), msg.sender, amount);
-        }
+        balanceOf[msg.sender] += amount;
+        totalSupply += amount;
+        //emit Transfer(address(0), msg.sender, amount);
     }
 
     function burn(uint amount) external {
-        unchecked {
-            balanceOf[msg.sender] -= amount;
-            totalSupply -= amount;
-            //emit Transfer(msg.sender, address(0), amount);
-        }
+        balanceOf[msg.sender] -= amount;
+        totalSupply -= amount;
+        //emit Transfer(msg.sender, address(0), amount);
     }
 }
-
