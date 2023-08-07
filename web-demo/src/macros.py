@@ -22,67 +22,57 @@ class MACROS:
     DEF_VARS        = {}
 
 
-    PREAMBLE_INT    =   """type address = int;
-type uint256 = int;
+
+    PREAMBLE_COMMON = """type address = int;
 const TwoE16 : uint256;
-axiom TwoE16 == 65536; 
+axiom TwoE16 == TwoE8 * TwoE8; 
 const TwoE64 : uint256; 
 axiom TwoE64 == TwoE16 * TwoE16 * TwoE16 * TwoE16;
 const TwoE255 : uint256;
-axiom TwoE255 == TwoE64 * TwoE64 * TwoE64 * TwoE16 * TwoE16 * TwoE16 *32768;
+axiom TwoE255 == TwoE64 * TwoE64 * TwoE64 * TwoE16 * TwoE16 * TwoE16 * TwoE8;
 const TwoE256 : uint256; 
 axiom TwoE256 == TwoE64 * TwoE64 * TwoE64 * TwoE64;
 
 function evmadd(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b);
-axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b-TwoE256);
+axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=Zero ==> evmadd(a,b) == a+b);
+axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=Zero ==> evmadd(a,b) == a+b-TwoE256);
+axiom (forall a,b: uint256 :: evmadd(a,b)>=a ==> evmadd(a,b) == a+b);
 
 function evmsub(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b>=0 ==> evmsub(a,b) == a-b);
-axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b<0 ==> evmsub(a,b) == a-b+TwoE256);
+axiom (forall a,b: uint256 :: a-b < TwoE256 && a>=b ==> evmsub(a,b) == a-b);
+axiom (forall a,b: uint256 :: a-b < TwoE256 && a<b ==> evmsub(a,b) == a-b+TwoE256);
+axiom (forall a,b: uint256 :: evmsub(a,b)<=a ==> evmsub(a,b) == a-b);
+
+function evmmul(a,b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: evmdiv(evmmul(a,b),a)==b ==> evmmul(a,b) == a*b);
 
 function evmmod(a,b:uint256) returns (uint256);
 
-function evmmul(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: evmmul(a,b) == a*b);
-
 function sum(m: [address] uint256) returns (uint256);
 axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(m) - m[a] + v);
-axiom (forall m: [address] uint256 :: ((forall a:address :: 0<=m[a]) ==> (forall a:address :: m[a]<=sum(m))));
+axiom (forall m: [address] uint256 :: ((forall a:address :: Zero<=m[a]) ==> (forall a:address :: m[a]<=sum(m))));
+
+function nondet() returns (uint256);
 
 """
 
-    PREAMBLE_REAL    =   """type address = int;
-type uint256 = real;
-const TwoE16 : uint256;
-axiom TwoE16 == 65536.0; 
-const TwoE64 : uint256; 
-axiom TwoE64 == TwoE16 * TwoE16 * TwoE16 * TwoE16;
-const TwoE255 : uint256;
-axiom TwoE255 == TwoE64 * TwoE64 * TwoE64 * TwoE16 * TwoE16 * TwoE16 *32768.0;
-const TwoE256 : uint256; 
-axiom TwoE256 == TwoE64 * TwoE64 * TwoE64 * TwoE64;
+    PREAMBLE_INT    =   """type uint256 = int;
+const Zero : uint256;
+axiom Zero == 0; 
+const TwoE8 : uint256;
+axiom TwoE8 == 32768; 
 
-function evmadd(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: a+b < TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b);
-axiom (forall a,b: uint256 :: a+b >= TwoE256 && a+b>=0 ==> evmadd(a,b) == a+b-TwoE256);
+""" + PREAMBLE_COMMON
 
-function evmsub(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b>=0 ==> evmsub(a,b) == a-b);
-axiom (forall a,b: uint256 :: a-b < TwoE256 && a-b<0 ==> evmsub(a,b) == a-b+TwoE256);
+    PREAMBLE_REAL    =   """type uint256 = real;
+const Zero : uint256;
+axiom Zero == 0.0; 
+const TwoE8 : uint256;
+axiom TwoE8 == 32768.0; 
 
-function evmmul(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: evmmul(a,b) == a*b);
 function evmdiv(a,b: uint256) returns (uint256);
 axiom (forall a, b : uint256:: evmdiv(a,b) == a / b); 
 
-function evmmod(a,b:uint256) returns (uint256);
-
-function sum(m: [address] uint256) returns (uint256);
-axiom (forall m: [address] uint256, a:address, v:uint256 :: sum(m[a:=v]) == sum(m) - m[a] + v);
-axiom (forall m: [address] uint256 :: ((forall a:address :: 0<=m[a]) ==> (forall a:address :: m[a]<=sum(m))));
-
-"""
-
+""" + PREAMBLE_COMMON
 
 

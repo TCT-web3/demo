@@ -113,7 +113,6 @@ class EVM:
 
             this_address = self._stacks[-1][-2]
             this_address = self.postorder_traversal(this_address)
-            print(this_address)
             self._sym_this_addresses.append(SVT(this_address))
 
             ### switch to a new contract and pops out the operands for a successful CALL operation
@@ -424,7 +423,7 @@ class EVM:
                 if (self._final_vars["tmp"+str(val1)] == 'bool'):
                     to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
                 elif (self._final_vars["tmp"+str(val1)] == 'uint256'):
-                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==0;\n"
+                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==Zero;\n"
                 node.value = to_return
                 node.children = []
                 self._final_vars[to_return] = 'bool'
@@ -496,12 +495,12 @@ class EVM:
                     self._final_path.append(to_boogie) 
         elif node.value == "ADD" or node.value == "SUB" or node.value == "AND" or node.value == "OR" or node.value == "MUL" or node.value == "DIV" or node.value == "MOD": # DIV, MUL
             val1=self.postorder_traversal(node.children[0])
-            val2=self.postorder_traversal(node.children[1])
-            if (str(val1).isdigit() and MACROS.NUM_TYPE == "real"):
-                     val1 = str(val1)+'.0'
-            if (str(val2).isdigit() and MACROS.NUM_TYPE == "real"):
-                     val2 = str(val2)+'.0'
+            val2=self.postorder_traversal(node.children[1])           
             if isinstance(val1, int) and isinstance(val2, int):
+                if (str(val1).isdigit() and MACROS.NUM_TYPE == "real"):
+                         val1 = str(val1)+'.0'
+                if (str(val2).isdigit() and MACROS.NUM_TYPE == "real"):
+                         val2 = str(val2)+'.0'
                 if node.value == "ADD":
                     to_return = val1 + val2
                 elif node.value == "SUB":
@@ -522,21 +521,36 @@ class EVM:
             else:
                 self._tmp_var_count+=1
                 to_return =  "tmp" + str(self._tmp_var_count)
-                if val1 in self._final_vars and val2 in self._final_vars and self._final_vars[val1] == 'bool' and self._final_vars[val2] == 'bool':
+                if (val1 in self._final_vars and self._final_vars[val1] == 'bool') or (val2 in self._final_vars and self._final_vars[val2] == 'bool'):
+                    if isinstance(val1, int):
+                        str_val1="false" if val1==0 else "true"
+                    else:
+                        str_val1=str(val1)
+                    if isinstance(val2, int):
+                        str_val2="false" if val2==0 else "true"
+                    else:
+                        str_val2=str(val2)
                     if node.value == "AND":
-                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":="+str(val1)+"&&"+str(val2)+";\n"
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":="+str_val1+"&&"+str_val2+";\n"
                     elif node.value == "OR":
-                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":="+str(val1)+"||"+str(val2)+";\n"
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":="+str_val1+"||"+str_val2+";\n"
                     self._final_vars[to_return] = 'bool'
                 else:
+                    if (str(val1).isdigit() and MACROS.NUM_TYPE == "real"):
+                         val1 = str(val1)+'.0'
+                    if (str(val2).isdigit() and MACROS.NUM_TYPE == "real"):
+                         val2 = str(val2)+'.0'
                     if node.value == "ADD":
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(val1)+","+str(val2)+");\n"
                     elif node.value == "SUB":
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(val1)+","+str(val2)+");\n"
+                        #print(f"{val1} {val2}")
+                        #print(f"{self._final_vars['path']}")
                     elif node.value == "AND":
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(val1)+","+str(val2)+");\n"
                     elif node.value == "OR":
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmor("+str(val1)+","+str(val2)+");\n"
+                        print(f"{val1}   {type(val1)}")
                     elif node.value == "MUL":
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmmul("+str(val1)+","+str(val2)+");\n"
                     elif node.value == "DIV":
@@ -555,6 +569,14 @@ class EVM:
             to_return = val << shift
             node.value = to_return
             node.children = []
+        elif node.value == "ACCOUNT_CODESIZE":
+            self._tmp_var_count+=1
+            to_return =  "tmp" + str(self._tmp_var_count)
+            to_boogie ="\ttmp"+str(self._tmp_var_count)+":=nondet(); //EXTCODESIZE\n"
+            self._final_vars[to_return] = 'uint256'
+            node.value = to_return
+            node.children = []
+            self._final_path.append(to_boogie)
         else:
             return str(node)
         return to_return
@@ -583,7 +605,10 @@ class EVM:
                     var_name = f"{self._storage_map[self._curr_contract][str(map_ID)]}[{sym_this}][{str(map_key)}]"
         else:
             var_name = f"{self._var_prefix}.{self._storage_map[self._curr_contract][str(node0.value)]}[{sym_this}]"
-        path="\t"+var_name+":=" + str(self.postorder_traversal(node1))+";\n\n"
+        path="\t"+var_name+":=" + str(self.postorder_traversal(node1))
+        if isinstance(node1.value,int) and MACROS.NUM_TYPE == "real":
+            path+=".0"
+        path+=";\n\n"
         self.add_new_vars(var_name)
         self._final_path.append(path)
         
@@ -619,17 +644,10 @@ class EVM:
             else:
                 path = "\tassume(!"+ var +");\n\n" 
         elif(self._final_vars[var]=='uint256'):
-            if (MACROS.NUM_TYPE=="int"):
-                if (isNotZero):
-                    path = "\tassume("+ var +"!=0);\n\n"
-                else:    
-                    path = "\tassume("+ var +"==0);\n\n"
-            elif (MACROS.NUM_TYPE=="real"):
-                if (isNotZero):
-                    path = "\tassume("+ var +"!=0.0);\n\n"
-                else:    
-                    path = "\tassume("+ var +"==0.0);\n\n"
-
+            if (isNotZero):
+                path = "\tassume("+ var +"!=Zero);\n\n"
+            else:    
+                path = "\tassume("+ var +"==Zero);\n\n"
         else:
             raise Exception("JUMPI stack[-1] is_not_zero error")
         self._final_path.append(path)
@@ -656,14 +674,13 @@ class EVM:
 
         self._output_file.write("""procedure straightline_code ()
 modifies """)
-        print(modified)
         for i in range(len(modified)-1):
             self._output_file.write(modified[i] + ", ")
         self._output_file.write(modified[-1] + ";\n")
         self._output_file.write("""{
-var tx_origin: address;
-var entry_contract: address;
-var BLOCKTIME: uint256;
+    var tx_origin: address;
+    var entry_contract: address;
+    var BLOCKTIME: uint256;
 """)
 
     '''write declared vars to Boogie'''
@@ -686,9 +703,9 @@ var BLOCKTIME: uint256;
             self._output_file.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
             for postcon in postcons:
                 # expression = postcon.strip(";")
-                print(postcon)
+                # print(postcon)
                 expression = name_substitution(self._curr_contract, postcon)
-                print(expression)
+                # print(expression)
                 # self._output_file.write("\tassert(" + postcon.strip().strip(";") + ");\n")
                 self._output_file.write("\tassert(" + expression + ");\n")
             self._output_file.write("\n")
@@ -849,7 +866,7 @@ def main():
         BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
 
     evm.write_global_vars()
-    BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
+    # BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs
     evm.write_declared_vars() # postcondition vars for Boogie proofs
 
