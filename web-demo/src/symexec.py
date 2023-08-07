@@ -42,6 +42,7 @@ EVM core trace analysis
 '''
 class EVM:
     from memory import recognize_32B_mask, mem_item_len, content_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR, memory_write
+    from utils  import name_substitution
     def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, var_prefix, non_static_calls): 
         self._stacks            = stacks  
         self._storage           = storage
@@ -709,15 +710,26 @@ modifies """)
     def write_declared_vars(self):
         declaration = self._postcondition.get(self._curr_contract, []).get(self._curr_function, []).get("declaration", [])
         for decl in declaration:
-            decl = decl.replace("this", self._curr_contract)
+            decl = decl.strip()
+            decl_name = re.search("var (.*):", decl)[0].strip('var').strip(':').strip()
+            print(decl_name)
+            decl_type = decl.strip('var').strip(':').strip(';').strip(decl_name).strip()
+            print(decl_type)
+
             self._output_file.write("\t" + decl + "\n")
         self._output_file.write("\n")
 
     '''write entry assignment to Boogie'''
     def write_entry_assignment(self):
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
-            asgmt = asgmt.replace("this", self._curr_contract).strip()
-            self._output_file.write("\t" + asgmt.strip() + "\n")
+            # asgmt = asgmt.replace("this", self._curr_contract).strip()
+            # asgmt = asgmt.replace(":=",)
+            asgmt = asgmt.strip()
+            asgmt = asgmt.strip(";")
+            print(self._var_prefix)
+            print(asgmt)
+            asgmt = name_substitution(self._var_prefix, asgmt)
+            self._output_file.write("\t" + asgmt.strip() + ";\n")
         self._output_file.write("\n")
     
     '''write entry postcondition to Boogie'''

@@ -442,12 +442,12 @@ def write_defvars(var_prefix):
     THEOREM = json.load(THEOREM_file)
     vars = THEOREM["def-vars"]
     for var in vars:
+        # rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
+        # expr = vars[var][1]
+        # rt = rt + "\t" + var + ":= " + name_substitution(var_prefix, expr) + ";\n"
+
         rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
-        # if (len(vars[var][0])!=0):
-        #     rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
-        # rt = rt + "\t" + var + ":= " + vars[var][1].replace("this", var_prefix) + ";\n"
         expr = vars[var][1]
-        print(expr)
         rt = rt + "\t" + var + ":= " + name_substitution(var_prefix, expr) + ";\n"
 
     # for var in vars:

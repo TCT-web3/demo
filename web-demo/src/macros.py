@@ -20,6 +20,7 @@ class MACROS:
     INVARIANTS      = {}
     ALL_VARS        = {"tx_origin": ""}
     DEF_VARS        = {}
+    DECL_VARS       = {}
 
 
 
