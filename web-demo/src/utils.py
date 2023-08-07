@@ -15,6 +15,7 @@ def get_init_vars(storage_info, abi_info, var_prefix):
 
     for contract in storage_info["contracts"]:
         elements = storage_info["contracts"][contract]["storage-layout"]["storage"]
+        var_prefix = contract[contract.find(":")+1:]
         for elmt in elements:
             label =  elmt["label"]
             t_type = elmt["type"]
@@ -441,8 +442,8 @@ def write_defvars(var_prefix):
     THEOREM = json.load(THEOREM_file)
     vars = THEOREM["def-vars"]
     for var in vars: 
-        if (len(vars[var][0])!=0):
-            rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
+        # if (len(vars[var][0])!=0):
+        #     rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
 
         rt = rt + "\t" + var + ":= " + vars[var][1].replace("this.", var_prefix) + ";\n"
     return(rt) 
@@ -455,10 +456,8 @@ def write_hypothesis(hypothesis, var_prefix):
     # hypothesis = hypothesis.replace("this", var_prefix)
     rt = "\n\t// hypothesis \n"
     for hypo in hypothesis:
-        # hypo = hypo.replace("this.", var_prefix)
-        out = name_substitution(var_prefix, hypo)
-        rt += "\tassume(" + out + ");\n" 
-        
+        rt += "\tassume(" + name_substitution(var_prefix, hypo) + ");\n" 
+        # rt += "\tassume(" + hypo + ");\n" 
     
     rt += "\n"
     return(rt)
@@ -510,7 +509,6 @@ def write_params(abi_info, var_prefix):
 
 
 def name_substitution(c_prefix, expression):
-
     parts = expression.split(" ")
     new_parts = []
     for elmt in parts:
@@ -536,8 +534,10 @@ def isfloat(num):
         return False
 
 def find_realname(var, c_prefix, defvars):
-    if var in MACROS.ALL_VARS.keys():
+    if var in MACROS.ALL_VARS.keys() or var in MACROS.DEF_VARS:
         return var
+    elif(in_allvars(var)):
+        return get_fullname(var)
     elif var in defvars.keys():
         # print(var)
         return find_realname(defvars[var][1], c_prefix, defvars)
@@ -547,23 +547,30 @@ def find_realname(var, c_prefix, defvars):
         var = var.replace("this", c_prefix)
         # return c_prefix
         return var
-    # elif (var[:var.find(".")] in defvars):
+    elif var.startswith('['):
+        # TODO: make it general
+        return "[" + find_realname(var[1:-1], c_prefix, defvars) + "]" 
     elif '.' in var:
         if(var in MACROS.ALL_VARS.keys()):
             return var
         to_sub = var[:var.find(".")]
         rest = var[var.find(".")+1:]
-        # print(var)
-        # print('to_sub', to_sub)
-        # print(rest)
-        # print(MACROS.ALL_VARS)
         # if (MACROS.VAR_TYPES[get_varname(to_sub)] == "address"):
-        # print('rest: ', rest)
+                # insert address before decoding rest
+        if('[' in rest):
+            map_name = rest[:rest.find('[')]
+            map_key = rest[rest.find('['):]
+            print("map name: "+map_name)
+            print("map key:  "+map_key)
+            return find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars)
+
+        print('to_sub ', to_sub)
+        print('rest: ', rest)
         if('[' in rest):
             return find_realname(rest, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'
         else:
             return get_fullname(rest)+'['+find_realname(to_sub, c_prefix, defvars)+']'
-        # else:
+        
     elif '[' in var:
         name = var[:var.find("[")]
         # print(name)
@@ -572,12 +579,9 @@ def find_realname(var, c_prefix, defvars):
         else:
             name_type = MACROS.ALL_VARS[get_fullname(name)]
         
-        if("[]" in name_type or name_type=="[address]"):
+        if("[int]" in name_type or name_type=="[address]"):
             # print("simplae array: ", var)
-            # if name in MACROS.ALL_VARS.keys():
             return var
-            # else:
-            # return get_fullname(var)
         else:
             # print(var)
             # print(name_type)
@@ -592,6 +596,11 @@ def find_realname(var, c_prefix, defvars):
     else:
         return var
 
+
+def in_allvars(name):
+    for var in MACROS.ALL_VARS:
+        if('.'+name in var):
+            return True
 
 def get_fullname(name):
     for var in MACROS.ALL_VARS:

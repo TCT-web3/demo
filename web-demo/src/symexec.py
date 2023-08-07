@@ -100,11 +100,6 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        # print(instr)
-        # if isinstance(PC, int) and opcode=="JUMPDEST": #and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  
-            # self.inspect("currstack")
-            # self.inspect("currmemory")
-            #sys.exit()
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             if (opcode=="CALL"):
                 self._non_static_calls.append("non-static")
@@ -167,21 +162,17 @@ class EVM:
                 self._non_static_calls[-1] = self._var_prefix
                 for contract in MACROS.INVARIANTS:
                     if (contract == dest_contract):
+                        # if (len(MACROS.INVARIANTS[dest_contract])>0):
                         self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
                         for inv in MACROS.INVARIANTS[dest_contract]:
-                            
                             inv = inv.replace("this", self._var_prefix)
-
-                            print(">>>>>", inv)
+                            # print(">>>>>", inv)
                             # expr = name_substitution(self._var_prefix, inv)
                             # print(">>>>>>>", expr)
 
                             self._final_path.append("\tassume("+inv+");\n")
                         self._final_path.append("\n")
 
-            # print("----AFTER----")
-            # self.inspect("currstack")
-            # self.inspect("currmemory")
             # sys.exit()
         elif instr[0]==("<"):
             # print(instr)
@@ -196,14 +187,16 @@ class EVM:
             if(len(self._non_static_calls)>0 and self._non_static_calls[-1] == "static"):
                 self._non_static_calls.pop()
             else:
+                # print(MACROS.INVARIANTS)
                 # for contract in MACROS.INVARIANTS:
                 #     if (contract == self._curr_contract):
                         # print(MACROS.INVARIANTS[contract])
+                # if (len(MACROS.INVARIANTS.get(self._curr_contract, []))>0):
                 self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
                 for inv in MACROS.INVARIANTS.get(self._curr_contract, []):
                     inv = inv.replace("this", self._var_prefix)
                     self._final_path.append("\tassert("+inv+");\n")
-                self._final_path.append("\n")
+                    self._final_path.append("\n")
 
             postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
             if postcons:
@@ -732,8 +725,6 @@ modifies """)
                 # expression = postcon.strip(";")
                 # print(postcon)
                 expression = name_substitution(self._curr_contract, postcon)
-                # print(expression)
-                # self._output_file.write("\tassert(" + postcon.strip().strip(";") + ");\n")
                 self._output_file.write("\tassert(" + expression + ");\n")
             self._output_file.write("\n")
 
@@ -877,6 +868,8 @@ def main():
     MACROS.NUM_TYPE  = get_numerical_type()
     MACROS.DEF_VARS  = get_defvars()
 
+
+
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX, [])
     evm._sym_this_addresses  = [SVT("tx_origin"),SVT("entry_contract")]
@@ -895,16 +888,15 @@ def main():
     evm.write_vars() # aux vars for Boogie Proofs
     evm.write_declared_vars() # postcondition vars for Boogie proofs
 
-    #BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
-
-    # name_substitution(get_init_var_prefix())
+    BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
+    BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
     # BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
 
-    evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs
-    #evm.write_entry_postcondition() # from AST file
-    #BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
+    evm.write_entry_assignment() # from AST file
+    evm.write_entry_postcondition() # from AST file
+    BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
  
 if __name__ == '__main__':
     main()
