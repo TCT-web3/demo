@@ -74,6 +74,25 @@ class EVM:
             #     self.write_vars()
             #     self.write_paths()
             #     sys.exit()
+            
+    def isAddress(self, operand):
+        if not isinstance(operand,str):
+            return False
+        i = operand.find('[');
+        name= operand[0:i] if i>=0 else operand
+
+        if name in self._final_vars:
+            t=self._final_vars[name]
+        else:
+            return False
+            
+        bracket_count = operand.count(']')
+        start = -1
+        for _ in range(bracket_count):
+            start = t.find(']', start + 1)
+            if start == -1:
+                return False
+        return t[start+1:].strip()=="address"
 
     '''run each EVM instruction with PC, operator, and operand'''        
     def run_instruction(self, instr, branch_taken):
@@ -542,6 +561,9 @@ class EVM:
                     elif node.value == "OR":
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":="+str_val1+"||"+str_val2+";\n"
                     self._final_vars[to_return] = 'bool'
+                elif  node.value == "SUB" and (self.isAddress(val1) or self.isAddress(val2)):
+                    to_boogie ="\ttmp"+str(self._tmp_var_count)+":=("+str(val1)+"!="+str(val2)+");\n"   
+                    self._final_vars[to_return] = 'bool'
                 else:
                     if (str(val1).isdigit() and MACROS.NUM_TYPE == "real"):
                          val1 = str(val1)+'.0'
@@ -550,9 +572,7 @@ class EVM:
                     if node.value == "ADD":
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmadd("+str(val1)+","+str(val2)+");\n"
                     elif node.value == "SUB":
-                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(val1)+","+str(val2)+");\n"
-                        #print(f"{val1} {val2}")
-                        #print(f"{self._final_vars['path']}")
+                        to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmsub("+str(val1)+","+str(val2)+");\n"    
                     elif node.value == "AND":
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":=evmand("+str(val1)+","+str(val2)+");\n"
                     elif node.value == "OR":
@@ -875,7 +895,7 @@ def main():
     evm.write_vars() # aux vars for Boogie Proofs
     evm.write_declared_vars() # postcondition vars for Boogie proofs
 
-    BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
+    #BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
     # name_substitution(get_init_var_prefix())
 
@@ -883,8 +903,8 @@ def main():
 
     evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs
-    evm.write_entry_postcondition() # from AST file
-    BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
+    #evm.write_entry_postcondition() # from AST file
+    #BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
  
 if __name__ == '__main__':
     main()
