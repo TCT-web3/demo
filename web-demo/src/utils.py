@@ -15,6 +15,7 @@ def get_init_vars(storage_info, abi_info, var_prefix):
 
     for contract in storage_info["contracts"]:
         elements = storage_info["contracts"][contract]["storage-layout"]["storage"]
+        var_prefix = contract[contract.find(":")+1:]
         for elmt in elements:
             label =  elmt["label"]
             t_type = elmt["type"]
