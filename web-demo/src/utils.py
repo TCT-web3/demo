@@ -444,8 +444,7 @@ def write_defvars(var_prefix):
     for var in vars: 
         # if (len(vars[var][0])!=0):
         #     rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
-
-        rt = rt + "\t" + var + ":= " + vars[var][1].replace("this.", var_prefix) + ";\n"
+        rt = rt + "\t" + var + ":= " + vars[var][1].replace("this", var_prefix) + ";\n"
     return(rt) 
 
         

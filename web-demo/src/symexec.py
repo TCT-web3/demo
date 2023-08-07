@@ -708,12 +708,14 @@ modifies """)
     def write_declared_vars(self):
         declaration = self._postcondition.get(self._curr_contract, []).get(self._curr_function, []).get("declaration", [])
         for decl in declaration:
+            decl = decl.replace("this", self._curr_contract)
             self._output_file.write("\t" + decl + "\n")
         self._output_file.write("\n")
 
     '''write entry assignment to Boogie'''
     def write_entry_assignment(self):
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
+            asgmt = asgmt.replace("this", self._curr_contract).strip()
             self._output_file.write("\t" + asgmt.strip() + "\n")
         self._output_file.write("\n")
     
