@@ -117,23 +117,23 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	var tmp32:  bool;
 	var tmp33:  bool;
 	var tmp34:  uint256;
-	var tmp35:  uint256;
-	var tmp36:  uint256;
+	var tmp35:  bool;
+	var tmp36:  bool;
 	var tmp37:  uint256;
-	var tmp38:  address;
+	var tmp38:  uint256;
 	var tmp39:  uint256;
 	var tmp40:  uint256;
-	var tmp41:  bool;
-	var tmp42:  bool;
-	var tmp43:  bool;
+	var tmp41:  address;
+	var tmp42:  uint256;
+	var tmp43:  uint256;
 	var tmp44:  bool;
-	var tmp45:  uint256;
+	var tmp45:  bool;
 	var tmp46:  bool;
 	var tmp47:  bool;
-	var tmp48:  address;
+	var tmp48:  uint256;
 	var tmp49:  bool;
 	var tmp50:  bool;
-	var tmp51:  bool;
+	var tmp51:  address;
 	var tmp52:  bool;
 	var tmp53:  bool;
 	var tmp54:  bool;
@@ -143,37 +143,37 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	var tmp58:  bool;
 	var tmp59:  bool;
 	var tmp60:  bool;
-	var tmp61:  uint256;
-	var tmp62:  uint256;
-	var tmp63:  uint256;
+	var tmp61:  bool;
+	var tmp62:  bool;
+	var tmp63:  bool;
 	var tmp64:  uint256;
-	var tmp65:  uint256;
+	var tmp65:  bool;
 	var tmp66:  bool;
-	var tmp67:  bool;
+	var tmp67:  uint256;
 	var tmp68:  uint256;
-	var tmp69:  bool;
+	var tmp69:  uint256;
 	var tmp70:  uint256;
-	var tmp71:  bool;
+	var tmp71:  uint256;
 	var tmp72:  bool;
-	var tmp73:  uint256;
-	var tmp74:  bool;
-	var tmp75:  uint256;
-	var tmp76:  bool;
+	var tmp73:  bool;
+	var tmp74:  uint256;
+	var tmp75:  bool;
+	var tmp76:  uint256;
 	var tmp77:  bool;
-	var tmp78:  uint256;
-	var tmp79:  bool;
+	var tmp78:  bool;
+	var tmp79:  uint256;
 	var tmp80:  bool;
 	var tmp81:  bool;
 	var tmp82:  uint256;
-	var tmp83:  uint256;
+	var tmp83:  bool;
 	var tmp84:  bool;
-	var tmp85:  bool;
+	var tmp85:  uint256;
 	var tmp86:  bool;
 	var tmp87:  uint256;
-	var tmp88:  uint256;
+	var tmp88:  bool;
 	var tmp89:  bool;
-	var tmp90:  bool;
-	var tmp91:  uint256;
+	var tmp90:  uint256;
+	var tmp91:  bool;
 	var tmp92:  bool;
 	var tmp93:  bool;
 	var tmp94:  bool;
@@ -199,68 +199,86 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	var tmp114:  uint256;
 	var tmp115:  bool;
 	var tmp116:  bool;
-	var tmp117:  bool;
-	var tmp118:  uint256;
-	var tmp119:  uint256;
+	var tmp117:  uint256;
+	var tmp118:  bool;
+	var tmp119:  bool;
 	var tmp120:  bool;
-	var tmp121:  bool;
-	var tmp122:  bool;
+	var tmp121:  uint256;
+	var tmp122:  uint256;
 	var tmp123:  bool;
 	var tmp124:  bool;
 	var tmp125:  bool;
-	var tmp126:  bool;
-	var tmp127:  bool;
+	var tmp126:  uint256;
+	var tmp127:  uint256;
 	var tmp128:  bool;
-	var tmp129:  uint256;
+	var tmp129:  bool;
 	var tmp130:  bool;
-	var tmp131:  bool;
+	var tmp131:  uint256;
 	var tmp132:  uint256;
 	var tmp133:  bool;
 	var tmp134:  bool;
-	var tmp135:  uint256;
+	var tmp135:  bool;
+	var tmp136:  bool;
+	var tmp137:  bool;
+	var tmp138:  bool;
+	var tmp139:  bool;
+	var tmp140:  bool;
+	var tmp141:  bool;
+	var tmp142:  uint256;
+	var tmp143:  bool;
+	var tmp144:  bool;
+	var tmp145:  uint256;
+	var tmp146:  bool;
+	var tmp147:  bool;
+	var tmp148:  uint256;
 
-	var factory, pair: address;
-	var tokenA, tokenB: address;
+	// declare-vars
+	var decl_factory: address;
+
 
 	// def-vars
-	factory:= UniswapV2Router.factory[entry_contract];
+	var pair:  address;
+	var tokenB:  address;
+	var tokenA:  address;
+	var factory:  address;
+	factory:=UniswapV2Router.factory[entry_contract];
 	tokenA:= path[0];
 	tokenB:= path[1];
 	pair:= UniswapV2Factory.getPair[factory][tokenA][tokenB];
 
 	// hypothesis 
-	assume(to!=pair);
-	assume(tx_origin!=pair);
-	assume(UniswapV2Factory.swapFeeRate[factory]==0.0);
-	assume(UniswapV2Factory.swapFeeRate[pair]==0.0);
-	assume(UniswapV2Pair.reserve0[pair]==UniswapV2ERC20.balanceOf[path[1]][pair]);
-	assume(UniswapV2Pair.reserve1[pair]==UniswapV2ERC20.balanceOf[path[0]][pair]);
-	assume(FancyToken.totalSupply[path[0]]<TwoE255);
-	assume(FancyToken.totalSupply[path[1]]<TwoE255);
-	assume(UniswapV2Pair.token0[pair]==path[1]);
-	assume(UniswapV2Pair.token1[pair]==path[0]);
+	assume(to != pair);
+	assume(tx_origin != pair);
+	assume(UniswapV2Factory.swapFeeRate[factory] == 0.0);
+	assume(UniswapV2Factory.swapFeeRate[pair] == 0.0);
+	assume(UniswapV2Pair.reserve0[pair] == UniswapV2ERC20.balanceOf[path[0]][pair]);
+	assume(UniswapV2Pair.reserve1[pair] == UniswapV2ERC20.balanceOf[path[1]][pair]);
+	assume(FancyToken.totalSupply[path[0]] < TwoE255);
+	assume(FancyToken.totalSupply[path[1]] < TwoE255);
+	assume(UniswapV2Pair.token0[pair] == path[0]);
+	assume(UniswapV2Pair.token1[pair] == path[1]);
 
 	tmp1:=(path[0]!=path[1]);
 	assume(tmp1);
 
 	tmp2:= (path[0]<path[1]);
-	assume(!tmp2);
+	assume(tmp2);
 
-	tmp3:=(path[1]!=0);
+	tmp3:=(path[0]!=0);
 	assume(tmp3);
 
 	tmp4:=UniswapV2Factory.getPair[entry_contract][path[0]][path[1]];
-	tmp5:= (path[0]==path[1]);
-	assume(!tmp5);
+	tmp5:= (path[0]==path[0]);
+	assume(tmp5);
 
 	tmp6:= (amountIn>0.0);
 	assume(tmp6);
 
-	tmp7:= (UniswapV2Pair.reserve1[tmp4]>0.0);
+	tmp7:= (UniswapV2Pair.reserve0[tmp4]>0.0);
 	tmp8:=!tmp7;
 	assume(!tmp8);
 
-	tmp9:= (UniswapV2Pair.reserve0[tmp4]>0.0);
+	tmp9:= (UniswapV2Pair.reserve1[tmp4]>0.0);
 	assume(tmp9);
 
 	tmp10:=evmsub(1000.0,UniswapV2Factory.swapFeeRate[UniswapV2Router.factory[entry_contract]]);
@@ -276,15 +294,15 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	assume(tmp17);
 
 	tmp18:=!tmp17;
-	tmp19:=evmmul(tmp14,UniswapV2Pair.reserve0[tmp4]);
+	tmp19:=evmmul(tmp14,UniswapV2Pair.reserve1[tmp4]);
 	tmp20:=evmdiv(tmp19,tmp14);
-	tmp21:= (UniswapV2Pair.reserve0[tmp4]==tmp20);
+	tmp21:= (UniswapV2Pair.reserve1[tmp4]==tmp20);
 	tmp22:=tmp18||tmp21;
 	assume(tmp22);
 
 	tmp23:=!tmp22;
-	tmp24:=evmmul(UniswapV2Pair.reserve1[tmp4],1000.0);
-	tmp25:=evmdiv(tmp24,UniswapV2Pair.reserve1[tmp4]);
+	tmp24:=evmmul(UniswapV2Pair.reserve0[tmp4],1000.0);
+	tmp25:=evmdiv(tmp24,UniswapV2Pair.reserve0[tmp4]);
 	tmp26:= (1000.0==tmp25);
 	tmp27:=tmp23||tmp26;
 	assume(tmp27);
@@ -305,148 +323,147 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	assume(forall x:address :: Zero <= FancyToken.balanceOf[path[0]][x] && FancyToken.balanceOf[path[0]][x] <= FancyToken.totalSupply[path[0]]);
 	assume(sum(FancyToken.balanceOf[path[0]]) == FancyToken.totalSupply[path[0]]);
 
-	tmp34:=FancyToken.allowance[path[0]][tx_origin][entry_contract];
-	tmp35:=evmsub(tmp34,amountIn);
-	FancyToken.allowance[path[0]][tx_origin][entry_contract]:=tmp35;
+	tmp34:=FancyToken.balanceOf[path[0]][tx_origin];
+	tmp35:= (tmp34<amountIn);
+	tmp36:=!tmp35;
+	assume(tmp36);
 
-	tmp36:=FancyToken.balanceOf[path[0]][tx_origin];
-assume(tmp36>=amountIn);
-	tmp37:=evmsub(tmp36,amountIn);
-	FancyToken.balanceOf[path[0]][tx_origin]:=tmp37;
+	tmp37:=FancyToken.allowance[path[0]][tx_origin][entry_contract];
+	tmp38:=evmsub(tmp37,amountIn);
+	FancyToken.allowance[path[0]][tx_origin][entry_contract]:=tmp38;
 
-	tmp38:=UniswapV2Factory.getPair[factory][path[0]][path[1]];
-	tmp39:=FancyToken.balanceOf[path[0]][tmp38];
-	tmp40:=evmadd(tmp39,amountIn);
-	FancyToken.balanceOf[path[0]][tmp38]:=tmp40;
+	tmp39:=FancyToken.balanceOf[path[0]][tx_origin];
+	tmp40:=evmsub(tmp39,amountIn);
+	FancyToken.balanceOf[path[0]][tx_origin]:=tmp40;
 
-	// (post) insert invariant of FancyToken
+	tmp41:=UniswapV2Factory.getPair[factory][path[0]][path[1]];
+	tmp42:=FancyToken.balanceOf[path[0]][tmp41];
+	tmp43:=evmadd(tmp42,amountIn);
+	FancyToken.balanceOf[path[0]][tmp41]:=tmp43;
+
 	assert(forall x:address :: Zero <= FancyToken.balanceOf[path[0]][x] && FancyToken.balanceOf[path[0]][x] <= FancyToken.totalSupply[path[0]]);
 	assert(sum(FancyToken.balanceOf[path[0]]) == FancyToken.totalSupply[path[0]]);
 
-	tmp41:=(path[0]!=path[1]);
-	assume(tmp41);
+	tmp44:=(path[0]!=path[1]);
+	assume(tmp44);
 
-	tmp42:= (path[0]<path[1]);
-	assume(!tmp42);
+	tmp45:= (path[0]<path[1]);
+	assume(tmp45);
 
-	tmp43:=(path[1]!=0);
-	assume(tmp43);
+	tmp46:=(path[0]!=0);
+	assume(tmp46);
 
-	tmp44:= (path[0]==path[1]);
-	assume(!tmp44);
-
-	tmp45:=nondet(); //EXTCODESIZE
-	tmp46:=tmp45==Zero;
-	tmp47:=!tmp46;
+	tmp47:= (path[0]==path[0]);
 	assume(tmp47);
 
-	tmp48:=UniswapV2Factory.getPair[entry_contract][path[0]][path[1]];
-	tmp49:= (UniswapV2Pair.unlocked[tmp48]==1.0);
-	assume(tmp49);
-
-	UniswapV2Pair.unlocked[tmp48]:=0.0;
-
-	tmp50:= (tmp31>0.0);
+	tmp48:=nondet(); //EXTCODESIZE
+	tmp49:=tmp48==Zero;
+	tmp50:=!tmp49;
 	assume(tmp50);
 
-	assume(tmp50);
+	tmp51:=UniswapV2Factory.getPair[entry_contract][path[0]][path[1]];
+	tmp52:= (UniswapV2Pair.unlocked[tmp51]==1.0);
+	assume(tmp52);
 
-	tmp51:= (tmp31<UniswapV2Pair.reserve0[tmp48]);
-	tmp52:=!tmp51;
-	assume(!tmp52);
+	UniswapV2Pair.unlocked[tmp51]:=0.0;
 
-	tmp53:= (0.0<UniswapV2Pair.reserve1[tmp48]);
+	tmp53:= (tmp31>0.0);
 	assume(tmp53);
 
-	tmp54:= (to==UniswapV2Pair.token0[tmp48]);
+	tmp54:= (0.0<UniswapV2Pair.reserve0[tmp51]);
 	tmp55:=!tmp54;
-	tmp56:=!tmp55;
-	assume(!tmp56);
+	assume(!tmp55);
 
-	tmp57:= (to==UniswapV2Pair.token1[tmp48]);
+	tmp56:= (tmp31<UniswapV2Pair.reserve1[tmp51]);
+	assume(tmp56);
+
+	tmp57:= (to==UniswapV2Pair.token0[tmp51]);
 	tmp58:=!tmp57;
-	assume(tmp58);
+	tmp59:=!tmp58;
+	assume(!tmp59);
 
-	tmp59:= (tmp31>0.0);
-	tmp60:=!tmp59;
-	assume(!tmp60);
+	tmp60:= (to==UniswapV2Pair.token1[tmp51]);
+	tmp61:=!tmp60;
+	assume(tmp61);
+
+	tmp62:= (tmp31>0.0);
+	tmp63:=!tmp62;
+	assume(!tmp63);
 
 	// insert invariant of FancyToken
 	assume(forall x:address :: Zero <= FancyToken.balanceOf[path[1]][x] && FancyToken.balanceOf[path[1]][x] <= FancyToken.totalSupply[path[1]]);
 	assume(sum(FancyToken.balanceOf[path[1]]) == FancyToken.totalSupply[path[1]]);
 
-	tmp61:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp48]][tmp48];
-assume(tmp61>=tmp31);
-	tmp62:=evmsub(tmp61,tmp31);
-	FancyToken.balanceOf[UniswapV2Pair.token0[tmp48]][tmp48]:=tmp62;
+	tmp64:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp51]][tmp51];
+	tmp65:= (tmp64<tmp31);
+	tmp66:=!tmp65;
+	assume(tmp66);
 
-	tmp63:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp48]][to];
-	tmp64:=evmadd(tmp63,tmp31);
-	FancyToken.balanceOf[UniswapV2Pair.token0[tmp48]][to]:=tmp64;
+	tmp67:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp51]][tmp51];
+	tmp68:=evmsub(tmp67,tmp31);
+	FancyToken.balanceOf[UniswapV2Pair.token0[tmp51]][tmp51]:=tmp68;
 
-	// (post) insert invariant of FancyToken
+	tmp69:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp51]][to];
+	tmp70:=evmadd(tmp69,tmp31);
+	FancyToken.balanceOf[UniswapV2Pair.token0[tmp51]][to]:=tmp70;
+
 	assert(forall x:address :: Zero <= FancyToken.balanceOf[path[1]][x] && FancyToken.balanceOf[path[1]][x] <= FancyToken.totalSupply[path[1]]);
 	assert(sum(FancyToken.balanceOf[path[1]]) == FancyToken.totalSupply[path[1]]);
 
-	tmp65:=evmsub(UniswapV2Pair.reserve0[tmp48],tmp31);
-	tmp66:= (tmp65>UniswapV2Pair.reserve0[tmp48]);
-	tmp67:=!tmp66;
-	assume(tmp67);
 
-	tmp68:=FancyToken.balanceOf[tmp48][tmp48];
-	tmp69:= (tmp68>tmp65);
-	assume(!tmp69);
+	tmp71:=evmsub(UniswapV2Pair.reserve0[tmp51],0.0);
+	tmp72:= (tmp71>UniswapV2Pair.reserve0[tmp51]);
+	tmp73:=!tmp72;
+	assume(tmp73);
 
-	tmp70:=evmsub(UniswapV2Pair.reserve1[tmp48],0.0);
-	tmp71:= (tmp70>UniswapV2Pair.reserve1[tmp48]);
-	tmp72:=!tmp71;
-	assume(tmp72);
+	tmp74:=FancyToken.balanceOf[tmp51][tmp51];
+	tmp75:= (tmp74>tmp71);
+	assume(tmp75);
 
-	tmp73:=FancyToken.balanceOf[tmp48][tmp48];
-	tmp74:= (tmp73>tmp70);
-	assume(tmp74);
+	tmp76:=evmsub(UniswapV2Pair.reserve0[tmp51],0.0);
+	tmp77:= (tmp76>UniswapV2Pair.reserve0[tmp51]);
+	tmp78:=!tmp77;
+	assume(tmp78);
 
-	tmp75:=evmsub(UniswapV2Pair.reserve1[tmp48],0.0);
-	tmp76:= (tmp75>UniswapV2Pair.reserve1[tmp48]);
-	tmp77:=!tmp76;
-	assume(tmp77);
-
-	tmp78:=evmsub(tmp73,tmp75);
-	tmp79:= (tmp78>tmp73);
-	tmp80:=!tmp79;
-	assume(tmp80);
-
-	tmp81:= (tmp78>0.0);
+	tmp79:=evmsub(tmp74,tmp76);
+	tmp80:= (tmp79>tmp74);
+	tmp81:=!tmp80;
 	assume(tmp81);
 
-	tmp82:=evmmul(0.0,UniswapV2Pair.swapFeeRate[tmp48]);
-	tmp83:=evmdiv(tmp82,0.0);
-	tmp84:= (UniswapV2Pair.swapFeeRate[tmp48]==tmp83);
-	tmp85:=true||tmp84;
-	assume(tmp85);
+	tmp82:=evmsub(UniswapV2Pair.reserve1[tmp51],tmp31);
+	tmp83:= (tmp82>UniswapV2Pair.reserve1[tmp51]);
+	tmp84:=!tmp83;
+	assume(tmp84);
 
-	tmp86:=!tmp85;
-	tmp87:=evmmul(tmp68,1000.0);
-	tmp88:=evmdiv(tmp87,tmp68);
-	tmp89:= (1000.0==tmp88);
-	tmp90:=tmp86||tmp89;
-	assume(tmp90);
+	tmp85:=FancyToken.balanceOf[tmp51][tmp51];
+	tmp86:= (tmp85>tmp82);
+	assume(tmp86);
 
-	tmp91:=evmsub(tmp87,tmp82);
-	tmp92:= (tmp91>tmp87);
-	tmp93:=!tmp92;
+	tmp87:=evmsub(UniswapV2Pair.reserve1[tmp51],tmp31);
+	tmp88:= (tmp87>UniswapV2Pair.reserve1[tmp51]);
+	tmp89:=!tmp88;
+	assume(tmp89);
+
+	tmp90:=evmsub(tmp85,tmp87);
+	tmp91:= (tmp90>tmp85);
+	tmp92:=!tmp91;
+	assume(tmp92);
+
+	tmp93:= (tmp79>0.0);
+	assume(tmp93);
+
 	assume(tmp93);
 
 	tmp94:=!tmp93;
-	tmp95:=evmmul(tmp78,UniswapV2Pair.swapFeeRate[tmp48]);
-	tmp96:=evmdiv(tmp95,tmp78);
-	tmp97:= (UniswapV2Pair.swapFeeRate[tmp48]==tmp96);
+	tmp95:=evmmul(tmp79,UniswapV2Pair.swapFeeRate[tmp51]);
+	tmp96:=evmdiv(tmp95,tmp79);
+	tmp97:= (UniswapV2Pair.swapFeeRate[tmp51]==tmp96);
 	tmp98:=tmp94||tmp97;
 	assume(tmp98);
 
 	tmp99:=!tmp98;
-	tmp100:=evmmul(tmp73,1000.0);
-	tmp101:=evmdiv(tmp100,tmp73);
+	tmp100:=evmmul(tmp74,1000.0);
+	tmp101:=evmdiv(tmp100,tmp74);
 	tmp102:= (1000.0==tmp101);
 	tmp103:=tmp99||tmp102;
 	assume(tmp103);
@@ -457,63 +474,80 @@ assume(tmp61>=tmp31);
 	assume(tmp106);
 
 	tmp107:=!tmp106;
-	tmp108:=evmmul(UniswapV2Pair.reserve0[tmp48],UniswapV2Pair.reserve1[tmp48]);
-	tmp109:=evmdiv(tmp108,UniswapV2Pair.reserve0[tmp48]);
-	tmp110:= (UniswapV2Pair.reserve1[tmp48]==tmp109);
+	tmp108:=evmmul(tmp90,UniswapV2Pair.swapFeeRate[tmp51]);
+	tmp109:=evmdiv(tmp108,tmp90);
+	tmp110:= (UniswapV2Pair.swapFeeRate[tmp51]==tmp109);
 	tmp111:=tmp107||tmp110;
 	assume(tmp111);
 
 	tmp112:=!tmp111;
-	tmp113:=evmmul(tmp108,1000000.0);
-	tmp114:=evmdiv(tmp113,tmp108);
-	tmp115:= (1000000.0==tmp114);
+	tmp113:=evmmul(tmp85,1000.0);
+	tmp114:=evmdiv(tmp113,tmp85);
+	tmp115:= (1000.0==tmp114);
 	tmp116:=tmp112||tmp115;
 	assume(tmp116);
 
-	tmp117:=!tmp116;
-	tmp118:=evmmul(tmp91,tmp104);
-	tmp119:=evmdiv(tmp118,tmp91);
-	tmp120:= (tmp104==tmp119);
-	tmp121:=tmp117||tmp120;
-	assume(tmp121);
+	tmp117:=evmsub(tmp113,tmp108);
+	tmp118:= (tmp117>tmp113);
+	tmp119:=!tmp118;
+	assume(tmp119);
 
-	tmp122:= (tmp118<tmp113);
-	tmp123:=!tmp122;
-	assume(tmp123);
+	tmp120:=!tmp119;
+	tmp121:=evmmul(UniswapV2Pair.reserve0[tmp51],UniswapV2Pair.reserve1[tmp51]);
+	tmp122:=evmdiv(tmp121,UniswapV2Pair.reserve0[tmp51]);
+	tmp123:= (UniswapV2Pair.reserve1[tmp51]==tmp122);
+	tmp124:=tmp120||tmp123;
+	assume(tmp124);
 
-	tmp124:= (tmp68>5192296858534827628530496329220095.0);
 	tmp125:=!tmp124;
-	tmp126:=!tmp125;
-	assume(!tmp126);
+	tmp126:=evmmul(tmp121,1000000.0);
+	tmp127:=evmdiv(tmp126,tmp121);
+	tmp128:= (1000000.0==tmp127);
+	tmp129:=tmp125||tmp128;
+	assume(tmp129);
 
-	tmp127:= (tmp73>5192296858534827628530496329220095.0);
-	tmp128:=!tmp127;
-	assume(tmp128);
-
-	tmp129:=evmadd(UniswapV2Pair.reserve0[tmp48],0.0);
-	tmp130:= (UniswapV2Pair.reserve0[tmp48]>tmp129);
-	tmp131:=!tmp130;
-	assume(tmp131);
-
-	tmp132:=evmadd(UniswapV2Pair.reserve1[tmp48],0.0);
-	tmp133:= (UniswapV2Pair.reserve1[tmp48]>tmp132);
-	tmp134:=!tmp133;
+	tmp130:=!tmp129;
+	tmp131:=evmmul(tmp104,tmp117);
+	tmp132:=evmdiv(tmp131,tmp104);
+	tmp133:= (tmp117==tmp132);
+	tmp134:=tmp130||tmp133;
 	assume(tmp134);
 
-	UniswapV2Pair.reserve0[tmp48]:=tmp68;
+	tmp135:= (tmp131<tmp126);
+	tmp136:=!tmp135;
+	assume(tmp136);
 
-	UniswapV2Pair.reserve1[tmp48]:=tmp73;
+	tmp137:= (tmp74>5192296858534827628530496329220095.0);
+	tmp138:=!tmp137;
+	tmp139:=!tmp138;
+	assume(!tmp139);
 
-	tmp135:=evmmod(BLOCKTIME,4294967296.0);
-	UniswapV2Pair.blockTimestampLast[tmp48]:=tmp135;
+	tmp140:= (tmp85>5192296858534827628530496329220095.0);
+	tmp141:=!tmp140;
+	assume(tmp141);
 
-	UniswapV2Pair.unlocked[tmp48]:=1.0;
+	tmp142:=evmadd(UniswapV2Pair.reserve0[tmp51],0.0);
+	tmp143:= (UniswapV2Pair.reserve0[tmp51]>tmp142);
+	tmp144:=!tmp143;
+	assume(tmp144);
 
-	// (post) insert invariant of UniswapV2Pair
+	tmp145:=evmadd(UniswapV2Pair.reserve1[tmp51],0.0);
+	tmp146:= (UniswapV2Pair.reserve1[tmp51]>tmp145);
+	tmp147:=!tmp146;
+	assume(tmp147);
+
+	UniswapV2Pair.reserve0[tmp51]:=tmp74;
+
+	UniswapV2Pair.reserve1[tmp51]:=tmp85;
+
+	tmp148:=evmmod(BLOCKTIME,4294967296.0);
+	UniswapV2Pair.blockTimestampLast[tmp51]:=tmp148;
+
+	UniswapV2Pair.unlocked[tmp51]:=1.0;
+
 	factory:=UniswapV2Router.factory[entry_contract];
 	pair:= UniswapV2Factory.getPair[factory][tokenA][tokenB];
 
 	// (post) insert postcondition of swapExactTokensForTokens
-	assert(old(UniswapV2ERC20.balanceOf[path[0]][pair])*old(UniswapV2ERC20.balanceOf[path[1]][pair])==UniswapV2ERC20.balanceOf[path[0]][pair]*UniswapV2ERC20.balanceOf[path[1]][pair]);
-//assert(false);
+	assert( old( UniswapV2ERC20.balanceOf[path[0]][pair] ) * old( UniswapV2ERC20.balanceOf[path[1]][pair] ) ==  UniswapV2ERC20.balanceOf[path[0]][pair] * UniswapV2ERC20.balanceOf[path[1]][pair] );
 }
