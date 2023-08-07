@@ -81,11 +81,6 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        # print(instr)
-        # if isinstance(PC, int) and opcode=="JUMPDEST": #and (PC>=10260 and PC <= 10265): # and self._stacks[-1][-1].value == 0x204): #  
-            # self.inspect("currstack")
-            # self.inspect("currmemory")
-            #sys.exit()
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             if (opcode=="CALL"):
                 self._non_static_calls.append("non-static")
@@ -149,20 +144,17 @@ class EVM:
                 self._non_static_calls[-1] = self._var_prefix
                 for contract in MACROS.INVARIANTS:
                     if (contract == dest_contract):
-                        if (len(MACROS.INVARIANTS[dest_contract])>0):
-                            self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
-                            for inv in MACROS.INVARIANTS[dest_contract]:
-                                inv = inv.replace("this", self._var_prefix)
-                                # print(">>>>>", inv)
-                                # expr = name_substitution(self._var_prefix, inv)
-                                # print(">>>>>>>", expr)
+                        # if (len(MACROS.INVARIANTS[dest_contract])>0):
+                        self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
+                        for inv in MACROS.INVARIANTS[dest_contract]:
+                            inv = inv.replace("this", self._var_prefix)
+                            # print(">>>>>", inv)
+                            # expr = name_substitution(self._var_prefix, inv)
+                            # print(">>>>>>>", expr)
 
-                                self._final_path.append("\tassume("+inv+");\n")
-                            self._final_path.append("\n")
+                            self._final_path.append("\tassume("+inv+");\n")
+                        self._final_path.append("\n")
 
-            # print("----AFTER----")
-            # self.inspect("currstack")
-            # self.inspect("currmemory")
             # sys.exit()
         elif instr[0]==("<"):
             # print(instr)
@@ -177,7 +169,7 @@ class EVM:
             if(len(self._non_static_calls)>0 and self._non_static_calls[-1] == "static"):
                 self._non_static_calls.pop()
             else:
-                print(MACROS.INVARIANTS)
+                # print(MACROS.INVARIANTS)
                 # for contract in MACROS.INVARIANTS:
                 #     if (contract == self._curr_contract):
                         # print(MACROS.INVARIANTS[contract])
@@ -841,6 +833,8 @@ def main():
     MACROS.NUM_TYPE  = get_numerical_type()
     MACROS.DEF_VARS  = get_defvars()
 
+
+
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX, [])
     evm._sym_this_addresses  = [SVT("tx_origin"),SVT("entry_contract")]
@@ -860,10 +854,10 @@ def main():
     evm.write_declared_vars() # postcondition vars for Boogie proofs
 
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
-    
-    # name_substitution(get_init_var_prefix())
 
     # BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
+    print("HERE:\n")
+    print(MACROS.ALL_VARS)
 
     # evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs
