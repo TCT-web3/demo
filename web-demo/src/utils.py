@@ -443,8 +443,8 @@ def write_defvars(var_prefix):
     THEOREM = json.load(THEOREM_file)
     vars = THEOREM["def-vars"]
     for var in vars: 
-        if (len(vars[var][0])!=0):
-            rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
+        # if (len(vars[var][0])!=0):
+        #     rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
 
         rt = rt + "\t" + var + ":= " + vars[var][1].replace("this.", var_prefix) + ";\n"
     return(rt) 
@@ -457,10 +457,8 @@ def write_hypothesis(hypothesis, var_prefix):
     # hypothesis = hypothesis.replace("this", var_prefix)
     rt = "\n\t// hypothesis \n"
     for hypo in hypothesis:
-        # hypo = hypo.replace("this.", var_prefix)
-        out = name_substitution(var_prefix, hypo)
-        rt += "\tassume(" + out + ");\n" 
-        
+        rt += "\tassume(" + name_substitution(var_prefix, hypo) + ");\n" 
+        # rt += "\tassume(" + hypo + ");\n" 
     
     rt += "\n"
     return(rt)
@@ -512,7 +510,6 @@ def write_params(abi_info, var_prefix):
 
 
 def name_substitution(c_prefix, expression):
-
     parts = expression.split(" ")
     new_parts = []
     for elmt in parts:
@@ -538,7 +535,7 @@ def isfloat(num):
         return False
 
 def find_realname(var, c_prefix, defvars):
-    if var in MACROS.ALL_VARS.keys():
+    if var in MACROS.ALL_VARS.keys() or var in MACROS.DEF_VARS:
         return var
     elif var in defvars.keys():
         # print(var)
@@ -555,10 +552,6 @@ def find_realname(var, c_prefix, defvars):
             return var
         to_sub = var[:var.find(".")]
         rest = var[var.find(".")+1:]
-        # print(var)
-        # print('to_sub', to_sub)
-        # print(rest)
-        # print(MACROS.ALL_VARS)
         # if (MACROS.VAR_TYPES[get_varname(to_sub)] == "address"):
         # print('rest: ', rest)
         if('[' in rest):
@@ -574,7 +567,7 @@ def find_realname(var, c_prefix, defvars):
         else:
             name_type = MACROS.ALL_VARS[get_fullname(name)]
         
-        if("[]" in name_type or name_type=="[address]"):
+        if("[int]" in name_type or name_type=="[address]"):
             # print("simplae array: ", var)
             # if name in MACROS.ALL_VARS.keys():
             return var

@@ -870,11 +870,10 @@ def main():
     evm.write_vars() # aux vars for Boogie Proofs
     evm.write_declared_vars() # postcondition vars for Boogie proofs
 
+    BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
     # BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
-    print("HERE:\n")
-    print(MACROS.ALL_VARS)
 
     # evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs
