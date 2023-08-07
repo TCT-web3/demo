@@ -705,8 +705,6 @@ modifies """)
                 # expression = postcon.strip(";")
                 # print(postcon)
                 expression = name_substitution(self._curr_contract, postcon)
-                # print(expression)
-                # self._output_file.write("\tassert(" + postcon.strip().strip(";") + ");\n")
                 self._output_file.write("\tassert(" + expression + ");\n")
             self._output_file.write("\n")
 
@@ -875,8 +873,8 @@ def main():
 
     # BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
 
-    # evm.write_entry_assignment() # from AST file
     evm.write_paths() # codegen for Boogie proofs
+    evm.write_entry_assignment() # from AST file
     evm.write_entry_postcondition() # from AST file
     BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
  

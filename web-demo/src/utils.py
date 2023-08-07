@@ -537,6 +537,8 @@ def isfloat(num):
 def find_realname(var, c_prefix, defvars):
     if var in MACROS.ALL_VARS.keys() or var in MACROS.DEF_VARS:
         return var
+    elif(in_allvars(var)):
+        return get_fullname(var)
     elif var in defvars.keys():
         # print(var)
         return find_realname(defvars[var][1], c_prefix, defvars)
@@ -546,19 +548,30 @@ def find_realname(var, c_prefix, defvars):
         var = var.replace("this", c_prefix)
         # return c_prefix
         return var
-    # elif (var[:var.find(".")] in defvars):
+    elif var.startswith('['):
+        # TODO: make it general
+        return "[" + find_realname(var[1:-1], c_prefix, defvars) + "]" 
     elif '.' in var:
         if(var in MACROS.ALL_VARS.keys()):
             return var
         to_sub = var[:var.find(".")]
         rest = var[var.find(".")+1:]
         # if (MACROS.VAR_TYPES[get_varname(to_sub)] == "address"):
-        # print('rest: ', rest)
+                # insert address before decoding rest
+        if('[' in rest):
+            map_name = rest[:rest.find('[')]
+            map_key = rest[rest.find('['):]
+            print("map name: "+map_name)
+            print("map key:  "+map_key)
+            return find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars)
+
+        print('to_sub ', to_sub)
+        print('rest: ', rest)
         if('[' in rest):
             return find_realname(rest, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'
         else:
             return get_fullname(rest)+'['+find_realname(to_sub, c_prefix, defvars)+']'
-        # else:
+        
     elif '[' in var:
         name = var[:var.find("[")]
         # print(name)
@@ -569,10 +582,7 @@ def find_realname(var, c_prefix, defvars):
         
         if("[int]" in name_type or name_type=="[address]"):
             # print("simplae array: ", var)
-            # if name in MACROS.ALL_VARS.keys():
             return var
-            # else:
-            # return get_fullname(var)
         else:
             # print(var)
             # print(name_type)
@@ -587,6 +597,11 @@ def find_realname(var, c_prefix, defvars):
     else:
         return var
 
+
+def in_allvars(name):
+    for var in MACROS.ALL_VARS:
+        if('.'+name in var):
+            return True
 
 def get_fullname(name):
     for var in MACROS.ALL_VARS:
