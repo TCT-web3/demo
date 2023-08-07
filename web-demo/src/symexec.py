@@ -42,6 +42,7 @@ EVM core trace analysis
 '''
 class EVM:
     from memory import recognize_32B_mask, mem_item_len, content_item_len, handle_MLOAD, handle_MSTORE, handle_AND, handle_OR, memory_write
+    from utils  import name_substitution
     def __init__(self, stacks, storage, storage_map, memories, output_file, final_path, final_vars, curr_contract, curr_function, call_stack, abi_info, var_prefix, non_static_calls): 
         self._stacks            = stacks  
         self._storage           = storage
@@ -165,11 +166,10 @@ class EVM:
                         # if (len(MACROS.INVARIANTS[dest_contract])>0):
                         self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
                         for inv in MACROS.INVARIANTS[dest_contract]:
-                            inv = inv.replace("this", self._var_prefix)
+                            # inv = inv.replace("this", self._var_prefix)
                             # print(">>>>>", inv)
-                            # expr = name_substitution(self._var_prefix, inv)
+                            inv = name_substitution(self._var_prefix, inv)
                             # print(">>>>>>>", expr)
-
                             self._final_path.append("\tassume("+inv+");\n")
                         self._final_path.append("\n")
 
@@ -192,11 +192,13 @@ class EVM:
                 #     if (contract == self._curr_contract):
                         # print(MACROS.INVARIANTS[contract])
                 # if (len(MACROS.INVARIANTS.get(self._curr_contract, []))>0):
-                self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
+                # self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
                 for inv in MACROS.INVARIANTS.get(self._curr_contract, []):
-                    inv = inv.replace("this", self._var_prefix)
-                    self._final_path.append("\tassert("+inv+");\n")
-                    self._final_path.append("\n")
+                    # inv = inv.replace("this", self._var_prefix)
+                    # print(">>>>>>?" + inv)
+                    inv = name_substitution(self._var_prefix, inv)
+                    self._final_path.append("\tassert("+inv+");")
+                    self._final_path.append("\n\n")
 
             postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
             if postcons:
@@ -708,15 +710,26 @@ modifies """)
     def write_declared_vars(self):
         declaration = self._postcondition.get(self._curr_contract, []).get(self._curr_function, []).get("declaration", [])
         for decl in declaration:
-            decl = decl.replace("this", self._curr_contract)
+            decl = decl.strip()
+            decl_name = re.search("var (.*):", decl)[0].strip('var').strip(':').strip()
+            print(decl_name)
+            decl_type = decl.strip('var').strip(':').strip(';').strip(decl_name).strip()
+            print(decl_type)
+
             self._output_file.write("\t" + decl + "\n")
         self._output_file.write("\n")
 
     '''write entry assignment to Boogie'''
     def write_entry_assignment(self):
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
-            asgmt = asgmt.replace("this", self._curr_contract).strip()
-            self._output_file.write("\t" + asgmt.strip() + "\n")
+            # asgmt = asgmt.replace("this", self._curr_contract).strip()
+            # asgmt = asgmt.replace(":=",)
+            asgmt = asgmt.strip()
+            asgmt = asgmt.strip(";")
+            print(self._var_prefix)
+            print(asgmt)
+            asgmt = name_substitution(self._var_prefix, asgmt)
+            self._output_file.write("\t" + asgmt.strip() + ";\n")
         self._output_file.write("\n")
     
     '''write entry postcondition to Boogie'''

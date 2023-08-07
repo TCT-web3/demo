@@ -441,10 +441,17 @@ def write_defvars(var_prefix):
     THEOREM_file = open(MACROS.THEOREM_FNAME, )
     THEOREM = json.load(THEOREM_file)
     vars = THEOREM["def-vars"]
-    for var in vars: 
-        # if (len(vars[var][0])!=0):
-        #     rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
-        rt = rt + "\t" + var + ":= " + vars[var][1].replace("this", var_prefix) + ";\n"
+    for var in vars:
+        # rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
+        # expr = vars[var][1]
+        # rt = rt + "\t" + var + ":= " + name_substitution(var_prefix, expr) + ";\n"
+
+        rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
+        expr = vars[var][1]
+        rt = rt + "\t" + var + ":= " + name_substitution(var_prefix, expr) + ";\n"
+
+    # for var in vars:
+        # rt += rt + "\t" + var + ":= " + vars[var][1].replace("this", var_prefix) + ";\n"
     return(rt) 
 
         
@@ -520,7 +527,7 @@ def name_substitution(c_prefix, expression):
             # print('find name: ', elmt)
             new_elmt = (find_realname(elmt, c_prefix, MACROS.DEF_VARS))
             new_parts.append(new_elmt)
-    actual_val = ''.join(new_parts)
+    actual_val = ' '.join(new_parts)
     return actual_val
     # print("realhypo: ", realhypo)
         
@@ -545,11 +552,16 @@ def find_realname(var, c_prefix, defvars):
         return c_prefix
     elif "this." in var:
         var = var.replace("this", c_prefix)
-        # return c_prefix
         return var
     elif var.startswith('['):
         # TODO: make it general
-        return "[" + find_realname(var[1:-1], c_prefix, defvars) + "]" 
+        vars = var.split(']')
+        rt = ""
+        for elmt in vars:
+            rt += '[' + find_realname(elmt[1:], c_prefix, defvars) + ']'
+        # print(var_name)
+        return rt
+        # return "[" + find_realname(var_name, c_prefix, defvars) + "]" 
     elif '.' in var:
         if(var in MACROS.ALL_VARS.keys()):
             return var
@@ -571,7 +583,10 @@ def find_realname(var, c_prefix, defvars):
         # print(name)
         if name in MACROS.ALL_VARS.keys():
             name_type = MACROS.ALL_VARS[name]
+        elif name in MACROS.DEF_VARS.keys():
+            name_type = MACROS.DEF_VARS[name][0]
         else:
+            print(name)
             name_type = MACROS.ALL_VARS[get_fullname(name)]
         
         if("[int]" in name_type or name_type=="[address]"):
