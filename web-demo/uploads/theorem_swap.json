@@ -4,9 +4,9 @@
 	"def-vars":
 		{
 			"factory": ["address", "this.factory"],
-			"tokenA" : ["", "path[0]"], 
-			"tokenB" : ["", "path[1]"],
-			"pair": ["map-item", "factory.getPair[tokenA][tokenB]"]
+			"tokenA" : ["address", "path[0]"], 
+			"tokenB" : ["address", "path[1]"],
+			"pair": ["address", "factory.getPair[tokenA][tokenB]"]
 		},
 	"hypothesis":
 		[
