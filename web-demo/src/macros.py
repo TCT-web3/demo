@@ -24,6 +24,8 @@ class MACROS:
 
 
     PREAMBLE_COMMON = """type address = int;
+type bytes32 = int;
+type uint8 = int;
 const TwoE16 : uint256;
 axiom TwoE16 == TwoE8 * TwoE8; 
 const TwoE64 : uint256; 
