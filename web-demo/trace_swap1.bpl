@@ -336,7 +336,7 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	tmp40:=evmsub(tmp39,amountIn);
 	FancyToken.balanceOf[path[0]][tx_origin]:=tmp40;
 
-	tmp41:=UniswapV2Factory.getPair[path[0]][path[0]][path[1]];
+	tmp41:=UniswapV2Factory.getPair[factory][path[0]][path[1]];
 	tmp42:=FancyToken.balanceOf[path[0]][tmp41];
 	tmp43:=evmadd(tmp42,amountIn);
 	FancyToken.balanceOf[path[0]][tmp41]:=tmp43;
