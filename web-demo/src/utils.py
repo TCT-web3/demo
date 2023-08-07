@@ -545,16 +545,17 @@ def find_realname(var, c_prefix, defvars):
     elif(in_allvars(var)):
         return get_fullname(var)
     elif var in defvars.keys():
-        # print(var)
         return find_realname(defvars[var][1], c_prefix, defvars)
     elif var=="this":
         return c_prefix
     elif "this." in var:
         var = var.replace("this", c_prefix)
         return var
+    elif var=="[]":
+        return ""
     elif var.startswith('['):
         # TODO: make it general
-        vars = var.split(']')
+        vars = var.split(']')[:-1]
         rt = ""
         for elmt in vars:
             rt += '[' + find_realname(elmt[1:], c_prefix, defvars) + ']'

@@ -712,6 +712,7 @@ modifies """)
         declaration = self._postcondition.get(self._curr_contract, []).get(self._curr_function, []).get("declaration", [])
         for decl in declaration:
             decl = decl.strip()
+            print(decl)
             original_name = re.search("var (.*):", decl)[0].strip('var').strip(':').strip()
             # print(original_name)
             decl_name = "decl_"+original_name
@@ -734,15 +735,18 @@ modifies """)
             asgmt = asgmt.strip(";")
             # print(self._var_prefix + "???")
 
-            test = asgmt.split(":=")
-            name = (test[0])
-            expr = (test[1])
+            # print(asgmt)
+            # test = asgmt.split(":=")
+            # name = (test[0])
+            # expr = (test[1])
+            # print(expr)
+            # self._output_file.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
 
             # print(MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
             # asgmt = name_substitution(self._var_prefix, asgmt)
-            # self._output_file.write("\t" + asgmt.strip() + ";\n")
+            self._output_file.write("\t" + asgmt.strip() + ";\n")
 
-            self._output_file.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
+            
 
         self._output_file.write("\n")
     
