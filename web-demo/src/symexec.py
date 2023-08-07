@@ -683,6 +683,7 @@ modifies """)
     var BLOCKTIME: uint256;
 """)
 
+
     '''write declared vars to Boogie'''
     def write_declared_vars(self):
         declaration = self._postcondition.get(self._curr_contract, []).get(self._curr_function, []).get("declaration", [])
@@ -702,8 +703,7 @@ modifies """)
         if postcons:
             self._output_file.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
             for postcon in postcons:
-                # expression = postcon.strip(";")
-                # print(postcon)
+                postcon = postcon.strip(";")
                 expression = name_substitution(self._curr_contract, postcon)
                 self._output_file.write("\tassert(" + expression + ");\n")
             self._output_file.write("\n")

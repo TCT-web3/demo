@@ -520,7 +520,6 @@ def name_substitution(c_prefix, expression):
             # print('find name: ', elmt)
             new_elmt = (find_realname(elmt, c_prefix, MACROS.DEF_VARS))
             new_parts.append(new_elmt)
-    # print(new_parts)
     actual_val = ''.join(new_parts)
     return actual_val
     # print("realhypo: ", realhypo)
@@ -533,7 +532,9 @@ def isfloat(num):
         return False
 
 def find_realname(var, c_prefix, defvars):
-    if var in MACROS.ALL_VARS.keys() or var in MACROS.DEF_VARS:
+    if (not var):
+        return var #skip spaces
+    elif var in MACROS.ALL_VARS.keys() or var in MACROS.DEF_VARS:
         return var
     elif(in_allvars(var)):
         return get_fullname(var)
@@ -559,12 +560,7 @@ def find_realname(var, c_prefix, defvars):
         if('[' in rest):
             map_name = rest[:rest.find('[')]
             map_key = rest[rest.find('['):]
-            print("map name: "+map_name)
-            print("map key:  "+map_key)
             return find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars)
-
-        print('to_sub ', to_sub)
-        print('rest: ', rest)
         if('[' in rest):
             return find_realname(rest, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'
         else:
