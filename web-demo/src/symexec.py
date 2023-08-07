@@ -169,7 +169,6 @@ class EVM:
                             # print(">>>>>", inv)
                             # expr = name_substitution(self._var_prefix, inv)
                             # print(">>>>>>>", expr)
-
                             self._final_path.append("\tassume("+inv+");\n")
                         self._final_path.append("\n")
 
