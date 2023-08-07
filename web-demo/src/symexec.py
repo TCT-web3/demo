@@ -855,7 +855,7 @@ def main():
         BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
 
     evm.write_global_vars()
-    BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
+    # BOOGIE_OUT.write(write_params(ABI_INFO,VAR_PREFIX))
     evm.write_vars() # aux vars for Boogie Proofs
     evm.write_declared_vars() # postcondition vars for Boogie proofs
 
