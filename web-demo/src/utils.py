@@ -461,7 +461,7 @@ def write_hypothesis(hypothesis, var_prefix):
     # hypothesis = hypothesis.replace("this", var_prefix)
     rt = "\n\t// hypothesis \n"
     for hypo in hypothesis:
-        print(hypo)
+        # print("hypooooo: " + hypo)
         rt += "\tassume(" + name_substitution(var_prefix, hypo) + ");\n" 
         # rt += "\tassume(" + hypo + ");\n" 
     
@@ -539,21 +539,27 @@ def isfloat(num):
         return False
 
 def find_realname(var, c_prefix, defvars):
+    # print("var: " + var)
     if (not var):
         return var #skip spaces
+    elif var == "entry_contract":
+        return var
+    elif var == "this":
+        return c_prefix
+    elif "this." in var:
+        var = var.replace("this", c_prefix)
+        return var
     elif var in MACROS.ALL_VARS.keys() or var in MACROS.DEF_VARS:
         return var
     elif(in_allvars(var)):
         return get_fullname(var)
     elif var in defvars.keys():
         return find_realname(defvars[var][1], c_prefix, defvars)
-    elif var=="this":
-        return c_prefix
-    elif "this." in var:
-        var = var.replace("this", c_prefix)
-        return var
     elif var=="[]":
         return ""
+    # elif (var.count('[') == 1 and var.count(']') == 1):
+    #     print("???", var)
+    #     return var
     elif var.startswith('['):
         # TODO: make it general
         vars = var.split(']')[:-1]
@@ -566,47 +572,64 @@ def find_realname(var, c_prefix, defvars):
     elif '.' in var:
         if(var in MACROS.ALL_VARS.keys()):
             return var
-        to_sub = var[:var.find(".")]
-        rest = var[var.find(".")+1:]
-        # if (MACROS.VAR_TYPES[get_varname(to_sub)] == "address"):
-                # insert address before decoding rest
+        to_sub = var[:var.rfind(".")]
+        rest = var[var.rfind(".")+1:]
+
+        print("to_sub  ",to_sub)
+        print("rest    ", rest)
+
         if('[' in rest):
+            
             map_name = rest[:rest.find('[')]
             map_key = rest[rest.find('['):]
             # print(map_key[1:-1])
             # print(MACROS.DEF_VARS)
-            if (map_key in MACROS.DEF_VARS):
-                return MACROS.DEF_VARS[map_key[1:-1]][0]+'>>>>'+find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars) # user defined var type
+            print(map_key)
+            print(rest)
+            if (map_key.isdigit()):
+                print(key)
+                key = map_key
             else:
-                return find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars)
-        # if('[' in rest):
-            # return find_realname(rest, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'
+                key = find_realname(map_key, c_prefix, defvars)
+
+            if (to_sub in MACROS.DEF_VARS):
+                return MACROS.DEF_VARS[to_sub][0]+'.'+ map_name +'['+find_realname(to_sub, c_prefix, defvars)+']'+ key # user defined var type
+            else:
+                # print(">>>>",var)
+                # print(map_name)
+                # return find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars)
+                return c_prefix+"." + map_name +'['+find_realname(to_sub, c_prefix, defvars)+']'+ key
         else:
-            return get_fullname(rest)+'['+find_realname(to_sub, c_prefix, defvars)+']'
-        
+            if (to_sub in MACROS.DEF_VARS):
+                return MACROS.DEF_VARS[to_sub][0]+'.'+ rest +'['+find_realname(to_sub, c_prefix, defvars)+']' # user defined var type
+            else:
+                # print(">>>>",var)
+                return c_prefix + "." +rest +'['+find_realname(to_sub, c_prefix, defvars)+']'
+                # return find_realname(rest)+'['+find_realname(to_sub, c_prefix, defvars)+']'
     elif '[' in var:
+        # print(var)
         name = var[:var.find("[")]
         # print(name)
+        name_type=""
         if name in MACROS.ALL_VARS.keys():
             name_type = MACROS.ALL_VARS[name]
         elif name in MACROS.DEF_VARS.keys():
             name_type = MACROS.DEF_VARS[name][0]
-        else:
-            name_type = MACROS.ALL_VARS[get_fullname(name)]
-        
+        # else:
+            # name_type = MACROS.ALL_VARS[get_fullname(name)]
         if("[int]" in name_type or name_type=="[address]"):
             return var
         else:
             mapkeys=re.search("\[.*\]", var)[0]
             mapkeys=mapkeys.split(']')[:-1]
-
-            
+            # print("nameeee", name)
             rt = get_fullname(name)
             for key in mapkeys:
                 rt += '[' + find_realname(key[1:], c_prefix, defvars)+ ']'
             return rt
     else:
         return var
+        # return get_fullname(var)
 
 
 def in_allvars(name):
@@ -620,10 +643,7 @@ def get_fullname(name):
     for var in MACROS.ALL_VARS:
         if('.'+name in var):
             return var
-
-
-
-
+    return name
 
 def get_var_mapping(var):
     mapping = []
