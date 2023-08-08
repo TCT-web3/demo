@@ -1,4 +1,8 @@
+#on MacOS
 curl -H "Content-Type: application/json" --data '{"jsonrpc":"2.0", "id": 1, "method": "debug_traceTransaction", "params": ["0x490b2180bef816017083d239e4fe66ed1131465fbb37d7e6b6944a4640e6c5af",{} ] }' http://localhost:7545 | json_pp > trace_swap.json
+
+#on Windows
+#curl -H "Content-Type: application/json" --data "{\"jsonrpc\":\"2.0\", \"id\": 1, \"method\": \"debug_traceTransaction\", \"params\": [\"0x97daf6bed892f5f1fc175301a7ba25638bc37c4faea1314ddf76f94a6dab5a73\",{} ] }" http://localhost:7545 -o client_trace.json
 
 # FINALIZED COPY
 # add liq: 0xd642b0084167b9f0d4423a608b30ca619a60c04641535ef3e9a2a6d955633f00
