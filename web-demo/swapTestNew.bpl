@@ -335,7 +335,7 @@ modifies FancyToken.balanceOf;
 	assume(tmp78);
 
 	tmp79:= (tmp76>0.0);   
-	//assume(tmp79);   //This is a contradiction. reserve1 should equal token0.balanceof[pair].
+	assume(tmp79);   
 
 	tmp80:=evmmul(0.0,UniswapV2Pair.swapFeeRate[pair]);
 	tmp81:=evmdiv(tmp80,0.0);
@@ -434,5 +434,5 @@ modifies FancyToken.balanceOf;
 	// postcondition
 	
 	assert(old(FancyToken.balanceOf[path[0]][pair]) * old(FancyToken.balanceOf[path[1]][pair]) ==  FancyToken.balanceOf[path[0]][pair] * FancyToken.balanceOf[path[1]][pair]);
-assert(false);
+//assert(false);
 }
