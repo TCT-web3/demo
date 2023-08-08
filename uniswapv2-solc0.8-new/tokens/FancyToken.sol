@@ -43,7 +43,8 @@ contract FancyToken is IERC20 {
             require(balanceOf[sender] >= amount);
             allowance[sender][msg.sender] -= amount;
             balanceOf[sender] -= amount;
-            balanceOf[recipient] += amount;
+            balanceOf[recipient] = amount + balanceOf[recipient];
+            require(balanceOf[recipient]>=amount);
             //emit Transfer(sender, recipient, amount);
             return true;
         }

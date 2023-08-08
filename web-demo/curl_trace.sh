@@ -1,9 +1,9 @@
-curl -H "Content-Type: application/json" --data '{"jsonrpc":"2.0", "id": 1, "method": "debug_traceTransaction", "params": ["0x2ddc8a732313702bea8e0d49aa4fbf332c159116dfefc7319563ef193a384585",{} ] }' http://localhost:7545 | json_pp > trace_swap.json
+curl -H "Content-Type: application/json" --data '{"jsonrpc":"2.0", "id": 1, "method": "debug_traceTransaction", "params": ["0x490b2180bef816017083d239e4fe66ed1131465fbb37d7e6b6944a4640e6c5af",{} ] }' http://localhost:7545 | json_pp > trace_swap.json
 
 # FINALIZED COPY
-# add liq: 0x02c8cf592c81ee52a8327df1fd35e0c4e1f05634b9fc588f58720722fec99148
-# remove liq: 0x455d0f523122d529a54e53209c6cf368cf22e2e19a561456994ebc7fb46c1608
-# swap: 0x2ddc8a732313702bea8e0d49aa4fbf332c159116dfefc7319563ef193a384585
+# add liq: 0xd642b0084167b9f0d4423a608b30ca619a60c04641535ef3e9a2a6d955633f00
+# remove liq: 0xeb7f3e1554e8ead45a25eb54d0a9cf221222e04fe5237c8304a07d2c2c50741b
+# swap: 0x490b2180bef816017083d239e4fe66ed1131465fbb37d7e6b6944a4640e6c5af
 
 # int overflow: 0xf8a80a310c0956a65145d07208773c4c37cd60206938aa195b573ab2e98b95dc
 # no reentrancy: 0x8468bb462b833fa2e49a987c292a19fef51a65684f3fd18172e2b435e269c28d
