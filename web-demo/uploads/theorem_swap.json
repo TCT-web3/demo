@@ -14,12 +14,12 @@
 			"tx_origin != pair",
 			"factory.swapFeeRate == 0.0",
 			"pair.swapFeeRate == 0.0",
-			"pair.reserve0 == path[0].balanceOf[pair]",
-			"pair.reserve1 == path[1].balanceOf[pair]",
+			"pair.reserve0 == path[1].balanceOf[pair]",
+			"pair.reserve1 == path[0].balanceOf[pair]",
 			"path[0].totalSupply < TwoE255",
 			"path[1].totalSupply < TwoE255",
-			"pair.token0 == path[0]",
-			"pair.token1 == path[1]"
+			"pair.token0 == path[1]",
+			"pair.token1 == path[0]"
 		],
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",
