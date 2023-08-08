@@ -575,8 +575,8 @@ def find_realname(var, c_prefix, defvars):
         to_sub = var[:var.rfind(".")]
         rest = var[var.rfind(".")+1:]
 
-        print("to_sub  ",to_sub)
-        print("rest    ", rest)
+        # print("to_sub  ",to_sub)
+        # print("rest    ", rest)
 
         if('[' in rest):
             
@@ -584,8 +584,8 @@ def find_realname(var, c_prefix, defvars):
             map_key = rest[rest.find('['):]
             # print(map_key[1:-1])
             # print(MACROS.DEF_VARS)
-            print(map_key)
-            print(rest)
+            # print(map_key)
+            # print(rest)
             if (map_key.isdigit()):
                 print(key)
                 key = map_key

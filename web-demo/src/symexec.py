@@ -166,19 +166,19 @@ class EVM:
                         # if (len(MACROS.INVARIANTS[dest_contract])>0):
                         self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
                         curr_address = (self._sym_this_addresses[-1]).value
-                        
+                        print("current address:\t", curr_address)
                         # for add in self._sym_this_addresses:
                         #     print(add.value)
                         for inv in MACROS.INVARIANTS[dest_contract]:
                             # inv = inv.replace("this", self._var_prefix)
                             # print(">>>>>", inv)
-                            print("invariant: ", inv)
-                            print(curr_address)
+                            print("invariant:\t", inv)
                             inv = inv.replace("this", curr_address)
                             # print(self._curr_contract)
                             # print(curr_address)
                             inv = name_substitution(self._curr_contract, inv)
                             # print(">>>>>>>", expr)
+                            print("boogie:\t", "\tassume("+inv+");\n")
                             self._final_path.append("\tassume("+inv+");\n")
                         self._final_path.append("\n")
 
@@ -203,15 +203,16 @@ class EVM:
                 # if (len(MACROS.INVARIANTS.get(self._curr_contract, []))>0):
                 # self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
                 curr_address = (self._sym_this_addresses[-1]).value
+                print("current address:\t", curr_address)
                 for inv in MACROS.INVARIANTS.get(self._curr_contract, []):
                     # inv = inv.replace("this", self._var_prefix)
                     # print(">>>>>>?" + inv)
-                    print("invariant: ", inv)
-                    print(curr_address)
+                    print("invariant:\t", inv)
                     inv = inv.replace("this", curr_address)
                     # print(self._curr_contract)
                     # print(curr_address)
                     inv = name_substitution(self._curr_contract, inv)
+                    print("boogie:\t", "\tassume("+inv+");\n")
                     # print(">>>>>>>", expr)
                     self._final_path.append("\tassume("+inv+");\n")
                     # inv = name_substitution(self._var_prefix, inv)
@@ -732,7 +733,7 @@ modifies """)
         declaration = self._postcondition.get(self._curr_contract, []).get(self._curr_function, []).get("declaration", [])
         for decl in declaration:
             decl = decl.strip()
-            print(decl)
+            # print(decl)
             original_name = re.search("var (.*):", decl)[0].strip('var').strip(':').strip()
             # print(original_name)
             decl_name = "decl_"+original_name
@@ -762,14 +763,17 @@ modifies """)
             # test = asgmt.split(":=")
             # name = (test[0])
             # expr = (test[1])
-            # print(expr)
             # self._output_file.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
             # print(asgmt)
             # print(MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
-            asgmt = name_substitution(self._var_prefix, asgmt)
+            # asgmt = name_substitution(self._var_prefix, asgmt)
             # print(asgmt)
             if(asgmt):
-                self._output_file.write("\t" + asgmt + ";\n")
+                # self._output_file.write("\t" + asgmt + ";\n")
+                test = asgmt.split(":=")
+            name = (test[0])
+            expr = (test[1])
+            self._output_file.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
 
             
 
@@ -782,8 +786,10 @@ modifies """)
             self._output_file.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
             for postcon in postcons:
                 postcon = postcon.strip(";")
-                expression = name_substitution(self._curr_contract, postcon)
-                self._output_file.write("\tassert( " + expression + " );\n")
+                expr = name_substitution(self._curr_contract, postcon)
+                for to_sub in MACROS.DECL_SUBS:
+                    expr = expr.replace(to_sub, MACROS.DECL_SUBS[to_sub])
+                self._output_file.write("\tassert( " + expr + " );\n")
             self._output_file.write("\n")
 
     '''write all generated code to Boogie'''
