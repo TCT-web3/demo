@@ -273,10 +273,12 @@ class EVM:
                 node = SVT("SLOAD")
                 node.children.append(to_load)
                 self._stacks[-1].append(node)
+                self.postorder_traversal(node)
             else:
                 stored_value = self._var_prefix+'.'+self._storage_map[self._curr_contract][str(to_load.value)]
                 self.add_new_vars(stored_value)
                 self._stacks[-1].append(SVT(stored_value+"["+self.postorder_traversal(self._sym_this_addresses[-1])+"]"))
+                self.postorder_traversal(self._stacks[-1][-1])
         elif opcode=="PC":
             self._stacks[-1].append(SVT(PC))
         elif opcode.startswith("LOG"):

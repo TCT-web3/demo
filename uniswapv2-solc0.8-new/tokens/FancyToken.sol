@@ -17,6 +17,7 @@ contract FancyToken is IERC20 {
     }
     function transfer(address recipient, uint amount) external override returns (bool) {
         unchecked {
+            require(balanceOf[msg.sender] >= amount);
             balanceOf[msg.sender] -= amount;
             balanceOf[recipient] += amount;
             //emit Transfer(msg.sender, recipient, amount);
@@ -30,6 +31,7 @@ contract FancyToken is IERC20 {
             //emit Approval(msg.sender, spender, amount);
             return true;
         }
+    
     }
 
     function transferFrom(
@@ -38,12 +40,14 @@ contract FancyToken is IERC20 {
         uint amount
     ) external override returns (bool) {
         unchecked {
+            require(balanceOf[sender] >= amount);
             allowance[sender][msg.sender] -= amount;
             balanceOf[sender] -= amount;
             balanceOf[recipient] += amount;
             //emit Transfer(sender, recipient, amount);
             return true;
         }
+        
     }
 
     function mint(uint amount) external {
@@ -56,6 +60,7 @@ contract FancyToken is IERC20 {
 
     function burn(uint amount) external {
         unchecked {
+            require(balanceOf[msg.sender] >= amount);
             balanceOf[msg.sender] -= amount;
             totalSupply -= amount;
             //emit Transfer(msg.sender, address(0), amount);
