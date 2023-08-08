@@ -748,6 +748,7 @@ modifies """)
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
             # asgmt = asgmt.replace("this", self._curr_contract).strip()
             # asgmt = asgmt.replace(":=",)
+            print(asgmt)
             asgmt = asgmt.strip()
             asgmt = asgmt.strip(";")
             # print(self._var_prefix + "???")
