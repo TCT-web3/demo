@@ -165,10 +165,19 @@ class EVM:
                     if (contract == dest_contract):
                         # if (len(MACROS.INVARIANTS[dest_contract])>0):
                         self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
+                        curr_address = (self._sym_this_addresses[-1]).value
+                        
+                        # for add in self._sym_this_addresses:
+                        #     print(add.value)
                         for inv in MACROS.INVARIANTS[dest_contract]:
                             # inv = inv.replace("this", self._var_prefix)
                             # print(">>>>>", inv)
-                            inv = name_substitution(self._var_prefix, inv)
+                            print("invariant: ", inv)
+                            print(curr_address)
+                            inv = inv.replace("this", curr_address)
+                            # print(self._curr_contract)
+                            # print(curr_address)
+                            inv = name_substitution(self._curr_contract, inv)
                             # print(">>>>>>>", expr)
                             self._final_path.append("\tassume("+inv+");\n")
                         self._final_path.append("\n")
@@ -193,12 +202,21 @@ class EVM:
                         # print(MACROS.INVARIANTS[contract])
                 # if (len(MACROS.INVARIANTS.get(self._curr_contract, []))>0):
                 # self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
+                curr_address = (self._sym_this_addresses[-1]).value
                 for inv in MACROS.INVARIANTS.get(self._curr_contract, []):
                     # inv = inv.replace("this", self._var_prefix)
                     # print(">>>>>>?" + inv)
-                    inv = name_substitution(self._var_prefix, inv)
-                    self._final_path.append("\tassert("+inv+");")
-                    self._final_path.append("\n\n")
+                    print("invariant: ", inv)
+                    print(curr_address)
+                    inv = inv.replace("this", curr_address)
+                    # print(self._curr_contract)
+                    # print(curr_address)
+                    inv = name_substitution(self._curr_contract, inv)
+                    # print(">>>>>>>", expr)
+                    self._final_path.append("\tassume("+inv+");\n")
+                    # inv = name_substitution(self._var_prefix, inv)
+                    # self._final_path.append("\tassert("+inv+");")
+                    # self._final_path.append("\n\n")
 
             postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
             if postcons:
@@ -731,22 +749,27 @@ modifies """)
     '''write entry assignment to Boogie'''
     def write_entry_assignment(self):
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
-            asgmt = asgmt.replace("this", self._curr_contract).strip()
+            # asgmt = asgmt.replace("this", self._curr_contract).strip()
             # asgmt = asgmt.replace(":=",)
             asgmt = asgmt.strip()
             asgmt = asgmt.strip(";")
             # print(self._var_prefix + "???")
-
+            curr_address = (self._sym_this_addresses[-1]).value
+            # print("??????", curr_address)
+            # print("??????", asgmt)
+            asgmt = asgmt.replace("this", curr_address)
             # print(asgmt)
             # test = asgmt.split(":=")
             # name = (test[0])
             # expr = (test[1])
             # print(expr)
             # self._output_file.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
-
+            # print(asgmt)
             # print(MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
-            # asgmt = name_substitution(self._var_prefix, asgmt)
-            self._output_file.write("\t" + asgmt.strip() + ";\n")
+            asgmt = name_substitution(self._var_prefix, asgmt)
+            # print(asgmt)
+            if(asgmt):
+                self._output_file.write("\t" + asgmt + ";\n")
 
             
 
