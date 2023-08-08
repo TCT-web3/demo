@@ -3,10 +3,10 @@
 	"entry-for-real":"0x14bf3d65dcd2832638558f9301fc91e11be5f505::0x472b43f3",
 	"def-vars":
 		{
-			"factory": ["address", "this.factory"],
-			"tokenA" : ["address", "path[0]"], 
-			"tokenB" : ["address", "path[1]"],
-			"pair": ["address", "factory.getPair[tokenA][tokenB]"]
+			"factory": ["UniswapV2Factory", "this.factory", "address"],
+			"tokenA" : ["FancyToken", "path[0]", "address"], 
+			"tokenB" : ["FancyToken", "path[1]", "address"],
+			"pair"   : ["UniswapV2Pair", "factory.getPair[tokenA][tokenB]", "address"]
 		},
 	"hypothesis":
 		[
@@ -16,8 +16,8 @@
 			"pair.swapFeeRate == 0.0",
 			"pair.reserve0 == path[1].balanceOf[pair]",
 			"pair.reserve1 == path[0].balanceOf[pair]",
-			"path[0].totalSupply < TwoE255",
-			"path[1].totalSupply < TwoE255",
+			"tokenA.totalSupply < TwoE255",
+			"tokenB.totalSupply < TwoE255",
 			"pair.token0 == path[1]",
 			"pair.token1 == path[0]"
 		],
