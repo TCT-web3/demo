@@ -448,6 +448,7 @@ def write_defvars(var_prefix):
         var_type = vars[var][2]
         rt = "\tvar " + var + ":  " + var_type + ";\n" + rt
         expr = vars[var][1]
+        expr = expr.replace("this", "entry_contract")
         rt = rt + "\t" + var + ":= " + name_substitution(var_prefix, expr) + ";\n"
 
     rt = "\n\t// def-vars\n" + rt

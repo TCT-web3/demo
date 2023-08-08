@@ -167,15 +167,11 @@ class EVM:
                         self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
                         curr_address = (self._sym_this_addresses[-1]).value
                         print("current address:\t", curr_address)
-                        # for add in self._sym_this_addresses:
-                        #     print(add.value)
+                        for add in self._sym_this_addresses:
+                            print(add.value)
                         for inv in MACROS.INVARIANTS[dest_contract]:
-                            # inv = inv.replace("this", self._var_prefix)
-                            # print(">>>>>", inv)
                             print("invariant:\t", inv)
                             inv = inv.replace("this", curr_address)
-                            # print(self._curr_contract)
-                            # print(curr_address)
                             inv = name_substitution(self._curr_contract, inv)
                             # print(">>>>>>>", expr)
                             print("boogie:\t", "\tassume("+inv+");\n")
