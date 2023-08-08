@@ -116,24 +116,24 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	var tmp31:  uint256;
 	var tmp32:  bool;
 	var tmp33:  bool;
-	var tmp34:  uint256;
-	var tmp35:  bool;
+	var tmp34:  address;
+	var tmp35:  uint256;
 	var tmp36:  bool;
-	var tmp37:  uint256;
+	var tmp37:  bool;
 	var tmp38:  uint256;
 	var tmp39:  uint256;
 	var tmp40:  uint256;
-	var tmp41:  address;
+	var tmp41:  uint256;
 	var tmp42:  uint256;
 	var tmp43:  uint256;
 	var tmp44:  bool;
 	var tmp45:  bool;
 	var tmp46:  bool;
 	var tmp47:  bool;
-	var tmp48:  uint256;
-	var tmp49:  bool;
+	var tmp48:  address;
+	var tmp49:  uint256;
 	var tmp50:  bool;
-	var tmp51:  address;
+	var tmp51:  bool;
 	var tmp52:  bool;
 	var tmp53:  bool;
 	var tmp54:  bool;
@@ -154,20 +154,20 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	var tmp69:  uint256;
 	var tmp70:  uint256;
 	var tmp71:  uint256;
-	var tmp72:  bool;
-	var tmp73:  bool;
-	var tmp74:  uint256;
+	var tmp72:  uint256;
+	var tmp73:  uint256;
+	var tmp74:  bool;
 	var tmp75:  bool;
-	var tmp76:  uint256;
-	var tmp77:  bool;
+	var tmp76:  bool;
+	var tmp77:  uint256;
 	var tmp78:  bool;
-	var tmp79:  uint256;
-	var tmp80:  bool;
+	var tmp79:  bool;
+	var tmp80:  uint256;
 	var tmp81:  bool;
-	var tmp82:  uint256;
-	var tmp83:  bool;
+	var tmp82:  bool;
+	var tmp83:  uint256;
 	var tmp84:  bool;
-	var tmp85:  uint256;
+	var tmp85:  bool;
 	var tmp86:  bool;
 	var tmp87:  uint256;
 	var tmp88:  bool;
@@ -233,7 +233,7 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	var tmp148:  uint256;
 
 	// declare-vars
-	var decl_factory: address;
+	var decl_factory, decl_pair: address;
 
 
 	// def-vars
@@ -267,7 +267,7 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	tmp3:=(path[0]!=0);
 	assume(tmp3);
 
-	tmp4:=UniswapV2Factory.getPair[entry_contract][path[0]][path[1]];
+	tmp4:=UniswapV2Factory.getPair[UniswapV2Router.factory[entry_contract]][path[0]][path[1]];
 	tmp5:= (path[0]==path[0]);
 	assume(tmp5);
 
@@ -319,27 +319,27 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	tmp33:=!tmp32;
 	assume(tmp33);
 
+	tmp34:=UniswapV2Factory.getPair[UniswapV2Router.factory[entry_contract]][path[0]][path[1]];
 	// insert invariant of FancyToken
 	assume(forall x:address :: Zero <= FancyToken.balanceOf[path[0]][x] && FancyToken.balanceOf[path[0]][x] <= FancyToken.totalSupply[path[0]]);
 	assume(sum(FancyToken.balanceOf[path[0]]) == FancyToken.totalSupply[path[0]]);
 
-	tmp34:=FancyToken.balanceOf[path[0]][tx_origin];
-	tmp35:= (tmp34<amountIn);
-	tmp36:=!tmp35;
-	assume(tmp36);
+	tmp35:=FancyToken.balanceOf[path[0]][tx_origin];
+	tmp36:= (tmp35<amountIn);
+	tmp37:=!tmp36;
+	assume(tmp37);
 
-	tmp37:=FancyToken.allowance[path[0]][tx_origin][entry_contract];
-	tmp38:=evmsub(tmp37,amountIn);
-	FancyToken.allowance[path[0]][tx_origin][entry_contract]:=tmp38;
+	tmp38:=FancyToken.allowance[path[0]][tx_origin][entry_contract];
+	tmp39:=evmsub(tmp38,amountIn);
+	FancyToken.allowance[path[0]][tx_origin][entry_contract]:=tmp39;
 
-	tmp39:=FancyToken.balanceOf[path[0]][tx_origin];
-	tmp40:=evmsub(tmp39,amountIn);
-	FancyToken.balanceOf[path[0]][tx_origin]:=tmp40;
+	tmp40:=FancyToken.balanceOf[path[0]][tx_origin];
+	tmp41:=evmsub(tmp40,amountIn);
+	FancyToken.balanceOf[path[0]][tx_origin]:=tmp41;
 
-	tmp41:=UniswapV2Factory.getPair[factory][path[0]][path[1]];
-	tmp42:=FancyToken.balanceOf[path[0]][tmp41];
+	tmp42:=FancyToken.balanceOf[path[0]][tmp34];
 	tmp43:=evmadd(tmp42,amountIn);
-	FancyToken.balanceOf[path[0]][tmp41]:=tmp43;
+	FancyToken.balanceOf[path[0]][tmp34]:=tmp43;
 
 	assert(forall x:address :: Zero <= FancyToken.balanceOf[path[0]][x] && FancyToken.balanceOf[path[0]][x] <= FancyToken.totalSupply[path[0]]);
 	assert(sum(FancyToken.balanceOf[path[0]]) == FancyToken.totalSupply[path[0]]);
@@ -356,33 +356,33 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	tmp47:= (path[0]==path[0]);
 	assume(tmp47);
 
-	tmp48:=nondet(); //EXTCODESIZE
-	tmp49:=tmp48==Zero;
-	tmp50:=!tmp49;
-	assume(tmp50);
+	tmp48:=UniswapV2Factory.getPair[UniswapV2Router.factory[entry_contract]][path[0]][path[1]];
+	tmp49:=nondet(); //EXTCODESIZE
+	tmp50:=tmp49==Zero;
+	tmp51:=!tmp50;
+	assume(tmp51);
 
-	tmp51:=UniswapV2Factory.getPair[entry_contract][path[0]][path[1]];
-	tmp52:= (UniswapV2Pair.unlocked[tmp51]==1.0);
+	tmp52:= (UniswapV2Pair.unlocked[tmp48]==1.0);
 	assume(tmp52);
 
-	UniswapV2Pair.unlocked[tmp51]:=0.0;
+	UniswapV2Pair.unlocked[tmp48]:=0.0;
 
 	tmp53:= (tmp31>0.0);
 	assume(tmp53);
 
-	tmp54:= (0.0<UniswapV2Pair.reserve0[tmp51]);
+	tmp54:= (0.0<UniswapV2Pair.reserve0[tmp48]);
 	tmp55:=!tmp54;
 	assume(!tmp55);
 
-	tmp56:= (tmp31<UniswapV2Pair.reserve1[tmp51]);
+	tmp56:= (tmp31<UniswapV2Pair.reserve1[tmp48]);
 	assume(tmp56);
 
-	tmp57:= (to==UniswapV2Pair.token0[tmp51]);
+	tmp57:= (to==UniswapV2Pair.token0[tmp48]);
 	tmp58:=!tmp57;
 	tmp59:=!tmp58;
 	assume(!tmp59);
 
-	tmp60:= (to==UniswapV2Pair.token1[tmp51]);
+	tmp60:= (to==UniswapV2Pair.token1[tmp48]);
 	tmp61:=!tmp60;
 	assume(tmp61);
 
@@ -394,76 +394,75 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	assume(forall x:address :: Zero <= FancyToken.balanceOf[path[1]][x] && FancyToken.balanceOf[path[1]][x] <= FancyToken.totalSupply[path[1]]);
 	assume(sum(FancyToken.balanceOf[path[1]]) == FancyToken.totalSupply[path[1]]);
 
-	tmp64:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp51]][tmp51];
+	tmp64:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp48]][tmp48];
 	tmp65:= (tmp64<tmp31);
 	tmp66:=!tmp65;
 	assume(tmp66);
 
-	tmp67:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp51]][tmp51];
+	tmp67:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp48]][tmp48];
 	tmp68:=evmsub(tmp67,tmp31);
-	FancyToken.balanceOf[UniswapV2Pair.token0[tmp51]][tmp51]:=tmp68;
+	FancyToken.balanceOf[UniswapV2Pair.token0[tmp48]][tmp48]:=tmp68;
 
-	tmp69:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp51]][to];
+	tmp69:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp48]][to];
 	tmp70:=evmadd(tmp69,tmp31);
-	FancyToken.balanceOf[UniswapV2Pair.token0[tmp51]][to]:=tmp70;
+	FancyToken.balanceOf[UniswapV2Pair.token0[tmp48]][to]:=tmp70;
 
 	assert(forall x:address :: Zero <= FancyToken.balanceOf[path[1]][x] && FancyToken.balanceOf[path[1]][x] <= FancyToken.totalSupply[path[1]]);
 	assert(sum(FancyToken.balanceOf[path[1]]) == FancyToken.totalSupply[path[1]]);
 
-
-	tmp71:=evmsub(UniswapV2Pair.reserve0[tmp51],0.0);
-	tmp72:= (tmp71>UniswapV2Pair.reserve0[tmp51]);
-	tmp73:=!tmp72;
-	assume(tmp73);
-
-	tmp74:=FancyToken.balanceOf[tmp51][tmp51];
-	tmp75:= (tmp74>tmp71);
+	tmp71:=FancyToken.balanceOf[UniswapV2Pair.token0[tmp48]][tmp48];
+	tmp72:=FancyToken.balanceOf[UniswapV2Pair.token1[tmp48]][tmp48];
+	tmp73:=evmsub(UniswapV2Pair.reserve0[tmp48],0.0);
+	tmp74:= (tmp73>UniswapV2Pair.reserve0[tmp48]);
+	tmp75:=!tmp74;
 	assume(tmp75);
 
-	tmp76:=evmsub(UniswapV2Pair.reserve0[tmp51],0.0);
-	tmp77:= (tmp76>UniswapV2Pair.reserve0[tmp51]);
-	tmp78:=!tmp77;
-	assume(tmp78);
+	tmp76:= (tmp71>tmp73);
+	assume(tmp76);
 
-	tmp79:=evmsub(tmp74,tmp76);
-	tmp80:= (tmp79>tmp74);
-	tmp81:=!tmp80;
-	assume(tmp81);
+	tmp77:=evmsub(UniswapV2Pair.reserve0[tmp48],0.0);
+	tmp78:= (tmp77>UniswapV2Pair.reserve0[tmp48]);
+	tmp79:=!tmp78;
+	assume(tmp79);
 
-	tmp82:=evmsub(UniswapV2Pair.reserve1[tmp51],tmp31);
-	tmp83:= (tmp82>UniswapV2Pair.reserve1[tmp51]);
-	tmp84:=!tmp83;
-	assume(tmp84);
+	tmp80:=evmsub(tmp71,tmp77);
+	tmp81:= (tmp80>tmp71);
+	tmp82:=!tmp81;
+	assume(tmp82);
 
-	tmp85:=FancyToken.balanceOf[tmp51][tmp51];
-	tmp86:= (tmp85>tmp82);
+	tmp83:=evmsub(UniswapV2Pair.reserve1[tmp48],tmp31);
+	tmp84:= (tmp83>UniswapV2Pair.reserve1[tmp48]);
+	tmp85:=!tmp84;
+	assume(tmp85);
+
+	tmp86:= (tmp72>tmp83);
 	assume(tmp86);
 
-	tmp87:=evmsub(UniswapV2Pair.reserve1[tmp51],tmp31);
-	tmp88:= (tmp87>UniswapV2Pair.reserve1[tmp51]);
+	tmp87:=evmsub(UniswapV2Pair.reserve1[tmp48],tmp31);
+	tmp88:= (tmp87>UniswapV2Pair.reserve1[tmp48]);
 	tmp89:=!tmp88;
 	assume(tmp89);
 
-	tmp90:=evmsub(tmp85,tmp87);
-	tmp91:= (tmp90>tmp85);
+	tmp90:=evmsub(tmp72,tmp87);
+	tmp91:= (tmp90>tmp72);
 	tmp92:=!tmp91;
 	assume(tmp92);
 
-	tmp93:= (tmp79>0.0);
+	tmp93:= (tmp80>0.0);
 	assume(tmp93);
 
 	assume(tmp93);
 
 	tmp94:=!tmp93;
-	tmp95:=evmmul(tmp79,UniswapV2Pair.swapFeeRate[tmp51]);
-	tmp96:=evmdiv(tmp95,tmp79);
-	tmp97:= (UniswapV2Pair.swapFeeRate[tmp51]==tmp96);
+	tmp95:=evmmul(tmp80,UniswapV2Pair.swapFeeRate[tmp48]);
+	tmp96:=evmdiv(tmp95,tmp80);
+	tmp97:= (UniswapV2Pair.swapFeeRate[tmp48]==tmp96);
 	tmp98:=tmp94||tmp97;
 	assume(tmp98);
 
 	tmp99:=!tmp98;
-	tmp100:=evmmul(tmp74,1000.0);
-	tmp101:=evmdiv(tmp100,tmp74);
+	tmp100:=evmmul(tmp71,1000.0);
+	tmp101:=evmdiv(tmp100,tmp71);
 	tmp102:= (1000.0==tmp101);
 	tmp103:=tmp99||tmp102;
 	assume(tmp103);
@@ -474,15 +473,15 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	assume(tmp106);
 
 	tmp107:=!tmp106;
-	tmp108:=evmmul(tmp90,UniswapV2Pair.swapFeeRate[tmp51]);
+	tmp108:=evmmul(tmp90,UniswapV2Pair.swapFeeRate[tmp48]);
 	tmp109:=evmdiv(tmp108,tmp90);
-	tmp110:= (UniswapV2Pair.swapFeeRate[tmp51]==tmp109);
+	tmp110:= (UniswapV2Pair.swapFeeRate[tmp48]==tmp109);
 	tmp111:=tmp107||tmp110;
 	assume(tmp111);
 
 	tmp112:=!tmp111;
-	tmp113:=evmmul(tmp85,1000.0);
-	tmp114:=evmdiv(tmp113,tmp85);
+	tmp113:=evmmul(tmp72,1000.0);
+	tmp114:=evmdiv(tmp113,tmp72);
 	tmp115:= (1000.0==tmp114);
 	tmp116:=tmp112||tmp115;
 	assume(tmp116);
@@ -493,9 +492,9 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	assume(tmp119);
 
 	tmp120:=!tmp119;
-	tmp121:=evmmul(UniswapV2Pair.reserve0[tmp51],UniswapV2Pair.reserve1[tmp51]);
-	tmp122:=evmdiv(tmp121,UniswapV2Pair.reserve0[tmp51]);
-	tmp123:= (UniswapV2Pair.reserve1[tmp51]==tmp122);
+	tmp121:=evmmul(UniswapV2Pair.reserve0[tmp48],UniswapV2Pair.reserve1[tmp48]);
+	tmp122:=evmdiv(tmp121,UniswapV2Pair.reserve0[tmp48]);
+	tmp123:= (UniswapV2Pair.reserve1[tmp48]==tmp122);
 	tmp124:=tmp120||tmp123;
 	assume(tmp124);
 
@@ -517,37 +516,37 @@ modifies UniswapV2ERC20.totalSupply, UniswapV2ERC20.balanceOf, UniswapV2ERC20.al
 	tmp136:=!tmp135;
 	assume(tmp136);
 
-	tmp137:= (tmp74>5192296858534827628530496329220095.0);
+	tmp137:= (tmp71>5192296858534827628530496329220095.0);
 	tmp138:=!tmp137;
 	tmp139:=!tmp138;
 	assume(!tmp139);
 
-	tmp140:= (tmp85>5192296858534827628530496329220095.0);
+	tmp140:= (tmp72>5192296858534827628530496329220095.0);
 	tmp141:=!tmp140;
 	assume(tmp141);
 
-	tmp142:=evmadd(UniswapV2Pair.reserve0[tmp51],0.0);
-	tmp143:= (UniswapV2Pair.reserve0[tmp51]>tmp142);
+	tmp142:=evmadd(UniswapV2Pair.reserve0[tmp48],0.0);
+	tmp143:= (UniswapV2Pair.reserve0[tmp48]>tmp142);
 	tmp144:=!tmp143;
 	assume(tmp144);
 
-	tmp145:=evmadd(UniswapV2Pair.reserve1[tmp51],0.0);
-	tmp146:= (UniswapV2Pair.reserve1[tmp51]>tmp145);
+	tmp145:=evmadd(UniswapV2Pair.reserve1[tmp48],0.0);
+	tmp146:= (UniswapV2Pair.reserve1[tmp48]>tmp145);
 	tmp147:=!tmp146;
 	assume(tmp147);
 
-	UniswapV2Pair.reserve0[tmp51]:=tmp74;
+	UniswapV2Pair.reserve0[tmp48]:=tmp71;
 
-	UniswapV2Pair.reserve1[tmp51]:=tmp85;
+	UniswapV2Pair.reserve1[tmp48]:=tmp72;
 
 	tmp148:=evmmod(BLOCKTIME,4294967296.0);
-	UniswapV2Pair.blockTimestampLast[tmp51]:=tmp148;
+	UniswapV2Pair.blockTimestampLast[tmp48]:=tmp148;
 
-	UniswapV2Pair.unlocked[tmp51]:=1.0;
+	UniswapV2Pair.unlocked[tmp48]:=1.0;
 
-	factory:=UniswapV2Router.factory[entry_contract];
-	pair:= UniswapV2Factory.getPair[factory][tokenA][tokenB];
+	decl_factory:=UniswapV2Router.factory[entry_contract];
+	decl_pair:= UniswapV2Factory.getPair[decl_factory][tokenA][tokenB];
 
 	// (post) insert postcondition of swapExactTokensForTokens
-	assert( old( UniswapV2ERC20.balanceOf[path[0]][pair] ) * old( UniswapV2ERC20.balanceOf[path[1]][pair] ) ==  UniswapV2ERC20.balanceOf[path[0]][pair] * UniswapV2ERC20.balanceOf[path[1]][pair] );
+	assert( old( UniswapV2ERC20.balanceOf[path[0]][decl_pair] ) * old( UniswapV2ERC20.balanceOf[path[1]][decl_pair] ) ==  UniswapV2ERC20.balanceOf[path[0]][decl_pair] * UniswapV2ERC20.balanceOf[path[1]][decl_pair] );
 }
