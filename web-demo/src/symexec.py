@@ -955,8 +955,10 @@ def main():
 
     evm.write_paths() # codegen for Boogie proofs
     evm.write_entry_assignment() # from AST file
-    evm.write_entry_postcondition() # from AST file
+    # evm.write_entry_postcondition() # from AST file
     BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
+
+    # print(MACROS.ALL_VARS)
  
 if __name__ == '__main__':
     main()
