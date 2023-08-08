@@ -3,7 +3,7 @@ import '../interfaces/IERC20.sol';
 pragma solidity >=0.8.0;
 
 /// @custom:tct invariant: forall x:address :: 0 <= this.balanceOf[x] && this.balanceOf[x] <= this.totalSupply
-/// @custom:tct invariant: sum(this.balanceOf) == this.totalSupply
+/// @custom:tct invariant: sum( this.balanceOf ) == this.totalSupply
 contract FancyToken is IERC20 {
     uint public override totalSupply;
     mapping(address => uint) public override balanceOf;
