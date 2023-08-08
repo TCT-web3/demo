@@ -461,7 +461,7 @@ def write_hypothesis(hypothesis, var_prefix):
     # hypothesis = hypothesis.replace("this", var_prefix)
     rt = "\n\t// hypothesis \n"
     for hypo in hypothesis:
-        print(hypo)
+        print("hypo: "+hypo)
         rt += "\tassume(" + name_substitution(var_prefix, hypo) + ");\n" 
         # rt += "\tassume(" + hypo + ");\n" 
     
@@ -567,6 +567,7 @@ def find_realname(var, c_prefix, defvars):
         if(var in MACROS.ALL_VARS.keys()):
             return var
         to_sub = var[:var.find(".")]
+
         rest = var[var.find(".")+1:]
         # if (MACROS.VAR_TYPES[get_varname(to_sub)] == "address"):
                 # insert address before decoding rest
@@ -575,14 +576,17 @@ def find_realname(var, c_prefix, defvars):
             map_key = rest[rest.find('['):]
             # print(map_key[1:-1])
             # print(MACROS.DEF_VARS)
-            if (map_key in MACROS.DEF_VARS):
-                return MACROS.DEF_VARS[map_key[1:-1]][0]+'>>>>'+find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars) # user defined var type
+            if (to_sub in MACROS.DEF_VARS):
+                return MACROS.DEF_VARS[to_sub][0]+'.'+ map_name +'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars) # user defined var type
             else:
                 return find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars)
         # if('[' in rest):
             # return find_realname(rest, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'
         else:
-            return get_fullname(rest)+'['+find_realname(to_sub, c_prefix, defvars)+']'
+            if (to_sub in MACROS.DEF_VARS):
+                return MACROS.DEF_VARS[to_sub][0]+'.'+ rest +'['+find_realname(to_sub, c_prefix, defvars)+']' # user defined var type
+            else:
+                return get_fullname(rest)+'['+find_realname(to_sub, c_prefix, defvars)+']'
         
     elif '[' in var:
         name = var[:var.find("[")]
@@ -620,10 +624,6 @@ def get_fullname(name):
     for var in MACROS.ALL_VARS:
         if('.'+name in var):
             return var
-
-
-
-
 
 def get_var_mapping(var):
     mapping = []
