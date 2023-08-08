@@ -160,7 +160,7 @@ contract UniswapV2Router is IUniswapV2Router {
     }
 
     /// @custom:declaration var factory: address; var pair: address; var tokenA: address; var tokenB: address;
-    /// @custom:assignment factory:=this.factory; tokenA:=path[0]; tokenB:=path[1]; pair:=factory.getPair[tokenA][tokenB]; 
+    /// @custom:assignment factory:=this.factory; tokenA:=path[0]; tokenB:=path[1]; pair:=factory.getPair[tokenA][tokenB] 
     /// @custom:postcondition old( tokenA.balanceOf[pair] ) * old( tokenB.balanceOf[pair] ) == ( tokenA.balanceOf[pair] * tokenB.balanceOf[pair] )
     function swapExactTokensForTokens(
         uint256 amountIn,
