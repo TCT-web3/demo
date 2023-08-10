@@ -56,8 +56,8 @@ def get_trace(theorem_fname, tx_hash):
     # Get trace
     output_trace("client_trace.json", tx_hash, "deployment_info.json", theorem_fname)
     # Get boogie output
-    os.system("python3 src/symexec.py ../single-token/Demo.sol uploads/" + theorem_fname + " trace-" + tx_hash + ".txt") # specify solidity file
-    os.system("boogie /proverOpt O:smt.arith.solver=2 trace-" + tx_hash + ".bpl > result.txt")
+    os.system("python3 src/symexec.py ../uniswapv2-solc0.8-new/test.sol uploads/" + theorem_fname + " trace-" + tx_hash + ".txt") # specify solidity file
+    os.system("boogie trace-" + tx_hash + ".bpl > result.txt")
 
 '''
 Display contents of any file

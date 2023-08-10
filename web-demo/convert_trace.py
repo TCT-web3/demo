@@ -10,7 +10,7 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
     theorem = json.load(theorem_file)
     with open(deployment_fname, "r") as deploy_info_file:
         deploy_info = json.load(deploy_info_file)
-    output = open("trace_" + tx_hash + ".txt", "w") # change output file name
+    output = open("trace-" + tx_hash + ".txt", "w") # change output file name
     # output = open("trace_UniswapAddLiquidity2.txt", "w")
 
     # Map entry point to deployment file
@@ -62,7 +62,7 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
             print(contract_address, func_selector)
             if not enter and func_selector == function_hash:
                 output.close()
-                output = open("trace_" + tx_hash + ".txt", "w")
+                output = open("trace-" + tx_hash + ".txt", "w")
                 output.write("======================================Begin==========================================\n")
                 line = ">>call 0x" + contract_hash + "::0x" + function_hash + " (" + deploy_info[contract_hash] + "::" + deploy_info[function_hash] + ") "
                 enter = True
@@ -81,14 +81,15 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
     output.close()
 
 def main():
+
     # Get file names
-    # ARGS = sys.argv
-    # TRACE_FNAME = ARGS[1]
+    ARGS = sys.argv
+    TRACE_FNAME = ARGS[1]
 
     # Call method
     # output_trace("trace_addLiquidity.json", "addLiquidity", "deployment_info.json", "theorem_addLiquidity.json")
     # output_trace("trace_removeLiquidity.json", "removeLiquidity", "deployment_info.json", "theorem_removeLiquidity.json")
-    output_trace("trace_swap.json", "swap", "deployment_info.json", "theorem_swap.json")
+    # output_trace("trace_swap.json", "swap", "deployment_info.json", "theorem_swap.json")
     # output_trace("trace_integerOverflow.json", "integerOverflow", "deployment_info.json", "theorem_integerOverflow.json")
     # output_trace("trace_noReentrancy.json", "noReentrancy", "deployment_info.json", "theorem_noReentrancy.json")
     # output_trace("trace_reentrancy.json", "reentrancy", "deployment_info.json", "theorem_reentrancy.json")
