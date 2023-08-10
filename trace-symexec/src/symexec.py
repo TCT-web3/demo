@@ -190,7 +190,7 @@ class EVM:
                 #     if (contract == self._curr_contract):
                         # print(MACROS.INVARIANTS[contract])
                 # if (len(MACROS.INVARIANTS.get(self._curr_contract, []))>0):
-                # self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
+                self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
                 curr_address = (self._sym_this_addresses[-1]).value
                 print("current address:\t", curr_address)
                 for inv in MACROS.INVARIANTS.get(self._curr_contract, []):
@@ -201,9 +201,9 @@ class EVM:
                     # print(self._curr_contract)
                     # print(curr_address)
                     inv = name_substitution(self._curr_contract, inv)
-                    print("boogie:\t", "\tassume("+inv+");\n")
+                    print("boogie:\t", "\tassert("+inv+");\n")
                     # print(">>>>>>>", expr)
-                    self._final_path.append("\tassume("+inv+");\n")
+                    self._final_path.append("\tassert("+inv+");\n")
                     # inv = name_substitution(self._var_prefix, inv)
                     # self._final_path.append("\tassert("+inv+");")
                     # self._final_path.append("\n\n")

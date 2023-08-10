@@ -521,6 +521,7 @@ def name_substitution(c_prefix, expression):
     parts = expression.split(" ")
     new_parts = []
     for elmt in parts:
+        print("before: ", elmt)
         if elmt in MACROS.ALL_VARS.keys():
             new_parts.append(elmt)
             # print("existing variable: " + elmt)
@@ -532,6 +533,7 @@ def name_substitution(c_prefix, expression):
         else:
             # print('find name: ', elmt)
             new_elmt = (find_realname(elmt, c_prefix, MACROS.DEF_VARS))
+            print("after:", new_elmt)
             new_parts.append(new_elmt)
     actual_val = ' '.join(new_parts)
     return actual_val
@@ -576,6 +578,7 @@ def find_realname(var, c_prefix, defvars):
         return rt
         # return "[" + find_realname(var_name, c_prefix, defvars) + "]" 
     elif '.' in var:
+        print("var:", var)
         if(var in MACROS.ALL_VARS.keys()):
             return var
 
@@ -603,17 +606,19 @@ def find_realname(var, c_prefix, defvars):
             map_name = rest[:rest.find('[')]
             map_key = rest[rest.find('['):]
             if (map_key.isdigit()):
-                print(key)
                 key = map_key
             else:
                 key = find_realname(map_key, c_prefix, defvars)
 
             if (to_sub in MACROS.DEF_VARS):
                 return MACROS.DEF_VARS[to_sub][0]+'.'+ map_name +'['+SUB+']'+ key # user defined var type
+            elif map_name.lower() == c_prefix.lower(): # patch
+                return var
             else:
                 # print(">>>>",var)
                 # print(map_name)
                 # return find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars)
+                print("i think i found it: ", c_prefix+"." + map_name +'['+SUB+']'+ key)
                 return c_prefix+"." + map_name +'['+SUB+']'+ key
         else:
             if (to_sub in MACROS.DEF_VARS):
