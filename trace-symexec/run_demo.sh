@@ -3,26 +3,67 @@
 SYMEXEC=src/symexec.py
 BOOGIE=boogie
 
+### Some boogie versions require "/proverOpt O:smt.arith.solver=2" in order to run
 
-### DEMO 1: simple token
-echo "--------------------(Demo 1)------------------------"
-python3 ${SYMEXEC} MultiVulnToken1.sol theorem1.json sampleAutoGenTrace1.txt
-${BOOGIE} TCT_out_theorem1.bpl
+### DEMO: integer overflow
+echo "--------------------(Demo: Integer Overflow)------------------------"
+SOLIDITY=../single-token/Demo.sol
+THEOREM=../web-demo/uploads/theorem_integerOverflow.json
+TRACE=../web-demo/trace_integerOverflow.txt
+python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+${BOOGIE} ../web-demo/trace_integerOverflow.bpl
 echo ""
 
-
-### DEMO 2: simple cross-contract call
-echo "--------------------(Demo 2)------------------------"
-python3 ${SYMEXEC} MultiVulnToken2.sol theorem2.json sampleAutoGenTrace2.txt
-${BOOGIE} TCT_out_theorem2.bpl
+### DEMO: no reentrancy
+echo "--------------------(Demo: No Reentrancy)------------------------"
+SOLIDITY=../single-token/Demo.sol
+THEOREM=../web-demo/uploads/theorem_noReentrancy.json
+TRACE=../web-demo/trace_noReentrancy.txt
+python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+${BOOGIE} ../web-demo/trace_noReentrancy.bpl
 echo ""
 
-### DEMO3: multiple cross contract call
-echo "--------------------(Demo 3)------------------------"
-python3 ${SYMEXEC} MultiVulnToken3.sol theorem3.json sampleAutoGenTrace3.txt
-${BOOGIE} TCT_out_theorem3.bpl
+### DEMO: reentrancy
+echo "--------------------(Demo: Reentrancy)------------------------"
+SOLIDITY=../single-token/Demo.sol
+THEOREM=../web-demo/uploads/theorem_Reentrancy.json
+TRACE=../web-demo/trace_Reentrancy.txt
+python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+${BOOGIE} ../web-demo/trace_Reentrancy.bpl
 echo ""
 
+### DEMO: add liquidity
+echo "--------------------(Demo: Add Liquidity)------------------------"
+SOLIDITY=../uniswapv2-solc0.8/test.sol
+THEOREM=../web-demo/uploads/theorem_addLiquidity.json
+TRACE=../web-demo/trace_addLiquidity.txt
+python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+${BOOGIE} ../web-demo/trace_addLiquidity.bpl
+echo ""
 
+### DEMO: remove liquidity
+echo "--------------------(Demo: Remove Liquidity)------------------------"
+SOLIDITY=../uniswapv2-solc0.8/test.sol
+THEOREM=../web-demo/uploads/theorem_removeLiquidity.json
+TRACE=../web-demo/trace_removeLiquidity.txt
+python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+${BOOGIE} ../web-demo/trace_removeLiquidity.bpl
+echo ""
 
+### DEMO: swap
+echo "--------------------(Demo: Swap)------------------------"
+SOLIDITY=../uniswapv2-solc0.8/test.sol
+THEOREM=../web-demo/uploads/theorem_swap.json
+TRACE=../web-demo/trace_swap.txt
+python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+${BOOGIE} ../web-demo/trace_swap.bpl
+echo ""
+
+### individual
+# python3 src/symexec.py ../single-token/Demo.sol ../web-demo/uploads/theorem_integerOverflow.json ../web-demo/trace_integerOverflow.txt
+# boogie ../web-demo/trace_integerOverflow.bpl
+python3 src/symexec.py ../single-token/Demo.sol ../web-demo/uploads/theorem_reentrancy.json ../web-demo/trace_reentrancy.txt
+boogie ../web-demo/trace_reentrancy.bpl
+python3 src/symexec.py ../uniswapv2-solc0.8/test.sol ../web-demo/uploads/theorem_swap.json ../web-demo/trace_swap.txt
+boogie ../web-demo/trace_swap.bpl
 

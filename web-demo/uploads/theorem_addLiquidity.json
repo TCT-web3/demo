@@ -1,7 +1,8 @@
 {
 	"entry-for-test":"UniswapV2Router::addLiquidity(address,address,uint256,uint256,uint256,uint256,address)",
 	"entry-for-real":"0x1525211a2200f523413470ff809449027cdc3739::0xca3d6539",
-	"hypothesis":"1==1",
+	"def-vars": {},
+	"hypothesis":["1==1"],
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",
 	"numerical-type": "real"

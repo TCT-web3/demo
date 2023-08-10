@@ -1,0 +1,5 @@
+trace-0x490b2180bef816017083d239e4fe66ed1131465fbb37d7e6b6944a4640e6c5af.bpl(534,2): Error: This assertion might not hold.
+Execution trace:
+    trace-0x490b2180bef816017083d239e4fe66ed1131465fbb37d7e6b6944a4640e6c5af.bpl(241,9): anon0
+
+Boogie program verifier finished with 0 verified, 1 error

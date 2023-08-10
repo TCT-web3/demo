@@ -1,7 +1,12 @@
 {
 	"entry-for-test":"MultiVulnToken::clear(address)",
 	"entry-for-real":"0x88c436e4a975ef5e5788f97e86d80fde29ddd13d::0x3d0a4061",
-	"hypothesis":"this.totalSupply<TwoE256 && tx_origin!=_to ",
+	"def-vars": {
+		"totalSupply": ["MultiVulnToken", "this.totalSupply", "uint256"]
+	},
+	"hypothesis": [
+		"totalSupply < TwoE256 && tx_origin != _to"
+	],
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",
 	"numerical-type": "int"
