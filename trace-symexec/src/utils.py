@@ -477,11 +477,9 @@ def write_invariants(invariants, var_prefix):
     rt = "\t// insert invariant of entry contract\n"
     trace_invariants = invariants.get(MACROS.CONTRACT_NAME, [])
     for inv in trace_invariants:
-        print("invariant:\t", inv)
         inv = inv.replace("this", "entry_contract")
         inv = name_substitution(var_prefix, inv)
         rt = rt + ("\tassume(" + inv + ");\n")
-        print("boogie:\t", "\tassume("+inv+");\n")
     rt = rt + ("\n")
     return rt 
 
@@ -492,11 +490,9 @@ def write_epilogue(invariants,var_prefix):
     rt = "\t// (post) insert invariant of entry contract\n"
     trace_invariants = invariants.get(MACROS.CONTRACT_NAME, [])
     for inv in trace_invariants:
-        print("(post) invariant:\t", inv)
         inv = inv.replace("this", "entry_contract")
         inv = name_substitution(var_prefix, inv)
         rt = rt + ("\tassert(" + inv + ");\n")
-        print("(post) boogie:\t", "\tassert("+inv+");\n")
     rt = rt + ('}')
     return rt
 
@@ -521,7 +517,6 @@ def name_substitution(c_prefix, expression):
     parts = expression.split(" ")
     new_parts = []
     for elmt in parts:
-        print("before: ", elmt)
         if elmt in MACROS.ALL_VARS.keys():
             new_parts.append(elmt)
             # print("existing variable: " + elmt)
@@ -533,7 +528,6 @@ def name_substitution(c_prefix, expression):
         else:
             # print('find name: ', elmt)
             new_elmt = (find_realname(elmt, c_prefix, MACROS.DEF_VARS))
-            print("after:", new_elmt)
             new_parts.append(new_elmt)
     actual_val = ' '.join(new_parts)
     return actual_val
@@ -547,7 +541,6 @@ def isfloat(num):
         return False
 
 def find_realname(var, c_prefix, defvars):
-    # print("var: " + var)
     if (not var):
         return var #skip spaces
     elif var == "entry_contract":
@@ -578,7 +571,6 @@ def find_realname(var, c_prefix, defvars):
         return rt
         # return "[" + find_realname(var_name, c_prefix, defvars) + "]" 
     elif '.' in var:
-        print("var:", var)
         if(var in MACROS.ALL_VARS.keys()):
             return var
 
@@ -618,7 +610,6 @@ def find_realname(var, c_prefix, defvars):
                 # print(">>>>",var)
                 # print(map_name)
                 # return find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars)
-                print("i think i found it: ", c_prefix+"." + map_name +'['+SUB+']'+ key)
                 return c_prefix+"." + map_name +'['+SUB+']'+ key
         else:
             if (to_sub in MACROS.DEF_VARS):
