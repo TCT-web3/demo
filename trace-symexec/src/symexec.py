@@ -671,6 +671,8 @@ class EVM:
                 raise Exception("JUMPI condition exception")
             else:
                 return
+        elif "." in var:
+            return
         elif(self._final_vars[var]=='bool'):
             if (isNotZero):
                 path = "\tassume("+ var +");\n\n"

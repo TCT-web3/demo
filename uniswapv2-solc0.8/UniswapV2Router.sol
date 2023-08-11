@@ -70,9 +70,9 @@ contract UniswapV2Router is IUniswapV2Router {
         }
     }
 
-    /// @custom:declaration var factory: address; var pair: address;
-    /// @custom:assignment factory:=this.factory; pair:=factory.getPair[tokenA][tokenB];
-    /// @custom:postcondition tokenA.balanceOf[pair] / old( tokenA.balanceOf[pair] ) ==  tokenB.balanceOf[pair] / old( tokenB.balanceOf[pair] )
+    /// @custom:declaration var factory: address; var pair: address; var tokenA: address; var tokenB: address;
+    /// @custom:assignment factory:=this.factory; tokenA:=tokenA; tokenB:=tokenB; pair:=factory.getPair[tokenA][tokenB];
+    /// @custom:postcondition tokenA.balanceOf[pair] / old( tokenA.balanceOf[pair] ) ==  tokenB.balanceOf[pair] / old( tokenB.balanceOf[pair] ); 
     /// @custom:postcondition tokenB.balanceOf[pair] / old( tokenB.balanceOf[pair] ) ==  pair.totalSupply / old( pair.totalSupply )
     function addLiquidity(
         address tokenA,

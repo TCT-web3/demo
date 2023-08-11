@@ -1,8 +1,21 @@
 {
 	"entry-for-test":"UniswapV2Router::addLiquidity(address,address,uint256,uint256,uint256,uint256,address)",
 	"entry-for-real":"0x1525211a2200f523413470ff809449027cdc3739::0xca3d6539",
-	"def-vars": {},
-	"hypothesis":["1==1"],
+	"def-vars": {
+		"factory": ["UniswapV2Factory", "this.factory", "address"],
+		"_tokenA" : ["FancyToken", "tokenA", "address"],
+		"_tokenB" : ["FancyToken", "tokenB", "address"],
+		"pair"   : ["UniswapV2Pair", "factory.getPair[_tokenA][_tokenB]", "address"]
+	},
+	"hypothesis": [
+		"_tokenA != _tokenB",
+		"tx_origin != pair",
+		"_tokenA.balanceOf[pair] != Zero",
+		"_tokenB.balanceOf[pair] != Zero",
+		"pair.totalSupply != Zero",
+		"pair.reserve0 == _tokenB.balanceOf[pair]",
+		"pair.reserve1 == _tokenA.balanceOf[pair]"
+	],
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",
 	"numerical-type": "real"
