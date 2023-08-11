@@ -571,7 +571,7 @@ def find_realname(var, c_prefix, defvars):
         return rt
         # return "[" + find_realname(var_name, c_prefix, defvars) + "]" 
     elif '.' in var:
-        if(var in MACROS.ALL_VARS.keys()):
+        if(var in MACROS.ALL_VARS):
             return var
 
         to_sub = var[:var.rfind(".")]
@@ -604,8 +604,6 @@ def find_realname(var, c_prefix, defvars):
 
             if (to_sub in MACROS.DEF_VARS):
                 return MACROS.DEF_VARS[to_sub][0]+'.'+ map_name +'['+SUB+']'+ key # user defined var type
-            elif map_name.lower() == c_prefix.lower(): # patch
-                return var
             else:
                 # print(">>>>",var)
                 # print(map_name)

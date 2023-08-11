@@ -127,6 +127,7 @@ class EVM:
             this_address = self._stacks[-1][-2]
             this_address = self.postorder_traversal(this_address)
             self._sym_this_addresses.append(SVT(this_address))
+            MACROS.ALL_VARS[this_address] = "address"
 
             ### switch to a new contract and pops out the operands for a successful CALL operation
             for i in range(7-static_idx_diff):
