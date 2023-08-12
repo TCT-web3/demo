@@ -13,8 +13,12 @@
 		"tokenA.balanceOf[pair] != Zero",
 		"tokenB.balanceOf[pair] != Zero",
 		"pair.totalSupply != Zero",
+		"tokenA.totalSupply < TwoE255",
+		"tokenB.totalSupply < TwoE255",
 		"pair.reserve0 == tokenB.balanceOf[pair]",
-		"pair.reserve1 == tokenA.balanceOf[pair]"
+		"pair.reserve1 == tokenA.balanceOf[pair]",
+		"pair.token0 == tokenB",
+		"pair.token1 == tokenA"
 	],
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",

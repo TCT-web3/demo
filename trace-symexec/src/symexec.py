@@ -433,6 +433,7 @@ class EVM:
     
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
+        print(node)
         to_return = ""
         if not node.children:
             return node.value
@@ -448,6 +449,18 @@ class EVM:
                 to_return = "true"
             elif to_return == "true":
                 to_return = "false"
+            elif to_return in self._final_vars:
+                val1 = to_return
+                self._tmp_var_count+=1
+                to_return = "tmp" + str(self._tmp_var_count)
+                if (self._final_vars[str(val1)] == 'bool'):
+                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=!" + str(val1) + ";\n"
+                elif (self._final_vars[str(val1)] == 'uint256'):
+                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=" + str(val1) + "==Zero;\n"
+                node.value = to_return
+                node.children = []
+                self._final_vars[to_return] = 'bool'
+                self._final_path.append(to_boogie)
             else:
                 val1=self._tmp_var_count
                 self._tmp_var_count+=1
@@ -611,7 +624,8 @@ class EVM:
             node.children = []
             self._final_path.append(to_boogie)
         else:
-            return str(node)
+            raise Exception(f"Codegen {node} -- not implemented")
+            #return str(node)
         return to_return
     
     '''generate boogie code when SSTORE happens'''
