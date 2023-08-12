@@ -60,12 +60,15 @@ ${BOOGIE} ../web-demo/trace_swap.bpl
 echo ""
 
 ### individual
+### /proverOpt O:smt.arith.solver=2
 # python3 src/symexec.py ../single-token/Demo.sol ../web-demo/uploads/theorem_integerOverflow.json ../web-demo/trace_integerOverflow.txt
 # boogie ../web-demo/trace_integerOverflow.bpl
 # python3 src/symexec.py ../single-token/Demo.sol ../web-demo/uploads/theorem_reentrancy.json ../web-demo/trace_reentrancy.txt
 # boogie ../web-demo/trace_reentrancy.bpl
 # python3 src/symexec.py ../uniswapv2-solc0.8/test.sol ../web-demo/uploads/theorem_addLiquidity.json ../web-demo/trace_addLiquidity.txt
 # boogie ../web-demo/trace_addLiquidity.bpl
+# python3 src/symexec.py ../uniswapv2-solc0.8/test.sol ../web-demo/uploads/theorem_removeLiquidity.json ../web-demo/trace_removeLiquidity.txt
+# boogie ../web-demo/trace_removeLiquidity.bpl
 # python3 src/symexec.py ../uniswapv2-solc0.8/test.sol ../web-demo/uploads/theorem_swap.json ../web-demo/trace_swap.txt
 # boogie ../web-demo/trace_swap.bpl
 

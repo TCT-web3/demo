@@ -485,12 +485,14 @@ def write_invariants(invariants, var_prefix):
 write epilogue to Boogie
 '''
 def write_epilogue(invariants,var_prefix):
-    rt = "\t// (post) insert invariant of entry contract\n"
     trace_invariants = invariants.get(MACROS.CONTRACT_NAME, [])
-    for inv in trace_invariants:
-        inv = inv.replace("this", "entry_contract")
-        inv = name_substitution(var_prefix, inv)
-        rt = rt + ("\tassert(" + inv + ");\n")
+    rt = ""
+    if trace_invariants:
+        rt = "\t// (post) insert invariant of entry contract\n"
+        for inv in trace_invariants:
+            inv = inv.replace("this", "entry_contract")
+            inv = name_substitution(var_prefix, inv)
+            rt = rt + ("\tassert(" + inv + ");\n")
     rt = rt + ('}')
     return rt
 
