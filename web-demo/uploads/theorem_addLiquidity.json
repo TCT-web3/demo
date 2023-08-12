@@ -10,9 +10,9 @@
 	"hypothesis": [
 		"tokenA != tokenB",
 		"tx_origin != pair",
-		"tokenA.balanceOf[pair] != Zero",
-		"tokenB.balanceOf[pair] != Zero",
-		"pair.totalSupply != Zero",
+		"tokenA.balanceOf[pair] > Zero",
+		"tokenB.balanceOf[pair] > Zero",
+		"pair.totalSupply > Zero",
 		"tokenA.totalSupply < TwoE255",
 		"tokenB.totalSupply < TwoE255",
 		"pair.reserve0 == tokenB.balanceOf[pair]",
