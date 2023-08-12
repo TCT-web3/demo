@@ -742,41 +742,22 @@ modifies """)
     '''write entry assignment to Boogie'''
     def write_entry_assignment(self):
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
-            # asgmt = asgmt.replace("this", self._curr_contract).strip()
-            # asgmt = asgmt.replace(":=",)
-            print(asgmt)
             asgmt = asgmt.strip()
             asgmt = asgmt.strip(";")
-            # print(self._var_prefix + "???")
             curr_address = (self._sym_this_addresses[-1]).value
-            # print("??????", curr_address)
-            # print("??????", asgmt)
             asgmt = asgmt.replace("this", curr_address)
-            # print(asgmt)
-            # test = asgmt.split(":=")
-            # name = (test[0])
-            # expr = (test[1])
-            # self._output_file.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
-            # print(asgmt)
-            # print(MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
-            # asgmt = name_substitution(self._var_prefix, asgmt)
-            # print(asgmt)
             if(asgmt):
-                # self._output_file.write("\t" + asgmt + ";\n")
                 test = asgmt.split(":=")
             name = (test[0])
             expr = (test[1])
             self._output_file.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
-
-            
-
         self._output_file.write("\n")
     
     '''write entry postcondition to Boogie'''
     def write_entry_postcondition(self):
         postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
         if postcons:
-            self._output_file.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
+            self._output_file.write("\t// (post) insert postcondition of entry contract: " + self._curr_function + '\n')
             for postcon in postcons:
                 postcon = postcon.strip(";")
                 expr = name_substitution(self._curr_contract, postcon)
@@ -943,7 +924,7 @@ def main():
     evm.write_global_vars()
     evm.write_vars() # aux vars for Boogie Proofs
     evm.write_declared_vars() # postcondition vars for Boogie proofs
-
+    
     BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
     BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
@@ -953,7 +934,7 @@ def main():
     evm.write_entry_postcondition() # from AST file
     BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
 
-    # print(MACROS.ALL_VARS)
+    BOOGIE_OUT.close() # close file
  
 if __name__ == '__main__':
     main()

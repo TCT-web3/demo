@@ -442,14 +442,12 @@ def write_defvars(var_prefix):
     THEOREM = json.load(THEOREM_file)
     vars = THEOREM["def-vars"]
     for var in vars:
-        # rt = "\tvar " + var + ":  " + vars[var][0] + ";\n" + rt
-        # expr = vars[var][1]
-        # rt = rt + "\t" + var + ":= " + name_substitution(var_prefix, expr) + ";\n"
-        var_type = vars[var][2]
-        rt = "\tvar " + var + ":  " + var_type + ";\n" + rt
-        expr = vars[var][1]
-        expr = expr.replace("this", "entry_contract")
-        rt = rt + "\t" + var + ":= " + name_substitution(var_prefix, expr) + ";\n"
+        if (var not in MACROS.ALL_VARS):
+            var_type = vars[var][2]
+            rt = "\tvar " + var + ":  " + var_type + ";\n" + rt
+            expr = vars[var][1]
+            expr = expr.replace("this", "entry_contract")
+            rt = rt + "\t" + var + ":= " + name_substitution(var_prefix, expr) + ";\n"
 
     rt = "\n\t// def-vars\n" + rt
     return(rt) 
@@ -526,7 +524,6 @@ def name_substitution(c_prefix, expression):
         elif ('=' in elmt or '>' in elmt or '<' in elmt or isfloat(elmt) or elmt.isdigit()):
             new_parts.append(elmt)
         else:
-            # print('find name: ', elmt)
             new_elmt = (find_realname(elmt, c_prefix, MACROS.DEF_VARS))
             new_parts.append(new_elmt)
     actual_val = ' '.join(new_parts)
@@ -558,9 +555,6 @@ def find_realname(var, c_prefix, defvars):
         return find_realname(defvars[var][1], c_prefix, defvars)
     elif var=="[]":
         return ""
-    # elif (var.count('[') == 1 and var.count(']') == 1):
-    #     print("???", var)
-    #     return var
     elif var.startswith('['):
         # TODO: make it general
         vars = var.split(']')[:-1]
@@ -605,9 +599,6 @@ def find_realname(var, c_prefix, defvars):
             if (to_sub in MACROS.DEF_VARS):
                 return MACROS.DEF_VARS[to_sub][0]+'.'+ map_name +'['+SUB+']'+ key # user defined var type
             else:
-                # print(">>>>",var)
-                # print(map_name)
-                # return find_realname(map_name, c_prefix, defvars)+'['+find_realname(to_sub, c_prefix, defvars)+']'+find_realname(map_key, c_prefix, defvars)
                 return c_prefix+"." + map_name +'['+SUB+']'+ key
         else:
             if (to_sub in MACROS.DEF_VARS):
