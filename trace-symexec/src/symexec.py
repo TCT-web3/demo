@@ -244,7 +244,7 @@ class EVM:
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
             
 
-            
+
             # print("----AFTER----")
             # self.inspect("currmemory")
         elif opcode=="GAS":
@@ -433,7 +433,6 @@ class EVM:
     
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
-        print(node)
         to_return = ""
         if not node.children:
             return node.value
@@ -449,18 +448,6 @@ class EVM:
                 to_return = "true"
             elif to_return == "true":
                 to_return = "false"
-            elif to_return in self._final_vars:
-                val1 = to_return
-                self._tmp_var_count+=1
-                to_return = "tmp" + str(self._tmp_var_count)
-                if (self._final_vars[str(val1)] == 'bool'):
-                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=!" + str(val1) + ";\n"
-                elif (self._final_vars[str(val1)] == 'uint256'):
-                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=" + str(val1) + "==Zero;\n"
-                node.value = to_return
-                node.children = []
-                self._final_vars[to_return] = 'bool'
-                self._final_path.append(to_boogie)
             else:
                 val1=self._tmp_var_count
                 self._tmp_var_count+=1
@@ -658,7 +645,7 @@ class EVM:
         path+=";\n\n"
         self.add_new_vars(var_name)
         self._final_path.append(path)
-        
+
 
     def is_called_param(self, map_key):
         if (re.search("c\_(.*).\_", map_key)):
@@ -752,7 +739,6 @@ modifies """)
 
             self._output_file.write("\t" + decl.replace(original_name, decl_name) + "\n")
         self._output_file.write("\n")
-
     '''write entry assignment to Boogie'''
     def write_entry_assignment(self):
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
@@ -771,7 +757,7 @@ modifies """)
     def write_entry_postcondition(self):
         postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
         if postcons:
-            self._output_file.write("\t// (post) insert postcondition of entry contract: " + self._curr_function + '\n')
+            self._output_file.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
             for postcon in postcons:
                 postcon = postcon.strip(";")
                 expr = name_substitution(self._curr_contract, postcon)
@@ -899,7 +885,8 @@ def main():
     MACROS.FUNCTION_NAME    = FUNCTION_NAME
     VAR_PREFIX              = CONTRACT_NAME # get_init_var_prefix() 
     check_entrypoint()
-    entry_contract_address=gen_trace_essential()[0]
+    entry_contract_address  = gen_trace_essential()[0]
+
     ABI_INFO    = get_ABI_info()
     STOR_INFO   = get_STORAGE_info()
 
