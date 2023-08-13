@@ -120,21 +120,12 @@ def get_types(storage_info):
                     types[label] = var_type
                 elif "t_mapping" in t_type:
                     var_type = get_boogie_type(t_type)
-                    # t_type = t_type.replace("t_", "")
-                    # t_type = t_type.replace("mapping", "")[1:-1]
-                    # t_type = t_type.split(',')
                     rt = rt + ("\tvar " + contract+'.'+label + ': ' + var_type + ';\n')
                     types[label] = var_type
                 else:
                     rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n") 
                     types[label] = t_type[2:] 
                 locals.append(contract+'.'+label)
-                # print(contract, label, t_type)
-        # contract_name = contract[contract.find(':'):]
-        # contract_name = str(contract)
-        # contract_name = contract_name[':':]        
-        # print(contract)
-        # print(types)
         TYPES[contract] = types
 
     return TYPES
@@ -157,11 +148,10 @@ def get_boogie_type(t_type):
 find where the essential part starts in a contract call
 '''
 def find_essential_start(contract_name, function_name):
-    # print(MACROS.SOLIDITY_FNAME)
     RUNTIME_file = open(MACROS.RUNTIME, )
     RUNTIME_BYTE = json.load(RUNTIME_file)
     essential_start=0
-    # function_list = (RUNTIME_BYTE["contracts"][MACROS.SOLIDITY_FNAME+":"+contract_name]["function-debug-runtime"])
+
     for contract in RUNTIME_BYTE["contracts"]:
         if ":"+contract_name in contract:
             function_list = RUNTIME_BYTE["contracts"][contract]["function-debug-runtime"]
@@ -190,11 +180,8 @@ def gen_trace_essential():
     PRE_start = 0
     for i in range(0, len(lines)-1):
         if lines[i].startswith(">>"):
-            # matches = re.search(r"\(([^:]+)::([^()]+)\(.*?\)\)", lines[i])
             depth += 1
             matches = re.search(r"\(([^:]+)::([^()]+)\(.*?\)\)", lines[i])
-            # print(line[1])
-            # print(matches.group(1))
             contract_name = matches.group(1)
             function_name = matches.group(2)
             if not lines[i-1].startswith("==="):
@@ -224,6 +211,7 @@ def gen_trace_essential():
             else:
                 PRE_start = PC
     return int(entry_address, 16), int(entry_func_hash, 16)
+
 '''
 get ABI information as a JSON
 '''
@@ -237,25 +225,7 @@ def get_ABI_info():
         new_name = contract_name[contract_name.find(':')+1:] #trim name
         info[new_name] = INFO["contracts"][contract_name]
     rt["contracts"] = info
-    # print(rt["contracts"].keys())
 
-    # tmp = ""
-    # lines = ABI_file.readlines()
-    # for line in lines:
-    #     # print("l" + line)
-    #     if line[0] == '{':
-    #         continue
-    #     elif len(line.strip()) == 0:
-    #         line = ",\n"
-    #     elif '===' in line:
-    #         c_name = line.replace("======= ", "").replace(" =======", "").replace(MACROS.SOLIDITY_FNAME+":", "").replace("\n", "")
-    #         line = "\"" + c_name + "\"" +":\n"
-    #     elif 'JSON ABI' in line:
-    #         continue    
-    #     tmp = tmp + line
-    # tmp = tmp + '}'
-    # tmp = '{' + tmp[1:] #patch
-    # INFO = json.loads(tmp)
     return rt
 
 '''
@@ -270,26 +240,6 @@ def get_STORAGE_info():
         new_name = contract_name[contract_name.find(':')+1:] #trim name
         info[new_name] = INFO["contracts"][contract_name]
     rt["contracts"] = info
-    # print(rt["contracts"].keys())
-        # print(contract_name)
-    # STORAGE_file = open(MACROS.STORAGE, "r")
-    # tmp = '{'
-    # lines = STORAGE_file.readlines()
-    # for line in lines:
-    #     # print("l" + line)
-    #     if len(line.strip()) == 0:
-    #         # print("},")
-    #         line = ",\n"    
-    #     elif '===' in line:
-    #         c_name = line.replace("======= ", "").replace(" =======", "").replace(MACROS.SOLIDITY_FNAME+":", "").replace("\n", "")
-    #         line = "\"" + c_name + "\"" +":\n"
-    #         # print(c_name)
-    #     elif 'Contract Storage' in line:
-    #         continue    
-    #     tmp = tmp + line
-    # tmp = tmp + '}'
-    # tmp = '{' + tmp[2:] #patch
-    # INFO = json.loads(tmp)
     return rt  
 
 
@@ -307,8 +257,6 @@ def get_invariant():
         sourceName = matches[0]
         contractName = matches[1]
         astNode_dict[contractName] = sourceName
-    #     if MACROS.CONTRACT_NAME == contractName:
-    #         nodes = AST_INFO["sources"][sourceName]["AST"]["nodes"]
 
     def natSpec_build(node):
         contractName = node["name"]
@@ -333,11 +281,7 @@ def get_invariant():
         
                 if my_natSpec:
                     natSpec_dict[contractName] = my_natSpec
-    
-    # for node in nodes:
-    #     if node["nodeType"] == "ContractDefinition":
-    #         natSpec_build(node)
-    
+
     for sources in AST_INFO["sources"]:
         nodes = AST_INFO["sources"][sources]["AST"]["nodes"]
         for node in nodes:
@@ -370,12 +314,13 @@ def get_postcondition():
             method_name = method[:method.find("(")]
             postconditions[contract_name][method_name] = {}
             for natspec in methods[method]:
-                natspec_name = natspec.replace("custom:", "") # TODO: "this" name resolution use name_substitution need var prefix
+                natspec_name = natspec.replace("custom:", "")
                 d = ";"
                 spec = [e+d for e in methods[method][natspec].split(d) if e]
                 postconditions[contract_name][method_name][natspec_name] = spec
 
     return postconditions
+
 '''
 get proof hypothesis from the the theorem file
 '''
@@ -457,12 +402,9 @@ def write_defvars(var_prefix):
 write hypothesis to Boogie
 '''
 def write_hypothesis(hypothesis, var_prefix):
-    # hypothesis = hypothesis.replace("this", var_prefix)
     rt = "\n\t// hypothesis \n"
     for hypo in hypothesis:
-        # print("hypooooo: " + hypo)
         rt += "\tassume(" + name_substitution(var_prefix, hypo) + ");\n" 
-        # rt += "\tassume(" + hypo + ");\n" 
     
     rt += "\n"
     return(rt)
@@ -530,7 +472,6 @@ def name_substitution(c_prefix, expression):
             new_parts.append(new_elmt)
     actual_val = ' '.join(new_parts)
     return actual_val
-    # print("realhypo: ", realhypo)
         
 def isfloat(num):
     try:
@@ -563,9 +504,7 @@ def find_realname(var, c_prefix, defvars):
         rt = ""
         for elmt in vars:
             rt += '[' + find_realname(elmt[1:], c_prefix, defvars) + ']'
-        # print(var_name)
         return rt
-        # return "[" + find_realname(var_name, c_prefix, defvars) + "]" 
     elif '.' in var:
         if(var in MACROS.ALL_VARS):
             return var
@@ -574,18 +513,11 @@ def find_realname(var, c_prefix, defvars):
         rest = var[var.rfind(".")+1:]
 
         SUB = ""
-        # print("?", to_sub)
-        # SUB = find_realname(to_sub, c_prefix, defvars)
 
         if ("[" not in to_sub):
             SUB = find_realname(to_sub, c_prefix, defvars)
         else:
-            # check = to_sub[:to_sub.find('[')]
-            # print(MACROS.ALL_VARS.keys())
-            # if(check in MACROS.ALL_VARS.keys()):
             if ("tmp" in to_sub):
-                # this is a patch since ALL_VARS is not updated
-                # print("this should not expand", check)
                 SUB = to_sub
             else:
                 SUB = find_realname(to_sub, c_prefix, defvars)
@@ -606,13 +538,9 @@ def find_realname(var, c_prefix, defvars):
             if (to_sub in MACROS.DEF_VARS):
                 return MACROS.DEF_VARS[to_sub][0]+'.'+ rest +'['+SUB+']' # user defined var type
             else:
-                # print(">>>>",var)
                 return c_prefix + "." +rest +'['+SUB+']'
-                # return find_realname(rest)+'['+find_realname(to_sub, c_prefix, defvars)+']'
     elif '[' in var:
-        # print(var)
         name = var[:var.find("[")]
-        # print(name)
         name_type=""
         if name in MACROS.ALL_VARS.keys():
             name_type = MACROS.ALL_VARS[name]
@@ -625,15 +553,12 @@ def find_realname(var, c_prefix, defvars):
         else:
             mapkeys=re.search("\[.*\]", var)[0]
             mapkeys=mapkeys.split(']')[:-1]
-            # print("nameeee", name)
             rt = get_fullname(name)
             for key in mapkeys:
                 rt += '[' + find_realname(key[1:], c_prefix, defvars)+ ']'
             return rt
     else:
         return var
-        # return get_fullname(var)
-
 
 def in_allvars(name):
     for var in MACROS.ALL_VARS:
@@ -641,8 +566,6 @@ def in_allvars(name):
             return True
 
 def get_fullname(name):
-    # for defvars in MACROS.DEF_VARS:
-    #     if 
     for var in MACROS.ALL_VARS:
         if('.'+name in var):
             return var
@@ -668,30 +591,3 @@ def get_var_mapping(var):
             word += ltr
     
     return(mapping)
-# '''
-# write local variables from storage file to Boogie
-# '''
-# def write_locals(storage_info):
-#     locals = []
-#     rt = ""
-#     for contract in storage_info.keys():
-#         for elmt in storage_info[contract]["storage"]:
-#             label =  elmt["label"]
-#             t_type = elmt["type"]
-            
-#             if (label in locals):
-#                 pass
-#             else:
-#                 if ("string" in t_type):
-#                     pass
-#                 elif ("contract" in t_type):
-#                     pass # TODO: contract address as a type
-#                 elif "t_mapping" in t_type:
-#                     t_type = t_type.replace("t_", "")
-#                     t_type = t_type.replace("mapping", "")[1:-1]
-#                     t_type = t_type.split(',')
-#                     rt = rt + ("\tvar " + contract+'.'+label + ':['+t_type[0]+'] ' + t_type[1] + ';\n')
-#                 else:
-#                     rt = rt + ("\tvar " + contract+'.'+label + ":\t" + t_type[2:] + ";\n")  
-#                 locals.append(contract+'.'+label)
-#     return rt + '\n'

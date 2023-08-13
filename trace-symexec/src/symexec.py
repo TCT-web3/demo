@@ -10,6 +10,7 @@ import sys
 from prepare    import *
 from macros     import *
 from utils      import *
+
 '''
 Symbolic value tree 
 '''
@@ -135,9 +136,6 @@ class EVM:
             self._stacks[-1].append(SVT(1)) # CALL successed
             dest_address = get_var_prefix(instr)
             self._full_address = get_curr_address(instr)
-            #dict.push{self._full_address:self._sym_this_addresses[-1]}
-
-            # self._var_prefix = dest_address
             self._call_stack.append((dest_contract, dest_function, dest_address))
             self._curr_contract = dest_contract
             self._curr_function = dest_function
@@ -157,57 +155,28 @@ class EVM:
                 self._non_static_calls[-1] = self._var_prefix
                 for contract in MACROS.INVARIANTS:
                     if (contract == dest_contract):
-                        # if (len(MACROS.INVARIANTS[dest_contract])>0):
                         self._final_path.append("\t// insert invariant of " + dest_contract + '\n')
                         curr_address = (self._sym_this_addresses[-1]).value
-                        # print("current address:\t", curr_address)
-                        # for add in self._sym_this_addresses:
-                        #     print(add.value)
                         for inv in MACROS.INVARIANTS[dest_contract]:
-                            # print("invariant:\t", inv)
                             inv = inv.replace("this", curr_address)
                             inv = name_substitution(self._curr_contract, inv)
-                            # print(">>>>>>>", expr)
-                            # print("boogie:\t", "\tassume("+inv+");\n")
                             self._final_path.append("\tassume("+inv+");\n")
                         self._final_path.append("\n")
 
-            # sys.exit()
         elif instr[0]==("<"):
-            # print(instr)
             pass
         elif opcode=="RETURN" or opcode=="STOP":
-
-            # print("----BEFORE----")
-            # self.inspect("currstack")
-            # self.inspect("currmemory")
             self._return_data_size =0
 
             if(len(self._non_static_calls)>0 and self._non_static_calls[-1] == "static"):
                 self._non_static_calls.pop()
             else:
-                # print(MACROS.INVARIANTS)
-                # for contract in MACROS.INVARIANTS:
-                #     if (contract == self._curr_contract):
-                        # print(MACROS.INVARIANTS[contract])
-                # if (len(MACROS.INVARIANTS.get(self._curr_contract, []))>0):
                 self._final_path.append("\t// (post) insert invariant of " + self._curr_contract + '\n')
                 curr_address = (self._sym_this_addresses[-1]).value
-                # print("current address:\t", curr_address)
                 for inv in MACROS.INVARIANTS.get(self._curr_contract, []):
-                    # inv = inv.replace("this", self._var_prefix)
-                    # print(">>>>>>?" + inv)
-                    # print("invariant:\t", inv)
                     inv = inv.replace("this", curr_address)
-                    # print(self._curr_contract)
-                    # print(curr_address)
                     inv = name_substitution(self._curr_contract, inv)
-                    # print("boogie:\t", "\tassert("+inv+");\n")
-                    # print(">>>>>>>", expr)
                     self._final_path.append("\tassert("+inv+");\n")
-                    # inv = name_substitution(self._var_prefix, inv)
-                    # self._final_path.append("\tassert("+inv+");")
-                    # self._final_path.append("\n\n")
 
             postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
             if postcons:
@@ -229,33 +198,21 @@ class EVM:
                     count-=32
             elif opcode=="STOP":
                 self._return_data_size = 0
-            # print(self._call_stack)
-            
+
             self._call_stack.pop()
             self._curr_contract = self._call_stack[-1][0]
             self._curr_function = self._call_stack[-1][1]
             MACROS.CONTRACT_NAME = self._curr_contract
             MACROS.FUNCTION_NAME = self._curr_function
-            # self._var_prefix = self._call_stack[-1][2]
+
             self._stacks.pop()
             self._memories.pop()   
             self._sym_this_addresses.pop()     
             self._var_prefix = self._curr_contract
             print(">>LEAVE, switched to contract: ", self._call_stack[-1][0])
-            
-
-
-            # print("----AFTER----")
-            # self.inspect("currmemory")
         elif opcode=="GAS":
             self._stacks[-1].append(SVT("GAS"))  
         elif opcode=="RETURNDATASIZE":
-            # for elmt in self._abi_info["contracts"][self._curr_contract]["abi"]:
-                # if ("name" in elmt.keys() and elmt["name"] == self._curr_function):
-                #     return_count = len(elmt["outputs"])
-                #     if(return_count == 0):
-                #         self._stacks[-1].append(SVT(0))
-                #     else:
             self._stacks[-1].append(SVT(self._return_data_size))
         elif opcode=="TIMESTAMP":
             self._stacks[-1].append(SVT("BLOCKTIME"))
@@ -411,12 +368,12 @@ class EVM:
                 self._stacks[-1].pop() # pop 64
                 self._stacks[-1].append(node)
             else:
-                self._stacks[-1].pop()    #ToDo: this is a temporary patch. It makes the stack layout correct. The content is still incorrect.
+                self._stacks[-1].pop()    # TODO: this is a temporary patch. It makes the stack layout correct. The content is still incorrect.
                 self._stacks[-1].pop()
                 self._stacks[-1].append(SVT(0xdeadbeef))
         elif opcode=="ADDRESS":
             self._stacks[-1].append(self._sym_this_addresses[-1])
-        elif opcode=="CALLDATACOPY": # for swap trace
+        elif opcode=="CALLDATACOPY": # TODO: this is a temporary patch. It makes the stack layout correct. The content is still incorrect.
             destOffset  = self._stacks[-1].pop()
             offset      = self._stacks[-1].pop()
             size        = self._stacks[-1].pop()
@@ -427,9 +384,6 @@ class EVM:
             self.inspect("currstack")
             self.inspect("currmemory")
             raise Exception("not handled") 
-            # sys.exit()
-        # self.inspect("currstack")
-        # self.inspect("currmemory")
     
     '''recursively traverse an SVT node'''
     def postorder_traversal(self, node):
@@ -449,10 +403,7 @@ class EVM:
             elif to_return == "true":
                 to_return = "false"
             else:
-                # key = to_return
                 val1 = to_return
-                # if "." in to_return:
-                #     val1 = val1[:to_return.find("[")]
                 self._tmp_var_count+=1
                 to_return = "tmp" + str(self._tmp_var_count)
                 if (self.isType(val1, 'bool')):
@@ -480,17 +431,10 @@ class EVM:
                     map_key = self.find_key(node.children[0].children[1])
                     key_for_boogie = f"[{sym_this}][{str(map_key)}]"
                     var_name = map_ID + key_for_boogie
-            # else:
-            #     map_ID = node.children[0].value
             self._tmp_var_count+=1
             to_return = "tmp" + str(self._tmp_var_count)
-            # var_name  = self._storage_map[self._curr_contract][str(map_id)]
             self.add_new_vars(var_name)
-            to_boogie = "\ttmp"+str(self._tmp_var_count)+":="+ var_name
-
-            # if node.children[0].value=="MapElement":
-            #     to_boogie += key_for_boogie
-            to_boogie +=";\n"
+            to_boogie = "\ttmp"+str(self._tmp_var_count)+":="+ var_name +";\n"
             node.value = to_return
             node.children = []
             self._final_vars[to_return] = self._final_vars[map_ID].split()[-1] # patch
@@ -513,8 +457,6 @@ class EVM:
                         to_return = "true" if val1 > val2 else "false"
                     elif node.value == "EQ":
                         to_return = "true" if val1 == val2 else "false"
-                # elif node.value == "EQ" and val1 == val2:
-                #     to_return = "true"
                 else:
                     self._tmp_var_count+=1
                     to_return = "tmp" + str(self._tmp_var_count)
@@ -528,7 +470,7 @@ class EVM:
                     node.children = []
                     self._final_vars[to_return] = 'bool'
                     self._final_path.append(to_boogie) 
-        elif node.value == "ADD" or node.value == "SUB" or node.value == "AND" or node.value == "OR" or node.value == "MUL" or node.value == "DIV" or node.value == "MOD": # DIV, MUL
+        elif node.value == "ADD" or node.value == "SUB" or node.value == "AND" or node.value == "OR" or node.value == "MUL" or node.value == "DIV" or node.value == "MOD":
             val1=self.postorder_traversal(node.children[0])
             val2=self.postorder_traversal(node.children[1])           
             if isinstance(val1, int) and isinstance(val2, int):
@@ -548,11 +490,6 @@ class EVM:
                     to_return = val1 * val2
                 elif node.value == "DIV":
                     to_return = val1 / val2
-            # elif (isinstance(val2, int) and val2 == 0) and (node.value == "MUL" or node.value == "SUB" or node.value == "ADD"):
-            #     if node.value == "MUL":
-            #         to_return = 0
-            #     elif node.value == "SUB" or node.value == "ADD":
-            #         to_return = val1
             else:
                 self._tmp_var_count+=1
                 to_return =  "tmp" + str(self._tmp_var_count)
@@ -615,7 +552,7 @@ class EVM:
             self._final_path.append(to_boogie)
         else:
             raise Exception(f"Codegen {node} -- not implemented")
-            #return str(node)
+            # return str(node)
         return to_return
     
     '''generate boogie code when SSTORE happens'''
@@ -690,8 +627,6 @@ class EVM:
         else:
             raise Exception("JUMPI stack[-1] is_not_zero error")
         self._final_path.append(path)
-        # self.write_paths()
-        # sys.exit()
 
     '''write aux vars to Boogie'''
     def write_vars(self):
@@ -722,26 +657,22 @@ modifies """)
     var BLOCKTIME: uint256;
 """)
 
-
     '''write declared vars to Boogie'''
     def write_declared_vars(self):
         self._output_file.write("\t// declare-vars\n")
         declaration = self._postcondition.get(self._curr_contract, {}).get(self._curr_function, {}).get("declaration", [])
         for decl in declaration:
             decl = decl.strip()
-            # print(decl)
             original_name = re.search("var (.*):", decl)[0].strip('var').strip(':').strip()
-            # print(original_name)
             decl_name = "decl_"+original_name
-            # print(decl_name)
             decl_type = decl.strip('var').strip(':').strip(';').strip(decl_name).strip()
-            # print(decl_type)
             
             MACROS.DECL_SUBS[original_name] = decl_name
             MACROS.DECL_VARS[original_name] = decl_type
 
             self._output_file.write("\t" + decl.replace(original_name, decl_name) + "\n")
         self._output_file.write("\n")
+    
     '''write entry assignment to Boogie'''
     def write_entry_assignment(self):
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
@@ -793,9 +724,6 @@ modifies """)
                 if mapping[i][mapping[i].find("[")+1:mapping[i].find("]")].isnumeric():
                     mapping[i] = mapping[i][:mapping[i].find("[")]
                 var_type += "[" + self._final_vars[mapping[i]] + "] "
-            # elif ('][' in var_name):
-            #     self._final_vars[var_name] = 'address' # patch
-
             if ('.' in var_name):
                 self._final_vars[var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name[var_name.find('.')+1:]]
             else:
@@ -804,11 +732,8 @@ modifies """)
     '''helper to find the key of a node'''
     def find_key(self, node):
         if not node.children:
-            if isinstance(node.value, str) or (self.is_hex(str(node.value))): 
-                # and not (node.value == 0xffffffffffffffffffffffffffffffffffffffff):
-                return node.value # or self.postorder_traversal(node)
-        # if isintance(node, dict):
-        #     return node
+            if isinstance(node.value, str) or (self.is_hex(str(node.value))):
+                return node.value
         for c in node.children:
             if not isinstance(c, tuple):
                 return_val = self.find_key(c)
@@ -886,7 +811,7 @@ def main():
     CONTRACT_NAME,FUNCTION_NAME = get_contract_and_function_names()
     MACROS.CONTRACT_NAME    = CONTRACT_NAME
     MACROS.FUNCTION_NAME    = FUNCTION_NAME
-    VAR_PREFIX              = CONTRACT_NAME # get_init_var_prefix() 
+    VAR_PREFIX              = CONTRACT_NAME
     check_entrypoint()
     entry_contract_address  = gen_trace_essential()[0]
 
