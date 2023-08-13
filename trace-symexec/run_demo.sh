@@ -33,22 +33,22 @@ ${BOOGIE} ../web-demo/trace_Reentrancy.bpl
 echo ""
 
 ### DEMO: add liquidity
-echo "--------------------(Demo: Add Liquidity)------------------------"
-SOLIDITY=../uniswapv2-solc0.8/test.sol
-THEOREM=../web-demo/uploads/theorem_addLiquidity.json
-TRACE=../web-demo/trace_addLiquidity.txt
-python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
-${BOOGIE} ../web-demo/trace_addLiquidity.bpl
-echo ""
+# echo "--------------------(Demo: Add Liquidity)------------------------"
+# SOLIDITY=../uniswapv2-solc0.8/test.sol
+# THEOREM=../web-demo/uploads/theorem_addLiquidity.json
+# TRACE=../web-demo/trace_addLiquidity.txt
+# python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+# ${BOOGIE} ../web-demo/trace_addLiquidity.bpl
+# echo ""
 
 ### DEMO: remove liquidity
-echo "--------------------(Demo: Remove Liquidity)------------------------"
-SOLIDITY=../uniswapv2-solc0.8/test.sol
-THEOREM=../web-demo/uploads/theorem_removeLiquidity.json
-TRACE=../web-demo/trace_removeLiquidity.txt
-python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
-${BOOGIE} ../web-demo/trace_removeLiquidity.bpl
-echo ""
+# echo "--------------------(Demo: Remove Liquidity)------------------------"
+# SOLIDITY=../uniswapv2-solc0.8/test.sol
+# THEOREM=../web-demo/uploads/theorem_removeLiquidity.json
+# TRACE=../web-demo/trace_removeLiquidity.txt
+# python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+# ${BOOGIE} ../web-demo/trace_removeLiquidity.bpl
+# echo ""
 
 ### DEMO: swap
 echo "--------------------(Demo: Swap)------------------------"

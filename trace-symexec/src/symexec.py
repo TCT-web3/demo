@@ -69,7 +69,7 @@ class EVM:
             else:
                 self.run_instruction(code_trace[i], None)
             
-    def isAddress(self, operand):
+    def isType(self, operand, check_type):
         if not isinstance(operand,str):
             return False
         i = operand.find('[');
@@ -86,7 +86,7 @@ class EVM:
             start = t.find(']', start + 1)
             if start == -1:
                 return False
-        return t[start+1:].strip()=="address"
+        return t[start+1:].strip()==check_type
 
     '''run each EVM instruction with PC, operator, and operand'''        
     def run_instruction(self, instr, branch_taken):
@@ -449,13 +449,16 @@ class EVM:
             elif to_return == "true":
                 to_return = "false"
             else:
-                val1=self._tmp_var_count
+                # key = to_return
+                val1 = to_return
+                # if "." in to_return:
+                #     val1 = val1[:to_return.find("[")]
                 self._tmp_var_count+=1
                 to_return = "tmp" + str(self._tmp_var_count)
-                if (self._final_vars["tmp"+str(val1)] == 'bool'):
-                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=!tmp" + str(val1) + ";\n"
-                elif (self._final_vars["tmp"+str(val1)] == 'uint256'):
-                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=tmp" + str(val1) + "==Zero;\n"
+                if (self.isType(val1, 'bool')):
+                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=!" + str(val1) + ";\n"
+                elif (self.isType(val1, 'uint256')):
+                    to_boogie = "\ttmp" + str(self._tmp_var_count) + ":=" + str(val1) + "==Zero;\n"
                 node.value = to_return
                 node.children = []
                 self._final_vars[to_return] = 'bool'
@@ -567,7 +570,7 @@ class EVM:
                     elif node.value == "OR":
                         to_boogie ="\ttmp"+str(self._tmp_var_count)+":="+str_val1+"||"+str_val2+";\n"
                     self._final_vars[to_return] = 'bool'
-                elif  node.value == "SUB" and (self.isAddress(val1) or self.isAddress(val2)):
+                elif  node.value == "SUB" and (self.isType(val1, "address") or self.isType(val2, "address")):
                     to_boogie ="\ttmp"+str(self._tmp_var_count)+":=("+str(val1)+"!="+str(val2)+");\n"   
                     self._final_vars[to_return] = 'bool'
                 else:
