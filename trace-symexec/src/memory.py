@@ -98,21 +98,15 @@ def handle_MLOAD(self):
             #We handle the bytes between unfilled_position and k                
             len_uninitialized_bytes = k-unfilled_position
             #print("k="+hex(k))
-            #print("unfilled_position="+hex(unfilled_position))
-            #print("len_uninitialized_bytes="+hex(len_uninitialized_bytes))
-            #print("bytes_to_copy="+hex(bytes_to_copy))
             if len_uninitialized_bytes >= 32 and bytes_to_copy==32:                   
                 return SVT(0)
             if len_uninitialized_bytes > 0:
                 
                 node1=SVT("Partial32B")
                 num_zero_bytes = min(len_uninitialized_bytes,bytes_to_copy)
-                #print("num_zero_bytes="+hex(num_zero_bytes))
                 node1.children.append((0,num_zero_bytes-1))
                 node1.children.append(SVT(0))
                 node.children.append(node1)
-                # print("///////", node)
-                # print("///////", node1)
                 bytes_to_copy-=num_zero_bytes
                 unfilled_position+=num_zero_bytes
                 if bytes_to_copy==0:
@@ -128,22 +122,10 @@ def handle_MLOAD(self):
                     return node
             else:
                 node1=SVT("Partial32B")
-                '''
-                if v.value!= "Partial32B":
-                    node1_segment = (0,bytes_to_copy-1)
-                    node1_value = v
-                    print(f"shuo0: v={v}") 
-                else:
-                    original_segment = v.children[0]
-                    #print(f"shuo1:  v.children[0]={v.children[0]}  v.children[1]={v.children[1]} bytes_to_copy={bytes_to_copy}" )
-                    node1_segment = (0,bytes_to_copy-1)
-                    node1_value = v.children[1]
-                '''
                 node1_segment = (0,bytes_to_copy-1)
                 node1_value = v
                 node1.children.append(node1_segment)
                 node1.children.append(node1_value)
-                #print(f"shuo2:  node1_segment={node1_segment}  node1_value={node1_value}", hex(prev_len))
                 node.children.append(node1)
                 bytes_to_copy = 0
                 return node
@@ -163,7 +145,6 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
         curr_len=self.mem_item_len(self._memories[depth],k)
         if k < offset and k+curr_len>offset:
         # This means offset falls in the current mem item
-            #print(f"shuo1 k={k} curr_len={curr_len} offset={offset} content_to_store_len={content_to_store_len}")
             node1=SVT("Partial32B")
             bytes_to_retract = k+curr_len-offset
             if v.value == "Partial32B":
@@ -174,13 +155,10 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
                 node1_segment = (0,31-bytes_to_retract) # retract the current mem item's right end
                 node1_value = v   
             node1.children.append(node1_segment)
-            node1.children.append(node1_value)
-            #print("///////", node1)    
+            node1.children.append(node1_value)  
             self._memories[depth][k] = node1
         if k < offset+content_to_store_len and k+curr_len>offset+content_to_store_len:
         # This means the end of content_to_store falls in the current mem item
-            #print(f"shuo2 k={k} curr_len={curr_len} offset={offset} content_to_store_len={content_to_store_len}")
-            
             node1=SVT("Partial32B")
             if v.value == "Partial32B":
                 node1_segment = ((offset+content_to_store_len-k), v.children[0][1])  # retract the current mem item's left end
@@ -190,7 +168,6 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
                 node1_value = v
             node1.children.append(node1_segment)
             node1.children.append(node1_value)
-            #print("///////", node1) 
             last_partial_overwritten_node = node1
             k_to_delete=k
             break
@@ -198,7 +175,6 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
         del self._memories[depth][k_to_delete]
         
     if last_partial_overwritten_node!=None:
-        #print("shuo3")
         self._memories[depth][offset+content_to_store_len] = last_partial_overwritten_node
     
     k_to_delete=None
@@ -248,7 +224,6 @@ def memory_write(self, offset, content_to_store, content_to_store_len, depth):
                 memory_with_consolidated_items[active_k]=active_v
             active_k = k
             active_v = v
-            #print(">>>a>>>>>>", active_k, active_v)
         else:
             #combine active_v and v
             new_v=SVT("Partial32B")
@@ -284,7 +259,6 @@ def handle_AND(self):
             segment = (first,last)
             num = a
     if segment != None:
-        #print (f"shuo1:{first} {last}  {num}")
         if num.value == "Partial32B" and num.children[0][0] >= first and num.children[0][1] <= last:
         # This means the new Partial32B would be superfuous
             return num
@@ -306,7 +280,6 @@ def handle_AND(self):
                 new_concat_node.children.append(left_zero_node)
                 pos = 0
                 for child in num.children:
-                    # print(child)
                     if pos>=first:
                         new_concat_node.children.append(child)
                     elif pos+child.children[0][1]-child.children[0][0]+1 > first:
@@ -361,7 +334,6 @@ def handle_OR(self):
             else:
                 node.children.append(child)
             pos+= child.children[0][1]-child.children[0][0]+1
-        # print("//////////", node)
         return node
     
     if a.value == "concat" and isinstance(b.value,int):
@@ -382,7 +354,6 @@ def handle_OR(self):
             else:
                 node.children.append(child)
             pos+= child.children[0][1]-child.children[0][0]+1
-        # print("//////////", node)
         return node
       
     if isinstance(a.value, int) and isinstance(b.value, int):
