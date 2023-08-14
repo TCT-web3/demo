@@ -417,11 +417,19 @@ def write_invariants(invariants, var_prefix):
     rt = "\t// insert invariant of entry contract\n"
     trace_invariants = invariants.get(MACROS.CONTRACT_NAME, [])
     for inv in trace_invariants:
+        print(inv)
+        inv_lst = inv.split(' ')
+        for v in inv_lst:
+            if ('this.' in v):
+                term = v.replace('this.', '')
+                print("term: ", term)
+
         inv = inv.replace("this", "entry_contract")
         inv = name_substitution(var_prefix, inv)
         rt = rt + ("\tassume(" + inv + ");\n")
     rt = rt + ("\n")
     return rt 
+
 
 '''
 write epilogue to Boogie

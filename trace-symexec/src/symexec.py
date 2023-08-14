@@ -245,6 +245,7 @@ class EVM:
                 self.add_new_vars(stored_value)
                 self._stacks[-1].append(SVT(stored_value+"["+self.postorder_traversal(self._sym_this_addresses[-1])+"]"))
                 self.postorder_traversal(self._stacks[-1][-1])
+            # print("SLOAD: ", self._stacks[-1].value)
         elif opcode=="PC":
             self._stacks[-1].append(SVT(PC))
         elif opcode.startswith("LOG"):
@@ -439,6 +440,7 @@ class EVM:
             node.children = []
             self._final_vars[to_return] = self._final_vars[map_ID].split()[-1] # patch
             self._final_path.append(to_boogie) 
+
         elif node.value == "LT" or node.value == "GT" or node.value == "EQ" or node.value == "SLT": #TODO: SLT implementation
             if node.value == "EQ" and node.children[0] == node.children[1]:
                 to_return = "true"
@@ -557,6 +559,7 @@ class EVM:
     
     '''generate boogie code when SSTORE happens'''
     def boogie_gen_sstore(self, node0, node1):
+        print("SSTORE: ", str(node0), str(node1))
         sym_this = str(self.postorder_traversal(self._sym_this_addresses[-1]))
         if node0.value=="MapElement":
             if node0.children[0].value=="MapElement": 
@@ -569,6 +572,9 @@ class EVM:
                     var_name = f"{map_ID}[{sym_this}][{map_key1}][{map_key2}]"
                 else:
                     var_name = f"{self._storage_map[self._curr_contract][str(map_ID)]}[{sym_this}][{str(map_key1)}][{str(map_key2)}]"
+
+                print("term1: ", map_key1)
+                print("term2: ", map_key2)
             else:
                 map_ID = self.find_mapID(node0)
                 self.postorder_traversal(node0.children[1])
@@ -577,6 +583,7 @@ class EVM:
                     var_name = f"{str(map_ID)}[{sym_this}][{str(map_key)}]"
                 else:
                     var_name = f"{self._storage_map[self._curr_contract][str(map_ID)]}[{sym_this}][{str(map_key)}]"
+                print("term: ", map_key)
         else:
             var_name = f"{self._var_prefix}.{self._storage_map[self._curr_contract][str(node0.value)]}[{sym_this}]"
         path="\t"+var_name+":=" + str(self.postorder_traversal(node1))
@@ -805,6 +812,9 @@ def main():
     MACROS.THEOREM_FNAME   = ARGS[2]
     MACROS.TRACE_FNAME     = ARGS[3]
     MACROS.BOOGIE          = MACROS.TRACE_FNAME[:-4]+".bpl"
+
+
+    concrete_trace = "concrete.json"
 
     ''' initial generation of solc files and essential trace '''
     gen_solc()
