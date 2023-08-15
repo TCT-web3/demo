@@ -1,6 +1,6 @@
 # Running the demo
 ## Step 0: Setup
-The following must be installed: Python and Ganache.
+The following must be installed: Python, Ganache, Boogie 2.16.0, Z3.
 ## Step 1: Get the tx hash from Remix
 1. Go to [Remix](https://remix.ethereum.org). Click `Upload folder`. Upload the `uniswapv2-solc0.8` folder. Select the `test.sol` file.
 2. Click `File Explorer` in the left bar. Select the `test.sol` file.
@@ -18,7 +18,7 @@ The following must be installed: Python and Ganache.
 4. The output file will be a txt file. We will use it in the next step.
 ### Step 3: Run the symbolic execution engine
 Go to the trace-symexec folder (this folder). There are a couple options you can choose from there:  
-1. Run the command `./run_demo.sh`. This will run the traces we have provided and also run their respective Boogie output files. Currently, the `addLiquidity` and `removeLiquidity` demos will not run the Boogie file. 
+1. Run the command `./run_demo.sh`. This will run the traces we have provided and also run their respective Boogie output files. Currently, the `addLiquidity` and `removeLiquidity` demos do not run the Boogie file. 
 2. In the `run_demo.sh` file, scroll down to `### individual`. You can copy and paste any command into Terminal and run each example individually.  
 3. Run the following commands for the file you just ouputted with `convert_trace.py`. The commands are:
     ```shell
