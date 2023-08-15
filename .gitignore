@@ -13,6 +13,7 @@ cache
 artifacts
 
 temp*
+trace_*.json
 TCT*
 hashes*
 trace_*.bpl
