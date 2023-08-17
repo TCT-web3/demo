@@ -422,7 +422,7 @@ def write_invariants(invariants, var_prefix):
         for v in inv_lst:
             if ('this.' in v):
                 term = v.replace('this.', '')
-                print("term: ", term)
+                print("term-inv: ", term)
 
         inv = inv.replace("this", "entry_contract")
         inv = name_substitution(var_prefix, inv)

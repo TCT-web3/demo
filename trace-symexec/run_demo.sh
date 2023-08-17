@@ -72,3 +72,4 @@ echo ""
 # python3 src/symexec.py ../uniswapv2-solc0.8/test.sol ../web-demo/uploads/theorem_swap.json ../web-demo/trace_swap.txt
 # boogie ../web-demo/trace_swap.bpl
 
+rm temp_*

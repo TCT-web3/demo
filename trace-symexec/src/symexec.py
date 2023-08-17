@@ -95,6 +95,7 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
+        print("init ???????")
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             if (opcode=="CALL"):
                 self._non_static_calls.append("non-static")
@@ -232,9 +233,12 @@ class EVM:
             node = self.handle_MLOAD()
             self._stacks[-1].append(node)  
         elif opcode=="SSTORE":
+            print("store ???????")
             self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop())
         elif opcode=="SLOAD":
+            print("load ???????")
             to_load = self._stacks[-1].pop()
+            print("SLOAD", to_load)
             if to_load.value == "MapElement": 
                 node = SVT("SLOAD")
                 node.children.append(to_load)
@@ -245,7 +249,6 @@ class EVM:
                 self.add_new_vars(stored_value)
                 self._stacks[-1].append(SVT(stored_value+"["+self.postorder_traversal(self._sym_this_addresses[-1])+"]"))
                 self.postorder_traversal(self._stacks[-1][-1])
-            # print("SLOAD: ", self._stacks[-1].value)
         elif opcode=="PC":
             self._stacks[-1].append(SVT(PC))
         elif opcode.startswith("LOG"):
@@ -573,8 +576,8 @@ class EVM:
                 else:
                     var_name = f"{self._storage_map[self._curr_contract][str(map_ID)]}[{sym_this}][{str(map_key1)}][{str(map_key2)}]"
 
-                print("term1: ", map_key1)
-                print("term2: ", map_key2)
+                print("term1-sstore: ", map_key1)
+                print("term2-sstore: ", map_key2)
             else:
                 map_ID = self.find_mapID(node0)
                 self.postorder_traversal(node0.children[1])
@@ -583,7 +586,7 @@ class EVM:
                     var_name = f"{str(map_ID)}[{sym_this}][{str(map_key)}]"
                 else:
                     var_name = f"{self._storage_map[self._curr_contract][str(map_ID)]}[{sym_this}][{str(map_key)}]"
-                print("term: ", map_key)
+                print("term-sstore: ", map_key)
         else:
             var_name = f"{self._var_prefix}.{self._storage_map[self._curr_contract][str(node0.value)]}[{sym_this}]"
         path="\t"+var_name+":=" + str(self.postorder_traversal(node1))
