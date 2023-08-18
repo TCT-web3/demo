@@ -235,13 +235,9 @@ class EVM:
             node = self.handle_MLOAD()
             self._stacks[-1].append(node)  
         elif opcode=="SSTORE":
-
-
             self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop(), PC)
         elif opcode=="SLOAD":
-            
             to_load = self._stacks[-1].pop()
-
             print("SLOAD: ", to_load)
             if (to_load.value=="MapElement"):
                 # print("term-sload", self.find_key(to_load.children[1]))
@@ -259,8 +255,6 @@ class EVM:
                 hypoinfo['value'] = get_concrete_value_sload(next_PC)
                 MACROS.HYPO_INFO.append(hypoinfo)
             
-
-
             if to_load.value == "MapElement": 
                 node = SVT("SLOAD")
                 node.children.append(to_load)
@@ -638,7 +632,6 @@ class EVM:
         self.add_new_vars(var_name)
         self._final_path.append(path)
 
-
     def is_called_param(self, map_key):
         if (re.search("c\_(.*).\_", map_key)):
             print(map_key, "TRUE")
@@ -858,12 +851,6 @@ def main():
     MACROS.TRACE_FNAME     = ARGS[3]
     MACROS.BOOGIE          = MACROS.TRACE_FNAME[:-4]+".bpl"
 
-
-    concrete_trace = ARGS[4]
-    concrete_file = open(concrete_trace, )
-    concrete_json = json.load(concrete_file)
-    MACROS.CONCRETE_INFO = concrete_json['result']['structLogs']
-
     ''' initial generation of solc files and essential trace '''
     gen_solc()
     CONTRACT_NAME,FUNCTION_NAME = get_contract_and_function_names()
@@ -893,8 +880,6 @@ def main():
     MACROS.NUM_TYPE  = get_numerical_type()
     MACROS.DEF_VARS  = get_defvars()
 
-
-
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX, [])
     evm._sym_this_addresses  = [SVT("tx_origin"),SVT("entry_contract")]
@@ -916,9 +901,13 @@ def main():
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
 
+    ''' new: hypothesis synthesis '''
+    concrete_trace = ARGS[4]
+    concrete_file = open(concrete_trace, )
+    concrete_json = json.load(concrete_file)
+    MACROS.CONCRETE_INFO = concrete_json['result']['structLogs']
     symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
     param_values = get_parameter_values(symbolic_stack)
-    # print(param_values)
 
     term_lst = set()
     MACROS.ALL_VARS['tx_origin'] = 'address'
@@ -932,7 +921,6 @@ def main():
             MACROS.HYPO_TERMS.add(name)
             info['type'] = MACROS.ALL_VARS[name]                                   
 
-    
     for t in param_values.keys():
         if (t=="FourByteSelector" or t=="AConstantBySolc"):
             pass
@@ -941,7 +929,6 @@ def main():
             MACROS.HYPO_TERMS.add(t)
 
     print("all terms: ", MACROS.HYPO_TERMS)
-
 
     addr_lst = []
     for info in MACROS.HYPO_INFO:
@@ -973,13 +960,8 @@ def main():
             if term in param_values.keys():
                 BOOGIE_OUT.write('\tassume('+ term + '==' + str(param_values[term]) + ');\n')
 
-    # manual
-    # inv_terms = get_invariant_terms(MACROS.INVARIANTS,VAR_PREFIX)
-    # print("inv terms: ", inv_terms)
-    # BOOGIE_OUT.write("\tassume(totalSupply < TwoE255" + ');\n')
     
  
-   
 
     BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
     evm.write_paths() # codegen for Boogie proofs
