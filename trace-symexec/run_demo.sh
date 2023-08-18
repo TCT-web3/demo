@@ -11,7 +11,7 @@ THEOREM=../web-demo/uploads/theorem_integerOverflow.json
 TRACE=../web-demo/trace_integerOverflow.txt
 CONCRETE=../web-demo/raw_traces/trace_integerOverflow.json
 python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE} ${CONCRETE}
-${BOOGIE} ../web-demo/trace_integerOverflow.bpl
+# ${BOOGIE} ../web-demo/trace_integerOverflow.bpl
 echo ""
 
 # ### DEMO: no reentrancy

@@ -25,6 +25,8 @@ class MACROS:
     CONCRETE_INFO   = {}
     HYPO_INFO       = []
     HYPO_TERMS      = set()
+    INT_TERMS       = {}
+    PARAM_VALUES    = {}
 
 
 

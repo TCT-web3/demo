@@ -11,6 +11,7 @@ from prepare    import *
 from macros     import *
 from utils      import *
 import itertools
+import subprocess
 
 '''
 Symbolic value tree 
@@ -840,6 +841,80 @@ modifies """)
             for key in self._storage:
                 print('(', key, ',', self._storage[key], ')')
 
+
+def hypothesis_synth(concrete_trace_file, symbolic_stack):
+    # concrete_trace_file = ARGS[4]
+    rt_hypos = []
+    concrete_file = open(concrete_trace_file, )
+    concrete_json = json.load(concrete_file)
+    MACROS.CONCRETE_INFO = concrete_json['result']['structLogs']
+    MACROS.PARAM_VALUES = get_parameter_values(symbolic_stack)
+    term_lst = set()
+    MACROS.ALL_VARS['tx_origin'] = 'address'
+    for info in MACROS.HYPO_INFO:
+        if (len(info.keys())!=0):
+            name = info['name']
+            if name in term_lst:
+                pass
+            term_lst.add(name)
+            MACROS.HYPO_TERMS.add(name)
+            info['type'] = MACROS.ALL_VARS[name]                                   
+    for t in MACROS.PARAM_VALUES.keys():
+        if (t=="FourByteSelector" or t=="AConstantBySolc"):
+            pass
+        else:
+            term_lst.add(t)
+            MACROS.HYPO_TERMS.add(t)
+    print("all terms: ", MACROS.HYPO_TERMS)
+    addr_lst = []
+
+    # initialize the integer estimation
+    for term in MACROS.HYPO_TERMS:
+        if (MACROS.ALL_VARS[term]=="uint256"):
+             MACROS.INT_TERMS[term]=('Zero',MACROS.PARAM_VALUES[term])
+
+    for info in MACROS.HYPO_INFO:
+        if len(info.keys())!=0 and info['type'] == 'address':
+            addr_lst.append(info['name'])
+        else:
+            MACROS.INT_TERMS[info['name']]=('Zero',MACROS.PARAM_VALUES[term])
+    addr_lst = list(set(addr_lst))
+
+    print("all addresses: ", addr_lst)
+    rt_hypos.append("\t// addresses aliasing\n")
+    iterator = itertools.combinations(addr_lst, 2)
+    alias_check = (list(itertools.combinations(addr_lst, 2)))
+    for alias in alias_check:
+        L = alias[0]
+        R = alias[1]
+        if L=="tx_origin" or R=="tx_origin":
+            continue #we don't know yet
+        else:
+            if (MACROS.PARAM_VALUES[L] == MACROS.PARAM_VALUES[R]):
+                rt_hypos.append('\tassume('+ str(alias[0]) + '==' + str(alias[1]) + ');\n')
+            else:
+                rt_hypos.append('\tassume('+ str(alias[0]) + '!=' + str(alias[1]) + ');\n')
+    return rt_hypos
+
+
+def hypothesis_synth_int():
+    rt_hypo_ints = []
+    rt_hypo_ints.append("\t// input parameter concrete values\n")
+    for term in MACROS.INT_TERMS.keys():
+        if term in MACROS.PARAM_VALUES.keys():
+            # v1: concrete values
+            # rt_hypo_ints.append('\tassume('+ term + '==' + str(MACROS.PARAM_VALUES[term]) + ');\n')
+            # v2: ranges
+            lower_bound = MACROS.INT_TERMS[term][0]
+            upper_bound = MACROS.INT_TERMS[term][1]
+            rt_hypo_ints.append('\tassume(' + lower_bound + "<=" + term + ");\n")
+            rt_hypo_ints.append('\tassume(' + term + "<=" + upper_bound + ");\n")
+    return rt_hypo_ints
+
+def refine_hypo_ints():
+    for term in MACROS.INT_TERMS.keys():
+        print("int: ", term, "\t(", MACROS.INT_TERMS[term][0], ", ", MACROS.INT_TERMS[term][1], ")")
+
 '''
 main symexec 
 '''
@@ -900,76 +975,28 @@ def main():
     BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
-
     ''' new: hypothesis synthesis '''
-    concrete_trace = ARGS[4]
-    concrete_file = open(concrete_trace, )
-    concrete_json = json.load(concrete_file)
-    MACROS.CONCRETE_INFO = concrete_json['result']['structLogs']
     symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
-    param_values = get_parameter_values(symbolic_stack)
+    HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
+    HYPO_INTS = hypothesis_synth_int()
+    for hypo in HYPOS:
+        BOOGIE_OUT.write(hypo)
+    for hypo_int in HYPO_INTS: 
+        BOOGIE_OUT.write(hypo_int)
 
-    term_lst = set()
-    MACROS.ALL_VARS['tx_origin'] = 'address'
-    for info in MACROS.HYPO_INFO:
-        if (len(info.keys())!=0):
-            name = info['name']
-            # print(name)
-            if name in term_lst:
-                pass
-            term_lst.add(name)
-            MACROS.HYPO_TERMS.add(name)
-            info['type'] = MACROS.ALL_VARS[name]                                   
-
-    for t in param_values.keys():
-        if (t=="FourByteSelector" or t=="AConstantBySolc"):
-            pass
-        else:
-            term_lst.add(t)
-            MACROS.HYPO_TERMS.add(t)
-
-    print("all terms: ", MACROS.HYPO_TERMS)
-
-    addr_lst = []
-    for info in MACROS.HYPO_INFO:
-        if len(info.keys())!=0 and info['type'] == 'address':
-            addr_lst.append(info['name'])
-    addr_lst = list(set(addr_lst))
-
-    print("all addresses: ", addr_lst)
-    
-    BOOGIE_OUT.write("\t// addresses aliasing\n")
-    iterator = itertools.combinations(addr_lst, 2)
-    alias_check = (list(itertools.combinations(addr_lst, 2)))
-    # print(alias_check)
-    for alias in alias_check:
-        L = alias[0]
-        R = alias[1]
-        if L=="tx_origin" or R=="tx_origin":
-            continue #we don't know yet
-        else:
-            if (param_values[L] == param_values[R]):
-                BOOGIE_OUT.write('\tassume('+ str(alias[0]) + '==' + str(alias[1]) + ');\n')
-            else:
-                BOOGIE_OUT.write('\tassume('+ str(alias[0]) + '!=' + str(alias[1]) + ');\n')
-
-
-    BOOGIE_OUT.write("\t// input parameter concrete values\n")
-    for term in MACROS.HYPO_TERMS:
-        if term not in addr_lst:
-            if term in param_values.keys():
-                BOOGIE_OUT.write('\tassume('+ term + '==' + str(param_values[term]) + ');\n')
-
-    
- 
+    refine_hypo_ints()
+            
 
     BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
     evm.write_paths() # codegen for Boogie proofs
     evm.write_entry_assignment() # from AST file
     evm.write_entry_postcondition() # from AST file
     BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
-
     BOOGIE_OUT.close() # close file
+
+    
+    try_boogie = subprocess.run(['boogie', MACROS.BOOGIE], capture_output=True)
+    print("boogie out: ", try_boogie)
 
 
 
