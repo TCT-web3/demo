@@ -235,7 +235,6 @@ class EVM:
             node = self.handle_MLOAD()
             self._stacks[-1].append(node)  
         elif opcode=="SSTORE":
-            # print("store ???????")
             self.inspect('currstack')
             self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop(), PC)
         elif opcode=="SLOAD":

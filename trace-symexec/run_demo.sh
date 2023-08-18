@@ -9,7 +9,7 @@ echo "--------------------(Demo: Integer Overflow)------------------------"
 SOLIDITY=../single-token/Demo.sol
 THEOREM=../web-demo/uploads/theorem_integerOverflow.json
 TRACE=../web-demo/trace_integerOverflow.txt
-CONCRETE=../web-demo/concrete/trace_integerOverflow.json
+CONCRETE=../web-demo/raw_traces/trace_integerOverflow.json
 python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE} ${CONCRETE}
 ${BOOGIE} ../web-demo/trace_integerOverflow.bpl
 echo ""
