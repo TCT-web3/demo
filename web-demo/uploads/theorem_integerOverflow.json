@@ -6,11 +6,7 @@
 	},
 	"hypothesis":
 	[
-		"Zero <= _value",
-		"_value < TwoE255",
-		"Zero <= _fee",
-		"_fee < TwoE255",
-		"totalSupply < TwoE255"
+		"Zero == Zero"           
 	],
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",

@@ -599,3 +599,12 @@ def get_var_mapping(var):
             word += ltr
     
     return(mapping)
+
+
+def get_concrete_value(PC):
+    val = 0
+    for op_info in MACROS.CONCRETE_INFO:
+        if (op_info['pc']==PC):
+            val = op_info['stack'][-2] 
+    return val
+    

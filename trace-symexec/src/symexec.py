@@ -10,6 +10,7 @@ import sys
 from prepare    import *
 from macros     import *
 from utils      import *
+import itertools
 
 '''
 Symbolic value tree 
@@ -95,7 +96,8 @@ class EVM:
         opcode  = instr[1]
         operand = instr[2]
 
-        print("init ???????")
+        # self.inspect("currstack")
+
         if opcode=="JUMPDEST" or opcode=="CALL" or opcode=="STATICCALL":
             if (opcode=="CALL"):
                 self._non_static_calls.append("non-static")
@@ -233,12 +235,31 @@ class EVM:
             node = self.handle_MLOAD()
             self._stacks[-1].append(node)  
         elif opcode=="SSTORE":
-            print("store ???????")
-            self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop())
+            # print("store ???????")
+            self.inspect('currstack')
+            self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop(), PC)
         elif opcode=="SLOAD":
-            print("load ???????")
+            
             to_load = self._stacks[-1].pop()
-            print("SLOAD", to_load)
+            print("SLOAD: ", to_load)
+            if (to_load.value=="MapElement"):
+                print("term-sload", self.find_key(to_load.children[1]))
+                hypoinfo = {}
+                hypoinfo['op'] = "SLOAD"
+                hypoinfo['name'] = self.find_key(to_load.children[1])
+                hypoinfo['value'] = get_concrete_value(PC)
+                
+                MACROS.HYPO_INFO.append(hypoinfo)
+            else:
+                print("term-sload", self.find_key(to_load))
+                hypoinfo = {}
+                hypoinfo['op'] = "SLOAD"
+                hypoinfo['name'] = self.find_key(to_load)
+                hypoinfo['value'] = get_concrete_value(PC)
+                MACROS.HYPO_INFO.append(hypoinfo)
+            
+
+
             if to_load.value == "MapElement": 
                 node = SVT("SLOAD")
                 node.children.append(to_load)
@@ -443,7 +464,6 @@ class EVM:
             node.children = []
             self._final_vars[to_return] = self._final_vars[map_ID].split()[-1] # patch
             self._final_path.append(to_boogie) 
-
         elif node.value == "LT" or node.value == "GT" or node.value == "EQ" or node.value == "SLT": #TODO: SLT implementation
             if node.value == "EQ" and node.children[0] == node.children[1]:
                 to_return = "true"
@@ -561,7 +581,8 @@ class EVM:
         return to_return
     
     '''generate boogie code when SSTORE happens'''
-    def boogie_gen_sstore(self, node0, node1):
+    def boogie_gen_sstore(self, node0, node1, PC):
+        print("PC:     ", PC)
         print("SSTORE: ", str(node0), str(node1))
         sym_this = str(self.postorder_traversal(self._sym_this_addresses[-1]))
         if node0.value=="MapElement":
@@ -586,7 +607,23 @@ class EVM:
                     var_name = f"{str(map_ID)}[{sym_this}][{str(map_key)}]"
                 else:
                     var_name = f"{self._storage_map[self._curr_contract][str(map_ID)]}[{sym_this}][{str(map_key)}]"
-                print("term-sstore: ", map_key)
+                print("term-sstore:    ", map_key)
+                for op_info in MACROS.CONCRETE_INFO:
+                    if (op_info['pc']==PC):
+                        val = op_info['stack'][-2]
+                        break; 
+                val = int(val, 16)
+                print("concrete value: ", val)
+                hypoinfo = {}
+                hypoinfo['op'] = "SSTORE"
+                hypoinfo['name'] = map_key
+                hypoinfo['value'] = get_concrete_value(PC)
+                
+                MACROS.HYPO_INFO.append(hypoinfo)
+                # for contract in MACROS.VAR_TYPES:
+                #     if (map_key in MACROS.VAR_TYPES[contract].keys()):
+                #         print(">>>>>>>", MACROS.VAR_TYPES[contract][map_key])
+                # print(MACROS.VAR_TYPES[MACROS.CONTRACT_NAME])
         else:
             var_name = f"{self._var_prefix}.{self._storage_map[self._curr_contract][str(node0.value)]}[{sym_this}]"
         path="\t"+var_name+":=" + str(self.postorder_traversal(node1))
@@ -817,7 +854,15 @@ def main():
     MACROS.BOOGIE          = MACROS.TRACE_FNAME[:-4]+".bpl"
 
 
-    concrete_trace = "concrete.json"
+    concrete_trace = ARGS[4]
+    concrete_file = open(concrete_trace, )
+    concrete_json = json.load(concrete_file)
+    MACROS.CONCRETE_INFO = concrete_json['result']['structLogs']
+    # print(json.dumps(MACROS.CONCRETE_INFO, indent=4))
+     
+
+
+
 
     ''' initial generation of solc files and essential trace '''
     gen_solc()
@@ -869,6 +914,34 @@ def main():
     
     BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
+
+    MACROS.ALL_VARS['tx_origin'] = 'address'
+    for info in MACROS.HYPO_INFO:
+        if (len(info.keys())!=0):
+            name = info['name']
+            info['type'] = MACROS.ALL_VARS[name]                                   
+            BOOGIE_OUT.write('\tassume('+ info['name'] + '==' + str(info['value']) + ');\n')
+        print(info)
+    
+    addr_lst = []
+    for info in MACROS.HYPO_INFO:
+        if len(info.keys())!=0 and info['type'] == 'address':
+            addr_lst.append(info['name'])
+    
+    addr_lst = list(set(addr_lst))
+    print(addr_lst)
+    iterator = itertools.combinations(addr_lst, 2)
+    alias_check = (list(itertools.combinations(addr_lst, 2)))
+    
+    # TODO
+    # for pair in alias_check:
+    #     if MACROS.HYPO_INFO[pair[0]]['value'] == HYPO_INFO[pair[1]]['value']:
+    #         print(pair[0], '==', pair[1])
+    #     else:
+    #         print(pair[0], '!=', pair[1])
+
+
+
     BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
 
     evm.write_paths() # codegen for Boogie proofs
@@ -877,6 +950,8 @@ def main():
     BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
 
     BOOGIE_OUT.close() # close file
- 
+
+
+
 if __name__ == '__main__':
     main()

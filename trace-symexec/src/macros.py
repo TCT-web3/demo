@@ -22,6 +22,8 @@ class MACROS:
     DEF_VARS        = {}
     DECL_VARS       = {}
     DECL_SUBS       = {}
+    CONCRETE_INFO   = {}
+    HYPO_INFO       = []
 
 
 
