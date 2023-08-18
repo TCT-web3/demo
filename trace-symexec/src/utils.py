@@ -74,8 +74,6 @@ def get_var_prefix(instr):
     L = instr.find(" ") 
     c_name = re.search("\(.*::", instr)[0][1:-2]
     c_name += '_c' + instr[L+3:L+8] + '_'
-    # print(c_name)
-    # print(test)
     return c_name
 
 '''
@@ -89,9 +87,7 @@ def get_MAPS(storage_info):
             slot =  elmt["slot"]
             label = elmt["label"]          
             MapIDs[slot] = label
-        contract_name = contract[contract.find(':')+1:]
-        # contract_name = contract_name[':':]
-        # print(contract) 
+        contract_name = contract[contract.find(':')+1:] 
         MAPS[contract_name] = MapIDs
     return MAPS
 
