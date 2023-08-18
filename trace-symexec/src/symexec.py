@@ -65,11 +65,11 @@ class EVM:
 
     '''perform symbolic execution'''
     def sym_exec(self, code_trace):
-        for i in range(len(code_trace)):
+        for i in range(len(code_trace)-1):
             if(code_trace[i][1]=="JUMPI"):
-                self.run_instruction(code_trace[i], (code_trace[i][0]+1 != code_trace[i+1][0]))
+                self.run_instruction(code_trace[i], (code_trace[i][0]+1 != code_trace[i+1][0]), code_trace[i+1][0])
             else:
-                self.run_instruction(code_trace[i], None)
+                self.run_instruction(code_trace[i], None, code_trace[i+1][0])
             
     def isType(self, operand, check_type):
         if not isinstance(operand,str):
@@ -91,7 +91,7 @@ class EVM:
         return t[start+1:].strip()==check_type
 
     '''run each EVM instruction with PC, operator, and operand'''        
-    def run_instruction(self, instr, branch_taken):
+    def run_instruction(self, instr, branch_taken, next_PC):
         PC      = instr[0]
         opcode  = instr[1]
         operand = instr[2]
@@ -236,26 +236,27 @@ class EVM:
             self._stacks[-1].append(node)  
         elif opcode=="SSTORE":
             # print("store ???????")
-            self.inspect('currstack')
+            # self.inspect('currstack')
             self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop(), PC)
         elif opcode=="SLOAD":
             
             to_load = self._stacks[-1].pop()
+
             print("SLOAD: ", to_load)
             if (to_load.value=="MapElement"):
-                print("term-sload", self.find_key(to_load.children[1]))
+                # print("term-sload", self.find_key(to_load.children[1]))
                 hypoinfo = {}
                 hypoinfo['op'] = "SLOAD"
                 hypoinfo['name'] = self.find_key(to_load.children[1])
-                hypoinfo['value'] = get_concrete_value(PC)
+                hypoinfo['value'] = get_concrete_value_sload(next_PC)
                 
                 MACROS.HYPO_INFO.append(hypoinfo)
             else:
-                print("term-sload", self.find_key(to_load))
+                # print("term-sload", self.find_key(to_load))
                 hypoinfo = {}
                 hypoinfo['op'] = "SLOAD"
                 hypoinfo['name'] = self.find_key(to_load)
-                hypoinfo['value'] = get_concrete_value(PC)
+                hypoinfo['value'] = get_concrete_value_sload(next_PC)
                 MACROS.HYPO_INFO.append(hypoinfo)
             
 
@@ -582,8 +583,31 @@ class EVM:
     
     '''generate boogie code when SSTORE happens'''
     def boogie_gen_sstore(self, node0, node1, PC):
-        print("PC:     ", PC)
-        print("SSTORE: ", str(node0), str(node1))
+        print("SSTORE: location=", str(node0), " value=", str(node1))
+
+        if node0.value=="MapElement":
+            if node0.children[0].value=="MapElement":
+                node0term1 = self.find_key(node0.children[0].children[1])
+                node0term2 = self.find_key(node0.children[1].children[1])
+            else:
+                node0term = self.find_key(node0.children[1])
+                store_sstore_term(node0term, PC)
+        elif "tmp" in str(node0):
+            children=set()
+            get_valid_children(node0, children)
+      
+        if node1.value=="MapElement":
+            if node1.children[0].value=="MapElement":
+                node1term1 = self.find_key(node0.children[0].children[1])
+                node1term2 = self.find_key(node0.children[1].children[1])
+            else:
+                node1term = self.find_key(node1.children[1])
+                store_sstore_term(node1term, PC)
+        elif "tmp" in str(node1):
+            children=set()
+            get_valid_children(node1, children)
+
+
         sym_this = str(self.postorder_traversal(self._sym_this_addresses[-1]))
         if node0.value=="MapElement":
             if node0.children[0].value=="MapElement": 
@@ -596,9 +620,6 @@ class EVM:
                     var_name = f"{map_ID}[{sym_this}][{map_key1}][{map_key2}]"
                 else:
                     var_name = f"{self._storage_map[self._curr_contract][str(map_ID)]}[{sym_this}][{str(map_key1)}][{str(map_key2)}]"
-
-                print("term1-sstore: ", map_key1)
-                print("term2-sstore: ", map_key2)
             else:
                 map_ID = self.find_mapID(node0)
                 self.postorder_traversal(node0.children[1])
@@ -607,23 +628,7 @@ class EVM:
                     var_name = f"{str(map_ID)}[{sym_this}][{str(map_key)}]"
                 else:
                     var_name = f"{self._storage_map[self._curr_contract][str(map_ID)]}[{sym_this}][{str(map_key)}]"
-                print("term-sstore:    ", map_key)
-                for op_info in MACROS.CONCRETE_INFO:
-                    if (op_info['pc']==PC):
-                        val = op_info['stack'][-2]
-                        break; 
-                val = int(val, 16)
-                print("concrete value: ", val)
-                hypoinfo = {}
-                hypoinfo['op'] = "SSTORE"
-                hypoinfo['name'] = map_key
-                hypoinfo['value'] = get_concrete_value(PC)
-                
-                MACROS.HYPO_INFO.append(hypoinfo)
-                # for contract in MACROS.VAR_TYPES:
-                #     if (map_key in MACROS.VAR_TYPES[contract].keys()):
-                #         print(">>>>>>>", MACROS.VAR_TYPES[contract][map_key])
-                # print(MACROS.VAR_TYPES[MACROS.CONTRACT_NAME])
+
         else:
             var_name = f"{self._var_prefix}.{self._storage_map[self._curr_contract][str(node0.value)]}[{sym_this}]"
         path="\t"+var_name+":=" + str(self.postorder_traversal(node1))
@@ -858,11 +863,6 @@ def main():
     concrete_file = open(concrete_trace, )
     concrete_json = json.load(concrete_file)
     MACROS.CONCRETE_INFO = concrete_json['result']['structLogs']
-    # print(json.dumps(MACROS.CONCRETE_INFO, indent=4))
-     
-
-
-
 
     ''' initial generation of solc files and essential trace '''
     gen_solc()
@@ -915,35 +915,73 @@ def main():
     BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
     BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
+
+    symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
+    param_values = get_parameter_values(symbolic_stack)
+    # print(param_values)
+
+    term_lst = set()
     MACROS.ALL_VARS['tx_origin'] = 'address'
     for info in MACROS.HYPO_INFO:
         if (len(info.keys())!=0):
             name = info['name']
+            # print(name)
+            if name in term_lst:
+                pass
+            term_lst.add(name)
+            MACROS.HYPO_TERMS.add(name)
             info['type'] = MACROS.ALL_VARS[name]                                   
-            BOOGIE_OUT.write('\tassume('+ info['name'] + '==' + str(info['value']) + ');\n')
-        print(info)
+
     
+    for t in param_values.keys():
+        if (t=="FourByteSelector" or t=="AConstantBySolc"):
+            pass
+        else:
+            term_lst.add(t)
+            MACROS.HYPO_TERMS.add(t)
+
+    print("all terms: ", MACROS.HYPO_TERMS)
+
+
     addr_lst = []
     for info in MACROS.HYPO_INFO:
         if len(info.keys())!=0 and info['type'] == 'address':
             addr_lst.append(info['name'])
-    
     addr_lst = list(set(addr_lst))
-    print(addr_lst)
+
+    print("all addresses: ", addr_lst)
+    
+    BOOGIE_OUT.write("\t// addresses aliasing\n")
     iterator = itertools.combinations(addr_lst, 2)
     alias_check = (list(itertools.combinations(addr_lst, 2)))
+    # print(alias_check)
+    for alias in alias_check:
+        L = alias[0]
+        R = alias[1]
+        if L=="tx_origin" or R=="tx_origin":
+            continue #we don't know yet
+        else:
+            if (param_values[L] == param_values[R]):
+                BOOGIE_OUT.write('\tassume('+ str(alias[0]) + '==' + str(alias[1]) + ');\n')
+            else:
+                BOOGIE_OUT.write('\tassume('+ str(alias[0]) + '!=' + str(alias[1]) + ');\n')
+
+
+    BOOGIE_OUT.write("\t// input parameter concrete values\n")
+    for term in MACROS.HYPO_TERMS:
+        if term not in addr_lst:
+            if term in param_values.keys():
+                BOOGIE_OUT.write('\tassume('+ term + '==' + str(param_values[term]) + ');\n')
+
+    # manual
+    # inv_terms = get_invariant_terms(MACROS.INVARIANTS,VAR_PREFIX)
+    # print("inv terms: ", inv_terms)
+    # BOOGIE_OUT.write("\tassume(totalSupply < TwoE255" + ');\n')
     
-    # TODO
-    # for pair in alias_check:
-    #     if MACROS.HYPO_INFO[pair[0]]['value'] == HYPO_INFO[pair[1]]['value']:
-    #         print(pair[0], '==', pair[1])
-    #     else:
-    #         print(pair[0], '!=', pair[1])
-
-
+ 
+   
 
     BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
-
     evm.write_paths() # codegen for Boogie proofs
     evm.write_entry_assignment() # from AST file
     evm.write_entry_postcondition() # from AST file

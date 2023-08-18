@@ -417,12 +417,12 @@ def write_invariants(invariants, var_prefix):
     rt = "\t// insert invariant of entry contract\n"
     trace_invariants = invariants.get(MACROS.CONTRACT_NAME, [])
     for inv in trace_invariants:
-        print(inv)
         inv_lst = inv.split(' ')
         for v in inv_lst:
             if ('this.' in v):
                 term = v.replace('this.', '')
-                print("term-inv: ", term)
+                # print("term-inv: ", term)
+                # MACROS.HYPO_TERMS.add(term)
 
         inv = inv.replace("this", "entry_contract")
         inv = name_substitution(var_prefix, inv)
@@ -601,10 +601,81 @@ def get_var_mapping(var):
     return(mapping)
 
 
-def get_concrete_value(PC):
+def get_concrete_value_sload(next_PC):
+    val = 0
+    for op_info in MACROS.CONCRETE_INFO:
+        if (op_info['pc']==next_PC):
+            val = op_info['stack'][-1] 
+    # val = int(val,16)
+    return val
+
+def get_concrete_value_sstore(PC):
     val = 0
     for op_info in MACROS.CONCRETE_INFO:
         if (op_info['pc']==PC):
             val = op_info['stack'][-2] 
+    # val = int(val,16)        
     return val
     
+
+def store_sstore_term(term, PC):
+    hypoinfo = {}
+    hypoinfo['op'] = "SSTORE"
+    hypoinfo['name'] = term
+    hypoinfo['value'] = get_concrete_value_sstore(PC)
+    MACROS.HYPO_INFO.append(hypoinfo)
+
+def get_valid_children(node, children):
+    if not node.children:
+        if isinstance(node.value, str) or (self.is_hex(str(node.value))):
+            children.add(node.value)
+            return node.value
+    for c in node.children: 
+        if "tmp" not in c.value:
+            return_val = get_valid_children(c, children)
+            if return_val:
+                children.add(return_val)
+
+def get_parameter_values(symbolic_stack):
+    values = {}
+    essential_start = find_essential_start(MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME)
+    for op_info in MACROS.CONCRETE_INFO:
+        if (op_info['pc']==essential_start):
+            concrete_stack = (op_info['stack'])
+            break
+    for i in range(len(symbolic_stack)):
+        # print(symbolic_stack[i])
+        values[str(symbolic_stack[i])] = concrete_stack[i]
+    return values
+    
+
+def get_init_STACK(var_prefix, abi_info):
+    stack = [
+        ("FourByteSelector"),      # It would be good to fill in the actual value into this placeholder
+        ("AConstantBySolc"), 
+    ]
+    func_list = abi_info["contracts"][MACROS.CONTRACT_NAME]["abi"]
+
+    for func in func_list:
+        if ("name" in func.keys()) and (func["name"] == MACROS.FUNCTION_NAME):
+            for item in func["inputs"] :
+                if item["name"] == "path":
+                    stack.append((0x80)) # for swap trace
+                else:
+                    stack.append((item["name"]))
+    return stack
+
+def get_invariant_terms(invariants, var_prefix):
+    rt=set()
+    # get from ast
+    trace_invariants = invariants.get(MACROS.CONTRACT_NAME, [])
+    for inv in trace_invariants:
+        # print(inv)
+        inv_lst = inv.split(' ')
+        for v in inv_lst:
+            if ('this.' in v):
+                term = v.replace('this.', '')
+                rt.add(term)
+                # print("term-inv: ", term)
+                # MACROS.HYPO_TERMS.add(term)
+    return rt

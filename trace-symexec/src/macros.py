@@ -24,6 +24,7 @@ class MACROS:
     DECL_SUBS       = {}
     CONCRETE_INFO   = {}
     HYPO_INFO       = []
+    HYPO_TERMS      = set()
 
 
 

@@ -6,7 +6,8 @@
 	},
 	"hypothesis":
 	[
-		"Zero == Zero"           
+		"Zero==Zero",
+		"totalSupply < TwoE255"           
 	],
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",
