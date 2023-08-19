@@ -6,7 +6,6 @@
 	},
 	"hypothesis":
 	[
-		"Zero==Zero",
 		"totalSupply<TwoE255"           
 	],
 	"path-hash-for-test": "*",

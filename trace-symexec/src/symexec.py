@@ -913,7 +913,17 @@ def hypothesis_synth_int():
 
 def refine_hypo_ints():
     for term in MACROS.INT_TERMS.keys():
+        MACROS.INT_TERMS[term] = (MACROS.INT_TERMS[term][0], nearest_upper(int(MACROS.INT_TERMS[term][1])))
         print("int: ", term, "\t(", MACROS.INT_TERMS[term][0], ", ", MACROS.INT_TERMS[term][1], ")")
+
+
+def nearest_upper(target):
+    if target > 1:
+        for i in range(1, int(target)):
+            if (2**i >= target):
+                return 2**i
+    else:
+        return 1
 
 '''
 main symexec 
@@ -962,41 +972,43 @@ def main():
     print('\n(executing instructions...)')
     evm.sym_exec(TRACE)
 
-    ''' write Boogie output '''
-    if (MACROS.NUM_TYPE == 'real'):
-        BOOGIE_OUT.write(MACROS.PREAMBLE_REAL)
-    elif (MACROS.NUM_TYPE == 'int'):
-        BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
-
-    evm.write_global_vars()
-    evm.write_vars() # aux vars for Boogie Proofs
-    evm.write_declared_vars() # postcondition vars for Boogie proofs
     
-    BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
-    BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
+    ''' hypothesis refining '''
+    try_boogie=""
+    while("0 verified" not in try_boogie):
+        ''' write Boogie output '''
+        if (MACROS.NUM_TYPE == 'real'):
+            BOOGIE_OUT.write(MACROS.PREAMBLE_REAL)
+        elif (MACROS.NUM_TYPE == 'int'):
+            BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
 
-    ''' new: hypothesis synthesis '''
-    symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
-    HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
-    HYPO_INTS = hypothesis_synth_int()
-    for hypo in HYPOS:
-        BOOGIE_OUT.write(hypo)
-    for hypo_int in HYPO_INTS: 
-        BOOGIE_OUT.write(hypo_int)
+        evm.write_global_vars()
+        evm.write_vars() # aux vars for Boogie Proofs
+        evm.write_declared_vars() # postcondition vars for Boogie proofs
+        
+        BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
+        BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
-    refine_hypo_ints()
-            
+        ''' new: hypothesis synthesis '''
+        symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
+        HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
+        HYPO_INTS = hypothesis_synth_int()
+        refine_hypo_ints()
+        for hypo in HYPOS:
+            BOOGIE_OUT.write(hypo)
+        for hypo_int in HYPO_INTS: 
+            BOOGIE_OUT.write(hypo_int)
+        BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
+        evm.write_paths() # codegen for Boogie proofs
+        evm.write_entry_assignment() # from AST file
+        evm.write_entry_postcondition() # from AST file
+        BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
+        BOOGIE_OUT.close() # close file
 
-    BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
-    evm.write_paths() # codegen for Boogie proofs
-    evm.write_entry_assignment() # from AST file
-    evm.write_entry_postcondition() # from AST file
-    BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
-    BOOGIE_OUT.close() # close file
+        try_boogie = str((subprocess.run(['boogie', MACROS.BOOGIE], capture_output=True)).stdout)
+        print("boogie out: ", try_boogie)
 
     
-    try_boogie = subprocess.run(['boogie', MACROS.BOOGIE], capture_output=True)
-    print("boogie out: ", try_boogie)
 
 
 

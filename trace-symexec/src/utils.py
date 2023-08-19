@@ -410,7 +410,7 @@ write invariant to Boogie
 '''
 def write_invariants(invariants, var_prefix):
     # get from ast
-    rt = "\t// insert invariant of entry contract\n"
+    rt = "\n\t// insert invariant of entry contract\n"
     trace_invariants = invariants.get(MACROS.CONTRACT_NAME, [])
     for inv in trace_invariants:
         inv_lst = inv.split(' ')
@@ -602,7 +602,7 @@ def get_concrete_value_sload(next_PC):
     for op_info in MACROS.CONCRETE_INFO:
         if (op_info['pc']==next_PC):
             val = op_info['stack'][-1] 
-    # val = int(val,16)
+    val = int(val,16)
     return val
 
 def get_concrete_value_sstore(PC):
@@ -610,7 +610,7 @@ def get_concrete_value_sstore(PC):
     for op_info in MACROS.CONCRETE_INFO:
         if (op_info['pc']==PC):
             val = op_info['stack'][-2] 
-    # val = int(val,16)        
+    val = int(val,16)        
     return val
     
 
