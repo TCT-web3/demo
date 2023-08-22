@@ -240,7 +240,7 @@ class EVM:
             self.boogie_gen_sstore(self._stacks[-1].pop(), self._stacks[-1].pop(), PC)
         elif opcode=="SLOAD":
             to_load = self._stacks[-1].pop()
-            print("SLOAD: ", to_load)
+            # print("SLOAD: ", to_load)
             if (to_load.value=="MapElement"):
                 # print("term-sload", self.find_key(to_load.children[1]))
                 hypoinfo = {}
@@ -579,7 +579,7 @@ class EVM:
     
     '''generate boogie code when SSTORE happens'''
     def boogie_gen_sstore(self, node0, node1, PC):
-        print("SSTORE: location=", str(node0), " value=", str(node1))
+        # print("SSTORE: location=", str(node0), " value=", str(node1))
 
         if node0.value=="MapElement":
             if node0.children[0].value=="MapElement":
@@ -721,7 +721,7 @@ modifies """)
         self._output_file.write("\n")
     
     '''write entry assignment to Boogie'''
-    def write_entry_assignment(self):
+    def write_entry_assignment(self, BOOGIE_POST):
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
             asgmt = asgmt.strip()
             asgmt = asgmt.strip(";")
@@ -731,11 +731,13 @@ modifies """)
                 test = asgmt.split(":=")
             name = (test[0])
             expr = (test[1])
-            self._output_file.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
-        self._output_file.write("\n")
+            # self._output_file.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
+            BOOGIE_POST.write("\t"+MACROS.DECL_SUBS[name] + ":=" + name_substitution(self._var_prefix, expr) + ";\n")
+        # self._output_file.write("\n")
+        BOOGIE_POST.write("\n")
     
     '''write entry postcondition to Boogie'''
-    def write_entry_postcondition(self):
+    def write_entry_postcondition(self, BOOGIE_POST):
         postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
         if postcons:
             self._output_file.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
@@ -744,13 +746,16 @@ modifies """)
                 expr = name_substitution(self._curr_contract, postcon)
                 for to_sub in MACROS.DECL_SUBS:
                     expr = expr.replace(to_sub, MACROS.DECL_SUBS[to_sub])
-                self._output_file.write("\tassert( " + expr + " );\n")
-            self._output_file.write("\n")
+                # self._output_file.write("\tassert( " + expr + " );\n")
+                BOOGIE_POST.write("\tassert( " + expr + " );\n")
+            # self._output_file.write("\n")
+            BOOGIE_POST.write("\n")
 
     '''write all generated code to Boogie'''
-    def write_paths(self):
+    def write_paths(self, BOOGIE_POST):
         for path in self._final_path:
-            self._output_file.write(path)
+            BOOGIE_POST.write(path)
+            # self._output_file.write(path)
 
     def is_hex(self, s):
         try:
@@ -844,7 +849,9 @@ modifies """)
 
 
 
-
+'''
+methods for hypothesis synthesis
+'''
 def hypothesis_synth(concrete_trace_file, symbolic_stack):
     # concrete_trace_file = ARGS[4]
     rt_hypos = []
@@ -868,7 +875,7 @@ def hypothesis_synth(concrete_trace_file, symbolic_stack):
         else:
             term_lst.add(t)
             MACROS.HYPO_TERMS.add(t)
-    print("all terms: ", MACROS.HYPO_TERMS)
+    # print("all terms: ", MACROS.HYPO_TERMS)
     addr_lst = []
 
     # initialize the integer estimation
@@ -884,7 +891,7 @@ def hypothesis_synth(concrete_trace_file, symbolic_stack):
             MACROS.INT_TERMS[info['name']]=('Zero',MACROS.PARAM_VALUES[term])
     addr_lst = list(set(addr_lst))
 
-    print("all addresses: ", addr_lst)
+    # print("all addresses: ", addr_lst)
     rt_hypos.append("\t// addresses aliasing\n")
     iterator = itertools.combinations(addr_lst, 2)
     alias_check = (list(itertools.combinations(addr_lst, 2)))
@@ -919,7 +926,6 @@ def refine_hypo_ints():
     print('(refine)')
     for term in MACROS.INT_TERMS.keys():
         MACROS.INT_TERMS[term] = (MACROS.INT_TERMS[term][0], nearest_upper(int(MACROS.INT_TERMS[term][1])))
-
 
 def nearest_upper(target):
     if target > 1:
@@ -957,7 +963,6 @@ def main():
     STACKS      = gen_init_STACK(VAR_PREFIX, ABI_INFO)
     STORAGE     = gen_init_STORAGE()
     MEMORIES    = gen_init_MEMORY()
-    BOOGIE_OUT  = open(MACROS.BOOGIE, "w+")
     PATHS       = []
     CALL_STACK  = gen_init_CALL_STACK(VAR_PREFIX)
     
@@ -970,59 +975,112 @@ def main():
     MACROS.NUM_TYPE  = get_numerical_type()
     MACROS.DEF_VARS  = get_defvars()
 
+    ''' setup Boogie write '''
+    CONTENT_PRE="pre.txt"
+    CONTENT_POST="post.txt"
+    BOOGIE_PRE  = open(CONTENT_PRE, "w+")
+    BOOGIE_POST = open(CONTENT_POST, "w+")
+
+
     ''' run EVM trace instructions '''
-    evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_OUT, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX, [])
+    evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_PRE, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX, [])
     evm._sym_this_addresses  = [SVT("tx_origin"),SVT("entry_contract")]
-    print('inputs: ', MACROS.SOLIDITY_FNAME, MACROS.THEOREM_FNAME, MACROS.TRACE_FNAME)
+    print('inputs: \n', MACROS.SOLIDITY_FNAME+'\n', MACROS.THEOREM_FNAME+'\n', MACROS.TRACE_FNAME+'\n')
     print('\n(executing instructions...)')
     evm.sym_exec(TRACE)
 
     symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
+    
     ''' hypothesis refining '''
     try_boogie=""
-    # while(True):
-    print('\nbuilding theorem...\n')
+
+    print('\n(building theorem...)\n')
 
     # ERASER  = open(MACROS.BOOGIE, "r+")
 
+    ''' write Boogie output '''
+    if (MACROS.NUM_TYPE == 'real'):
+        BOOGIE_PRE.write(MACROS.PREAMBLE_REAL)
+    elif (MACROS.NUM_TYPE == 'int'):
+        BOOGIE_PRE.write(MACROS.PREAMBLE_INT)
+
+    ''' preambles and variable declarations '''
+    evm.write_global_vars()
+    evm.write_vars() # aux vars for Boogie Proofs
+    evm.write_declared_vars() # postcondition vars for Boogie proofs
+    BOOGIE_PRE.write(write_defvars(VAR_PREFIX))
+    BOOGIE_PRE.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
+    BOOGIE_PRE.close()
+
+    ''' invariants, path and post-conditions '''
+    BOOGIE_POST.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
+    evm.write_paths(BOOGIE_POST) # codegen for Boogie proofs
+    evm.write_entry_assignment(BOOGIE_POST) # from AST file
+    evm.write_entry_postcondition(BOOGIE_POST) # from AST file
+    BOOGIE_POST.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
+    BOOGIE_POST.close()
+
+
+    
+
+    ''' build final .bpl files and iteratively build hypothesis '''
+    count=0
     for i in range(0,1):
-        # BOOGIE_OUT  = open(MACROS.BOOGIE, "w")
-        # ERASER.truncate(0)
-        # subprocess.run("./erase_it.sh", shell=True, capture_output=True)  
-        # os.system('./erase_it.sh')
-        # time.sleep(1)
 
-        ''' write Boogie output '''
-        if (MACROS.NUM_TYPE == 'real'):
-            BOOGIE_OUT.write(MACROS.PREAMBLE_REAL)
-        elif (MACROS.NUM_TYPE == 'int'):
-            BOOGIE_OUT.write(MACROS.PREAMBLE_INT)
+        print('refine #1\n')
+        BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
 
-        evm.write_global_vars()
-        evm.write_vars() # aux vars for Boogie Proofs
-        evm.write_declared_vars() # postcondition vars for Boogie proofs
-        BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
-        BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
+        with open(CONTENT_PRE) as file:
+            while line := file.readline():
+                BOOGIE_WRITE.write(line)
+                # print(line.rstrip())
 
         ''' new: hypothesis synthesis '''
         HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
         HYPO_INTS = hypothesis_synth_int()
         for hypo in HYPOS:
-            BOOGIE_OUT.write(hypo)
+            BOOGIE_WRITE.write(hypo)
         for hypo_int in HYPO_INTS: 
-            BOOGIE_OUT.write(hypo_int)
-
-
+            BOOGIE_WRITE.write(hypo_int)
+        # debug
         for term in MACROS.INT_TERMS.keys():
-            print("int: ", term, "\t(", MACROS.INT_TERMS[term][0], ", ", MACROS.INT_TERMS[term][1], ")")
+            print("int: ", term, "\t(", MACROS.INT_TERMS[term][0], ",", MACROS.INT_TERMS[term][1], ")")
     
+        with open(CONTENT_POST) as file:
+            while line := file.readline():
+                BOOGIE_WRITE.write(line)
+                # print(line.rstrip())
 
-        ''' invariants, pathm and post-conditions '''
-        BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
-        evm.write_paths() # codegen for Boogie proofs
-        evm.write_entry_assignment() # from AST file
-        evm.write_entry_postcondition() # from AST file
-        BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
+        BOOGIE_WRITE.close()
+
+
+        cmd = "./boogie_it.sh"
+        boogie_out = str(subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0])
+        print("try boogie: ", boogie_out)
+
+        SUCCESS_key='1 verified'
+        if (SUCCESS_key in boogie_out):
+            break
+        else:
+            break
+
+
+        # print()
+
+        # p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        # print(p)
+        # print p.stdout.readline(), # read the first line
+        # for i in range(10): # repeat several times to show that it works
+        #     print >>p.stdin, i # write input
+        #     p.stdin.flush() # not necessary in this case
+        #     print p.stdout.readline(), # read output
+
+        # print p.communicate("n\n")[0], # signal the child to exit,
+        #                             # read the rest of the output, 
+        #                             # wait for the child to exit
+
+
+
         # BOOGIE_OUT.close() # close file
 
         # time.sleep(1)
@@ -1048,11 +1106,10 @@ def main():
             # break
             # subprocess.run('./erase_it.sh')
         # BOOGIE_OUT.truncate(0)
-       
+    
 
 
-
-    BOOGIE_OUT.close() # close file
+    # BOOGIE_OUT.close() # close file
     
 
     

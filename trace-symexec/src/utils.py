@@ -398,7 +398,7 @@ def write_defvars(var_prefix):
 write hypothesis to Boogie
 '''
 def write_hypothesis(hypothesis, var_prefix):
-    rt = "\n\t// hypothesis \n"
+    rt = "\n\t// user given hypothesis \n"
     for hypo in hypothesis:
         rt += "\tassume(" + name_substitution(var_prefix, hypo) + ");\n" 
     

@@ -1,0 +1,43 @@
+
+	// insert invariant of entry contract
+	assume(forall x:address :: Zero <= MultiVulnToken.balances[entry_contract][x] && MultiVulnToken.balances[entry_contract][x] <= MultiVulnToken.totalSupply[entry_contract]);
+	assume(sum( MultiVulnToken.balances[entry_contract] ) == MultiVulnToken.totalSupply[entry_contract]);
+
+	tmp1:=MultiVulnToken.balances[entry_contract][_from];
+	tmp2:=evmadd(_fee,_value);
+	tmp3:= (tmp1<tmp2);
+	tmp4:=!tmp3;
+	assume(tmp4);
+
+	tmp5:=MultiVulnToken.balances[entry_contract][_to];
+	tmp6:=MultiVulnToken.balances[entry_contract][_to];
+	tmp7:=evmadd(tmp6,_value);
+	tmp8:= (tmp7<tmp5);
+	tmp9:=!tmp8;
+	assume(tmp9);
+
+	tmp10:=MultiVulnToken.balances[entry_contract][tx_origin];
+	tmp11:=MultiVulnToken.balances[entry_contract][tx_origin];
+	tmp12:=evmadd(tmp11,_fee);
+	tmp13:= (tmp12<tmp10);
+	tmp14:=!tmp13;
+	assume(tmp14);
+
+	tmp15:=MultiVulnToken.balances[entry_contract][_to];
+	tmp16:=evmadd(tmp15,_value);
+	MultiVulnToken.balances[entry_contract][_to]:=tmp16;
+
+	tmp17:=MultiVulnToken.balances[entry_contract][tx_origin];
+	tmp18:=evmadd(tmp17,_fee);
+	MultiVulnToken.balances[entry_contract][tx_origin]:=tmp18;
+
+	tmp19:=MultiVulnToken.balances[entry_contract][_from];
+	tmp20:=evmadd(_value,_fee);
+	tmp21:=evmsub(tmp19,tmp20);
+	MultiVulnToken.balances[entry_contract][_from]:=tmp21;
+
+
+	// (post) insert invariant of entry contract
+	assert(forall x:address :: Zero <= MultiVulnToken.balances[entry_contract][x] && MultiVulnToken.balances[entry_contract][x] <= MultiVulnToken.totalSupply[entry_contract]);
+	assert(sum( MultiVulnToken.balances[entry_contract] ) == MultiVulnToken.totalSupply[entry_contract]);
+}
