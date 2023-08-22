@@ -1017,7 +1017,6 @@ def main():
     BOOGIE_PRE  = open(CONTENT_PRE, "w+")
     BOOGIE_POST = open(CONTENT_POST, "w+")
 
-
     ''' run EVM trace instructions '''
     evm = EVM(STACKS, STORAGE, MAP, MEMORIES, BOOGIE_PRE, PATHS, VARS, CONTRACT_NAME, FUNCTION_NAME, CALL_STACK, ABI_INFO, VAR_PREFIX, [])
     evm._sym_this_addresses  = [SVT("tx_origin"),SVT("entry_contract")]
@@ -1025,7 +1024,6 @@ def main():
     print('\n(executing instructions...)')
     evm.sym_exec(TRACE)
     
-
     print('\n(building theorem...)\n')
     ''' write Boogie output '''
     if (MACROS.NUM_TYPE == 'real'):
@@ -1067,12 +1065,11 @@ def main():
     for i in range(0,3):
         # try_int_refine()
         count+=1
-        print('\ntry boogie #', count, '\n')
+        print('\nrefine #', count, '\n')
         BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
         write_PRE(BOOGIE_WRITE)
 
         ''' new: hypothesis synthesis '''
-        
         for hypo in HYPOS:
             BOOGIE_WRITE.write(hypo)
         for hypo_int in HYPO_INTS: 
@@ -1084,23 +1081,21 @@ def main():
     
         write_POST(BOOGIE_WRITE)
         BOOGIE_WRITE.close()
-
         cmd = "./boogie_it.sh"
         boogie_out = str(subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0])
-        print("try boogie: ", boogie_out)
 
         
         SUCCESS_key='1 verified'
         if (SUCCESS_key in boogie_out):
+            print('boogie verifies, try to widen upper bound')
             HYPO_INTS=try_refine_hypo_int('widen')
-            print('try to widen upper bound')
             for hypo_int in HYPO_INTS: 
                 print(hypo_int)
             continue
             # break
         else:
+            print('boogie falsifies, narrow upper bound and exit')
             HYPO_INTS=try_refine_hypo_int('narrow')
-            print('try to narrow upper bound')
             for hypo_int in HYPO_INTS: 
                 print(hypo_int)
 
@@ -1113,7 +1108,9 @@ def main():
             write_POST(BOOGIE_WRITE)
             BOOGIE_WRITE.close()
 
-            break # stop refining
+            break # stop refining and print the final successful proof
+
+
     
 
 
