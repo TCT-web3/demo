@@ -12,6 +12,7 @@ from macros     import *
 from utils      import *
 import itertools
 import subprocess
+import time
 
 '''
 Symbolic value tree 
@@ -842,6 +843,8 @@ modifies """)
                 print('(', key, ',', self._storage[key], ')')
 
 
+
+
 def hypothesis_synth(concrete_trace_file, symbolic_stack):
     # concrete_trace_file = ARGS[4]
     rt_hypos = []
@@ -872,6 +875,7 @@ def hypothesis_synth(concrete_trace_file, symbolic_stack):
     for term in MACROS.HYPO_TERMS:
         if (MACROS.ALL_VARS[term]=="uint256"):
              MACROS.INT_TERMS[term]=('Zero',MACROS.PARAM_VALUES[term])
+            #  print(MACROS.PARAM_VALUES[term])
 
     for info in MACROS.HYPO_INFO:
         if len(info.keys())!=0 and info['type'] == 'address':
@@ -896,7 +900,6 @@ def hypothesis_synth(concrete_trace_file, symbolic_stack):
                 rt_hypos.append('\tassume('+ str(alias[0]) + '!=' + str(alias[1]) + ');\n')
     return rt_hypos
 
-
 def hypothesis_synth_int():
     rt_hypo_ints = []
     rt_hypo_ints.append("\t// input parameter concrete values\n")
@@ -907,20 +910,21 @@ def hypothesis_synth_int():
             # v2: ranges
             lower_bound = MACROS.INT_TERMS[term][0]
             upper_bound = MACROS.INT_TERMS[term][1]
+            # print(upper_bound)
             rt_hypo_ints.append('\tassume(' + lower_bound + "<=" + term + ");\n")
             rt_hypo_ints.append('\tassume(' + term + "<=" + upper_bound + ");\n")
     return rt_hypo_ints
 
 def refine_hypo_ints():
+    print('(refine)')
     for term in MACROS.INT_TERMS.keys():
         MACROS.INT_TERMS[term] = (MACROS.INT_TERMS[term][0], nearest_upper(int(MACROS.INT_TERMS[term][1])))
-        print("int: ", term, "\t(", MACROS.INT_TERMS[term][0], ", ", MACROS.INT_TERMS[term][1], ")")
 
 
 def nearest_upper(target):
     if target > 1:
         for i in range(1, int(target)):
-            if (2**i >= target):
+            if (2**i > target):
                 return 2**i
     else:
         return 1
@@ -934,7 +938,8 @@ def main():
     MACROS.SOLIDITY_FNAME  = ARGS[1]
     MACROS.THEOREM_FNAME   = ARGS[2]
     MACROS.TRACE_FNAME     = ARGS[3]
-    MACROS.BOOGIE          = MACROS.TRACE_FNAME[:-4]+".bpl"
+    # MACROS.BOOGIE          = MACROS.TRACE_FNAME[:-4]+".bpl" #TODO: relative path with subprocess?
+    MACROS.BOOGIE          = "integerOverflow.bpl"
 
     ''' initial generation of solc files and essential trace '''
     gen_solc()
@@ -952,7 +957,7 @@ def main():
     STACKS      = gen_init_STACK(VAR_PREFIX, ABI_INFO)
     STORAGE     = gen_init_STORAGE()
     MEMORIES    = gen_init_MEMORY()
-    BOOGIE_OUT  = open(MACROS.BOOGIE, "w")
+    BOOGIE_OUT  = open(MACROS.BOOGIE, "w+")
     PATHS       = []
     CALL_STACK  = gen_init_CALL_STACK(VAR_PREFIX)
     
@@ -972,10 +977,21 @@ def main():
     print('\n(executing instructions...)')
     evm.sym_exec(TRACE)
 
-    
+    symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
     ''' hypothesis refining '''
     try_boogie=""
-    while("0 verified" not in try_boogie):
+    # while(True):
+    print('\nbuilding theorem...\n')
+
+    # ERASER  = open(MACROS.BOOGIE, "r+")
+
+    for i in range(0,1):
+        # BOOGIE_OUT  = open(MACROS.BOOGIE, "w")
+        # ERASER.truncate(0)
+        # subprocess.run("./erase_it.sh", shell=True, capture_output=True)  
+        # os.system('./erase_it.sh')
+        # time.sleep(1)
+
         ''' write Boogie output '''
         if (MACROS.NUM_TYPE == 'real'):
             BOOGIE_OUT.write(MACROS.PREAMBLE_REAL)
@@ -985,28 +1001,59 @@ def main():
         evm.write_global_vars()
         evm.write_vars() # aux vars for Boogie Proofs
         evm.write_declared_vars() # postcondition vars for Boogie proofs
-        
         BOOGIE_OUT.write(write_defvars(VAR_PREFIX))
         BOOGIE_OUT.write(write_hypothesis(HYPOTHESIS,VAR_PREFIX))
 
         ''' new: hypothesis synthesis '''
-        symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
         HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
         HYPO_INTS = hypothesis_synth_int()
-        refine_hypo_ints()
         for hypo in HYPOS:
             BOOGIE_OUT.write(hypo)
         for hypo_int in HYPO_INTS: 
             BOOGIE_OUT.write(hypo_int)
+
+
+        for term in MACROS.INT_TERMS.keys():
+            print("int: ", term, "\t(", MACROS.INT_TERMS[term][0], ", ", MACROS.INT_TERMS[term][1], ")")
+    
+
+        ''' invariants, pathm and post-conditions '''
         BOOGIE_OUT.write(write_invariants(MACROS.INVARIANTS,VAR_PREFIX))
         evm.write_paths() # codegen for Boogie proofs
         evm.write_entry_assignment() # from AST file
         evm.write_entry_postcondition() # from AST file
         BOOGIE_OUT.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
-        BOOGIE_OUT.close() # close file
+        # BOOGIE_OUT.close() # close file
 
-        try_boogie = str((subprocess.run(['boogie', MACROS.BOOGIE], capture_output=True)).stdout)
-        print("boogie out: ", try_boogie)
+        # time.sleep(1)
+        # p1 = subprocess.Popen(['./erase_it.sh']) 
+        # p1.wait()
+
+        # os.system('./boogie_it.sh')
+        # try_boogie = str(subprocess.run('./boogie_it.sh', shell=True, capture_output=True))
+        # p_boogie = subprocess.Popen(['./boogie_it.sh'], shell=True)
+        # p_boogie.wait()
+        # print("boogie out: ", try_boogie)
+
+        # p1 = subprocess.Popen(['./erase_it.sh']) 
+        # p1.wait()
+
+        # if("0 verified" in try_boogie):
+        #     print("(!) not verified, refining integers in hypothesis\n")
+        #     refine_hypo_ints()
+        #     # subprocess.run('./erase_it.sh')
+        # else:
+        #     print("(!) success! theorem found!\n")
+        #     refine_hypo_ints()
+            # break
+            # subprocess.run('./erase_it.sh')
+        # BOOGIE_OUT.truncate(0)
+       
+
+
+
+    BOOGIE_OUT.close() # close file
+    
 
     
 

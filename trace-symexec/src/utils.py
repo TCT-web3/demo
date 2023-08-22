@@ -417,8 +417,6 @@ def write_invariants(invariants, var_prefix):
         for v in inv_lst:
             if ('this.' in v):
                 term = v.replace('this.', '')
-                # print("term-inv: ", term)
-                # MACROS.HYPO_TERMS.add(term)
 
         inv = inv.replace("this", "entry_contract")
         inv = name_substitution(var_prefix, inv)
@@ -465,7 +463,6 @@ def name_substitution(c_prefix, expression):
     for elmt in parts:
         if elmt in MACROS.ALL_VARS.keys():
             new_parts.append(elmt)
-            # print("existing variable: " + elmt)
         elif elmt.isdigit():
             if (MACROS.NUM_TYPE=="real"):
                 new_parts.append(elmt+".0") #patch
@@ -602,7 +599,7 @@ def get_concrete_value_sload(next_PC):
     for op_info in MACROS.CONCRETE_INFO:
         if (op_info['pc']==next_PC):
             val = op_info['stack'][-1] 
-    val = int(val,16)
+    val = int(str(val),16)
     return val
 
 def get_concrete_value_sstore(PC):
@@ -610,7 +607,7 @@ def get_concrete_value_sstore(PC):
     for op_info in MACROS.CONCRETE_INFO:
         if (op_info['pc']==PC):
             val = op_info['stack'][-2] 
-    val = int(val,16)        
+    val = int(str(val),16)        
     return val
     
 
@@ -641,7 +638,14 @@ def get_parameter_values(symbolic_stack):
             break
     for i in range(len(symbolic_stack)):
         # print(symbolic_stack[i])
-        values[str(symbolic_stack[i])] = concrete_stack[i]
+        # if(isinstance(concrete_stack[i], hex)):
+        val = int(concrete_stack[i], 16)
+        # exp_number = "{:e}".format(val)
+        # else:
+            # val = concrete_stack[i]
+        values[str(symbolic_stack[i])] = str(val)
+        
+
     return values
     
 
@@ -666,12 +670,9 @@ def get_invariant_terms(invariants, var_prefix):
     # get from ast
     trace_invariants = invariants.get(MACROS.CONTRACT_NAME, [])
     for inv in trace_invariants:
-        # print(inv)
         inv_lst = inv.split(' ')
         for v in inv_lst:
             if ('this.' in v):
                 term = v.replace('this.', '')
                 rt.add(term)
-                # print("term-inv: ", term)
-                # MACROS.HYPO_TERMS.add(term)
     return rt
