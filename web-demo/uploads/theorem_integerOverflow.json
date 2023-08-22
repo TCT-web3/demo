@@ -1,4 +1,4 @@
-{
+ {
 	"entry-for-test":"MultiVulnToken::transferProxy(address,address,uint256,uint256)",
 	"entry-for-real":"0x88c436e4a975ef5e5788f97e86d80fde29ddd13d::0xcf053d9d",
 	"def-vars": {
