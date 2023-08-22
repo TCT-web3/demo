@@ -632,6 +632,9 @@ def get_valid_children(node, children):
 def get_parameter_values(symbolic_stack):
     values = {}
     essential_start = find_essential_start(MACROS.CONTRACT_NAME, MACROS.FUNCTION_NAME)
+    print(MACROS.CONTRACT_NAME)
+    print(MACROS.FUNCTION_NAME)
+    print(essential_start)
     for op_info in MACROS.CONCRETE_INFO:
         if (op_info['pc']==essential_start):
             concrete_stack = (op_info['stack'])
