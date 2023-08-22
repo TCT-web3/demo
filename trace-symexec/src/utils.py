@@ -456,7 +456,6 @@ def write_params(abi_info, var_prefix):
                     rt = rt + "\tvar " +input["name"] + ":\t" + input["type"]+';\n'
     return rt + '\n'
 
-
 def name_substitution(c_prefix, expression):
     parts = expression.split(" ")
     new_parts = []
@@ -610,7 +609,6 @@ def get_concrete_value_sstore(PC):
     val = int(str(val),16)        
     return val
     
-
 def store_sstore_term(term, PC):
     hypoinfo = {}
     hypoinfo['op'] = "SSTORE"
@@ -648,7 +646,6 @@ def get_parameter_values(symbolic_stack):
 
     return values
     
-
 def get_init_STACK(var_prefix, abi_info):
     stack = [
         ("FourByteSelector"),      # It would be good to fill in the actual value into this placeholder

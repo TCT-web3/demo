@@ -703,8 +703,7 @@ modifies """)
     var entry_contract: address;
     var BLOCKTIME: uint256;
 """)
-
-    '''write declared vars to Boogie'''
+    ''' write declared vars to Boogie '''
     def write_declared_vars(self):
         self._output_file.write("\t// declare-vars\n")
         declaration = self._postcondition.get(self._curr_contract, {}).get(self._curr_function, {}).get("declaration", [])
@@ -720,7 +719,7 @@ modifies """)
             self._output_file.write("\t" + decl.replace(original_name, decl_name) + "\n")
         self._output_file.write("\n")
     
-    '''write entry assignment to Boogie'''
+    ''' write entry assignment to Boogie '''
     def write_entry_assignment(self, BOOGIE_POST):
         for asgmt in self._postcondition[self._curr_contract].get(self._curr_function, {}).get("assignment", []):
             asgmt = asgmt.strip()
@@ -736,7 +735,7 @@ modifies """)
         # self._output_file.write("\n")
         BOOGIE_POST.write("\n")
     
-    '''write entry postcondition to Boogie'''
+    ''' write entry postcondition to Boogie '''
     def write_entry_postcondition(self, BOOGIE_POST):
         postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
         if postcons:
@@ -751,12 +750,13 @@ modifies """)
             # self._output_file.write("\n")
             BOOGIE_POST.write("\n")
 
-    '''write all generated code to Boogie'''
+    ''' write all generated code to Boogie '''
     def write_paths(self, BOOGIE_POST):
         for path in self._final_path:
             BOOGIE_POST.write(path)
             # self._output_file.write(path)
 
+    ''' check if a string is a hex '''
     def is_hex(self, s):
         try:
             int(s, 16)
@@ -764,6 +764,7 @@ modifies """)
         except ValueError:
             return False
 
+    ''' add new variable to var list '''
     def add_new_vars(self, var_name):
         mapping = get_var_mapping(var_name)
         var_name = var_name.split('[')[0]
@@ -781,7 +782,7 @@ modifies """)
             else:
                 self._final_vars[self._var_prefix+'.'+var_name] = var_type + MACROS.VAR_TYPES[self._curr_contract][var_name]
 
-    '''helper to find the key of a node'''
+    ''' helper to find the key of a node '''
     def find_key(self, node):
         if not node.children:
             if isinstance(node.value, str) or (self.is_hex(str(node.value))):
@@ -792,7 +793,7 @@ modifies """)
                 if return_val:
                     return return_val
 
-    '''helper to find the map ID'''
+    ''' helper to find the map ID '''
     def find_mapID(self, node):
         if node.value == "MapElement":
             return node.children[0]
@@ -846,7 +847,6 @@ modifies """)
             print("-----Storage-----")
             for key in self._storage:
                 print('(', key, ',', self._storage[key], ')')
-
 
 
 '''
@@ -906,6 +906,7 @@ def hypothesis_synth(concrete_trace_file, symbolic_stack):
                 rt_hypos.append('\tassume('+ str(alias[0]) + '!=' + str(alias[1]) + ');\n')
     return rt_hypos
 
+''' current hypothesis with type INT '''
 def curr_hypo_int():
     rt_hypo_ints = []
     rt_hypo_ints.append("\t// input parameter concrete values\n")
@@ -921,6 +922,7 @@ def curr_hypo_int():
             rt_hypo_ints.append('\tassume(' + term + "<=" + upper_bound + ");\n")
     return rt_hypo_ints
 
+''' try to refine by either widen or narrow the upper bound of int '''
 def try_refine_hypo_int(mode):
     rt_hypo_ints = []
     rt_hypo_ints.append("\t// input parameter concrete values\n")
@@ -939,10 +941,10 @@ def try_refine_hypo_int(mode):
             # print(refined_upper_bound)
             # print(upper_bound)
             rt_hypo_ints.append('\tassume(' + lower_bound + "<=" + term + ");\n")
-            rt_hypo_ints.append('\tassume(' + term + "<" + 'TwoE'+str(i) + ");\n")
+            rt_hypo_ints.append('\tassume(' + term + "<=" + 'TwoE'+str(i) + ");\n")
     return rt_hypo_ints
 
-
+''' widen upper bound '''
 def widen_upper(target):
     if target > 1:
         for i in range(1, int(target)):
@@ -952,6 +954,7 @@ def widen_upper(target):
     else:
         return 1
 
+''' narrow upper bound '''
 def narrow_upper(target):
     if target > 1:
         for i in range(1, int(target)):
@@ -961,6 +964,7 @@ def narrow_upper(target):
     else:
         return 1
 
+''' modify the stored bound for int hypo '''
 def refine_hypo_int(mode):
     print('(refine)')
     for term in MACROS.INT_TERMS.keys():
@@ -1011,7 +1015,7 @@ def main():
     MACROS.NUM_TYPE  = get_numerical_type()
     MACROS.DEF_VARS  = get_defvars()
 
-    ''' setup Boogie write '''
+    ''' setup file writers '''
     CONTENT_PRE="pre.txt"
     CONTENT_POST="post.txt"
     BOOGIE_PRE  = open(CONTENT_PRE, "w+")
@@ -1024,8 +1028,8 @@ def main():
     print('\n(executing instructions...)')
     evm.sym_exec(TRACE)
     
-    print('\n(building theorem...)\n')
     ''' write Boogie output '''
+    print('\n(building theorem...)\n')
     if (MACROS.NUM_TYPE == 'real'):
         BOOGIE_PRE.write(MACROS.PREAMBLE_REAL)
     elif (MACROS.NUM_TYPE == 'int'):
@@ -1062,8 +1066,12 @@ def main():
     symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
     HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
     HYPO_INTS = curr_hypo_int()
-    for i in range(0,3):
-        # try_int_refine()
+
+    def check_hypo():
+        for hypo_int in HYPO_INTS: 
+                print(hypo_int.strip())
+
+    while(True):
         count+=1
         print('\nrefine #', count, '\n')
         BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
@@ -1087,17 +1095,15 @@ def main():
         
         SUCCESS_key='1 verified'
         if (SUCCESS_key in boogie_out):
-            print('boogie verifies, try to widen upper bound')
+            print('boogie verifies, try to widen upper bound as follows')
             HYPO_INTS=try_refine_hypo_int('widen')
-            for hypo_int in HYPO_INTS: 
-                print(hypo_int)
+            check_hypo()
             continue
             # break
         else:
-            print('boogie falsifies, narrow upper bound and exit')
+            print('boogie falsifies, narrow upper bound back and exit')
             HYPO_INTS=try_refine_hypo_int('narrow')
-            for hypo_int in HYPO_INTS: 
-                print(hypo_int)
+            check_hypo()
 
             BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
             write_PRE(BOOGIE_WRITE)
@@ -1109,11 +1115,6 @@ def main():
             BOOGIE_WRITE.close()
 
             break # stop refining and print the final successful proof
-
-
-    
-
-
 
 if __name__ == '__main__':
     main()
