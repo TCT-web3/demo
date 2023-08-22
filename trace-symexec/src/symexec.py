@@ -853,7 +853,6 @@ modifies """)
 methods for hypothesis synthesis
 '''
 def hypothesis_synth(concrete_trace_file, symbolic_stack):
-    # concrete_trace_file = ARGS[4]
     rt_hypos = []
     concrete_file = open(concrete_trace_file, )
     concrete_json = json.load(concrete_file)
@@ -907,7 +906,22 @@ def hypothesis_synth(concrete_trace_file, symbolic_stack):
                 rt_hypos.append('\tassume('+ str(alias[0]) + '!=' + str(alias[1]) + ');\n')
     return rt_hypos
 
-def hypothesis_synth_int():
+def curr_hypo_int():
+    rt_hypo_ints = []
+    rt_hypo_ints.append("\t// input parameter concrete values\n")
+    for term in MACROS.INT_TERMS.keys():
+        if term in MACROS.PARAM_VALUES.keys():
+            # v1: concrete values
+            # rt_hypo_ints.append('\tassume('+ term + '==' + str(MACROS.PARAM_VALUES[term]) + ');\n')
+            # v2: ranges
+            lower_bound = str(MACROS.INT_TERMS[term][0])
+            upper_bound = str(MACROS.INT_TERMS[term][1])
+            # print(upper_bound)
+            rt_hypo_ints.append('\tassume(' + lower_bound + "<=" + term + ");\n")
+            rt_hypo_ints.append('\tassume(' + term + "<=" + upper_bound + ");\n")
+    return rt_hypo_ints
+
+def try_refine_hypo_int(mode):
     rt_hypo_ints = []
     rt_hypo_ints.append("\t// input parameter concrete values\n")
     for term in MACROS.INT_TERMS.keys():
@@ -918,22 +932,44 @@ def hypothesis_synth_int():
             lower_bound = MACROS.INT_TERMS[term][0]
             upper_bound = MACROS.INT_TERMS[term][1]
             # print(upper_bound)
+            if(mode=='widen'):
+                i = str(widen_upper(int(upper_bound)))
+            else:
+                i = str(narrow_upper(int(upper_bound)))
+            # print(refined_upper_bound)
+            # print(upper_bound)
             rt_hypo_ints.append('\tassume(' + lower_bound + "<=" + term + ");\n")
-            rt_hypo_ints.append('\tassume(' + term + "<=" + upper_bound + ");\n")
+            rt_hypo_ints.append('\tassume(' + term + "<" + 'TwoE'+str(i) + ");\n")
     return rt_hypo_ints
 
-def refine_hypo_ints():
-    print('(refine)')
-    for term in MACROS.INT_TERMS.keys():
-        MACROS.INT_TERMS[term] = (MACROS.INT_TERMS[term][0], nearest_upper(int(MACROS.INT_TERMS[term][1])))
 
-def nearest_upper(target):
+def widen_upper(target):
     if target > 1:
         for i in range(1, int(target)):
-            if (2**i > target):
-                return 2**i
+            if (2**i >= target):
+                return i
+                # return 2**i
     else:
         return 1
+
+def narrow_upper(target):
+    if target > 1:
+        for i in range(1, int(target)):
+            if (2**i >= target):
+                return (i-1)
+                # return 2**i
+    else:
+        return 1
+
+def refine_hypo_int(mode):
+    print('(refine)')
+    for term in MACROS.INT_TERMS.keys():
+        if(mode=='widen'):
+            i=widen_upper(int(MACROS.INT_TERMS[term][1]))
+        else:
+            i=narrow_upper(int(MACROS.INT_TERMS[term][1]))    
+        new_upper = int(2**i)
+        MACROS.INT_TERMS[term] = (MACROS.INT_TERMS[term][0], new_upper)
 
 '''
 main symexec 
@@ -988,16 +1024,9 @@ def main():
     print('inputs: \n', MACROS.SOLIDITY_FNAME+'\n', MACROS.THEOREM_FNAME+'\n', MACROS.TRACE_FNAME+'\n')
     print('\n(executing instructions...)')
     evm.sym_exec(TRACE)
-
-    symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
     
-    ''' hypothesis refining '''
-    try_boogie=""
 
     print('\n(building theorem...)\n')
-
-    # ERASER  = open(MACROS.BOOGIE, "r+")
-
     ''' write Boogie output '''
     if (MACROS.NUM_TYPE == 'real'):
         BOOGIE_PRE.write(MACROS.PREAMBLE_REAL)
@@ -1020,98 +1049,71 @@ def main():
     BOOGIE_POST.write(write_epilogue(MACROS.INVARIANTS,VAR_PREFIX))
     BOOGIE_POST.close()
 
-
-    
-
-    ''' build final .bpl files and iteratively build hypothesis '''
-    count=0
-    for i in range(0,1):
-
-        print('refine #1\n')
-        BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
-
+    def write_PRE(BOOGIE_WRITE):
         with open(CONTENT_PRE) as file:
             while line := file.readline():
                 BOOGIE_WRITE.write(line)
-                # print(line.rstrip())
+
+    def write_POST(BOOGIE_WRITE):
+        with open(CONTENT_POST) as file:
+            while line := file.readline():
+                BOOGIE_WRITE.write(line)
+
+    ''' build final .bpl files and iteratively build hypothesis '''
+    count=0
+    symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
+    HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
+    HYPO_INTS = curr_hypo_int()
+    for i in range(0,3):
+        # try_int_refine()
+        count+=1
+        print('\ntry boogie #', count, '\n')
+        BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
+        write_PRE(BOOGIE_WRITE)
 
         ''' new: hypothesis synthesis '''
-        HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
-        HYPO_INTS = hypothesis_synth_int()
+        
         for hypo in HYPOS:
             BOOGIE_WRITE.write(hypo)
         for hypo_int in HYPO_INTS: 
             BOOGIE_WRITE.write(hypo_int)
+
         # debug
-        for term in MACROS.INT_TERMS.keys():
-            print("int: ", term, "\t(", MACROS.INT_TERMS[term][0], ",", MACROS.INT_TERMS[term][1], ")")
+        # for term in MACROS.INT_TERMS.keys():
+            # print("int:", term, "(", MACROS.INT_TERMS[term][1], ")")
     
-        with open(CONTENT_POST) as file:
-            while line := file.readline():
-                BOOGIE_WRITE.write(line)
-                # print(line.rstrip())
-
+        write_POST(BOOGIE_WRITE)
         BOOGIE_WRITE.close()
-
 
         cmd = "./boogie_it.sh"
         boogie_out = str(subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0])
         print("try boogie: ", boogie_out)
 
+        
         SUCCESS_key='1 verified'
         if (SUCCESS_key in boogie_out):
-            break
-        else:
-            break
-
-
-        # print()
-
-        # p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        # print(p)
-        # print p.stdout.readline(), # read the first line
-        # for i in range(10): # repeat several times to show that it works
-        #     print >>p.stdin, i # write input
-        #     p.stdin.flush() # not necessary in this case
-        #     print p.stdout.readline(), # read output
-
-        # print p.communicate("n\n")[0], # signal the child to exit,
-        #                             # read the rest of the output, 
-        #                             # wait for the child to exit
-
-
-
-        # BOOGIE_OUT.close() # close file
-
-        # time.sleep(1)
-        # p1 = subprocess.Popen(['./erase_it.sh']) 
-        # p1.wait()
-
-        # os.system('./boogie_it.sh')
-        # try_boogie = str(subprocess.run('./boogie_it.sh', shell=True, capture_output=True))
-        # p_boogie = subprocess.Popen(['./boogie_it.sh'], shell=True)
-        # p_boogie.wait()
-        # print("boogie out: ", try_boogie)
-
-        # p1 = subprocess.Popen(['./erase_it.sh']) 
-        # p1.wait()
-
-        # if("0 verified" in try_boogie):
-        #     print("(!) not verified, refining integers in hypothesis\n")
-        #     refine_hypo_ints()
-        #     # subprocess.run('./erase_it.sh')
-        # else:
-        #     print("(!) success! theorem found!\n")
-        #     refine_hypo_ints()
+            HYPO_INTS=try_refine_hypo_int('widen')
+            print('try to widen upper bound')
+            for hypo_int in HYPO_INTS: 
+                print(hypo_int)
+            continue
             # break
-            # subprocess.run('./erase_it.sh')
-        # BOOGIE_OUT.truncate(0)
-    
+        else:
+            HYPO_INTS=try_refine_hypo_int('narrow')
+            print('try to narrow upper bound')
+            for hypo_int in HYPO_INTS: 
+                print(hypo_int)
 
+            BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
+            write_PRE(BOOGIE_WRITE)
+            for hypo in HYPOS:
+                BOOGIE_WRITE.write(hypo)
+            for hypo_int in HYPO_INTS: 
+                BOOGIE_WRITE.write(hypo_int)
+            write_POST(BOOGIE_WRITE)
+            BOOGIE_WRITE.close()
 
-    # BOOGIE_OUT.close() # close file
-    
-
+            break # stop refining
     
 
 

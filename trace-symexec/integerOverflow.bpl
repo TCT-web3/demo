@@ -92,12 +92,12 @@ modifies Demo.attacker1Address, Demo.attacker2Address2, Demo.benignUserAddress2,
 	assume(totalSupply<TwoE255);
 
 	// addresses aliasing
-	assume(_to!=_from);
+	assume(_from!=_to);
 	// input parameter concrete values
-	assume(Zero<=_value);
-	assume(_value<=57896044618658097711785492504343953926634992332820282019728792003956564819969);
 	assume(Zero<=_fee);
-	assume(_fee<=57896044618658097711785492504343953926634992332820282019728792003956564819968);
+	assume(_fee<TwoE254);
+	assume(Zero<=_value);
+	assume(_value<TwoE255);
 
 	// insert invariant of entry contract
 	assume(forall x:address :: Zero <= MultiVulnToken.balances[entry_contract][x] && MultiVulnToken.balances[entry_contract][x] <= MultiVulnToken.totalSupply[entry_contract]);
