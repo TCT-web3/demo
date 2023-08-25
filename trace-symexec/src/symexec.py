@@ -13,6 +13,7 @@ from utils      import *
 import itertools
 import subprocess
 import time
+import random
 
 '''
 Symbolic value tree 
@@ -923,25 +924,51 @@ def curr_hypo_int():
     return rt_hypo_ints
 
 ''' try to refine by either widen or narrow the upper bound of int '''
-def try_refine_hypo_int(mode):
+def try_refine_hypo_int(mode, picked_term):
     rt_hypo_ints = []
     rt_hypo_ints.append("\t// input parameter concrete values\n")
+
+    # terms=list(MACROS.INT_TERMS.keys())
+    # picked_term = random.choice(terms)
+    # print(picked_term)
+
     for term in MACROS.INT_TERMS.keys():
-        if term in MACROS.PARAM_VALUES.keys():
+        # print(term)
+        # print(picked_term, "????")
+        if term!=picked_term:
+            # print('?')
+            lower_bound = MACROS.INT_TERMS[term][0]
+            upper_bound = MACROS.INT_TERMS[term][1]
+            rt_hypo_ints.append('\tassume(' + lower_bound + "<=" + term + ");\n")
+            rt_hypo_ints.append('\tassume(' + term + "<=" + str(upper_bound) + ");\n")
+
+        else:
             # v1: concrete values
             # rt_hypo_ints.append('\tassume('+ term + '==' + str(MACROS.PARAM_VALUES[term]) + ');\n')
             # v2: ranges
             lower_bound = MACROS.INT_TERMS[term][0]
             upper_bound = MACROS.INT_TERMS[term][1]
-            # print(upper_bound)
+            
             if(mode=='widen'):
-                i = str(widen_upper(int(upper_bound)))
+                if ("TwoE" in upper_bound):
+                    i = int(upper_bound.replace('TwoE', ""))+1
+                else:    
+                    i = str(widen_upper(int(upper_bound)))
+                # MACROS.INT_TERMS[term] = (MACROS.INT_TERMS[term][0], 'TwoE'+str(i)) 
             else:
-                i = str(narrow_upper(int(upper_bound)))
-            # print(refined_upper_bound)
-            # print(upper_bound)
+                if ("TwoE" in upper_bound):
+                    i = int(upper_bound.replace('TwoE', ""))-1
+                else:
+                    i = str(narrow_upper(int(upper_bound)))
+            MACROS.INT_TERMS[term] = (MACROS.INT_TERMS[term][0], 'TwoE'+str(i))   
+             
             rt_hypo_ints.append('\tassume(' + lower_bound + "<=" + term + ");\n")
             rt_hypo_ints.append('\tassume(' + term + "<=" + 'TwoE'+str(i) + ");\n")
+
+    # for term in MACROS.INT_TERMS.keys():
+    #     if term in MACROS.PARAM_VALUES.keys():
+    #         # v1: concrete values
+    #         # rt_hypo_ints.append('\tassume('+ term + '==' + str(MACROS.PARAM_VALUES[term]) + ');\n')
     return rt_hypo_ints
 
 ''' widen upper bound '''
@@ -965,7 +992,7 @@ def narrow_upper(target):
         return 1
 
 ''' modify the stored bound for int hypo '''
-def refine_hypo_int(mode):
+def refine_hypo_int(mode, refined_term):
     print('(refine)')
     for term in MACROS.INT_TERMS.keys():
         if(mode=='widen'):
@@ -974,6 +1001,22 @@ def refine_hypo_int(mode):
             i=narrow_upper(int(MACROS.INT_TERMS[term][1]))    
         new_upper = int(2**i)
         MACROS.INT_TERMS[term] = (MACROS.INT_TERMS[term][0], new_upper)
+
+
+
+''' attemp to create pareto frontier ''' 
+
+
+
+
+
+
+
+
+
+
+
+
 
 '''
 main symexec 
@@ -1066,11 +1109,15 @@ def main():
     symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
     HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
     HYPO_INTS = curr_hypo_int()
-
+    FROZEN = set()
+    picked_term = list(MACROS.INT_TERMS.keys())[0] #default
+    # picked_term = ""
+    # FROZEN.add("")
     def check_hypo():
         for hypo_int in HYPO_INTS: 
                 print(hypo_int.strip())
 
+    curr_refinement=picked_term
     while(True):
         count+=1
         print('\nrefine #', count, '\n')
@@ -1092,29 +1139,53 @@ def main():
         cmd = "./boogie_it.sh"
         boogie_out = str(subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0])
 
+
         
         SUCCESS_key='1 verified'
         if (SUCCESS_key in boogie_out):
-            print('boogie verifies, try to widen upper bound as follows')
-            HYPO_INTS=try_refine_hypo_int('widen')
+            print('boogie verifies, try to widen upper bound with a term')
+
+            
+            if(curr_refinement!=""):
+                picked_term=curr_refinement
+            else:
+                print("pick another non-frozen term")
+                while(picked_term in FROZEN):
+                    terms=list(MACROS.INT_TERMS.keys())
+                    picked_term = random.choice(terms)
+                    curr_refinement=picked_term
+                    print("picked: ", picked_term)
+            
+            print("refining ", curr_refinement)
+           
+            
+            HYPO_INTS=try_refine_hypo_int('widen', picked_term)
+
             check_hypo()
             continue
             # break
         else:
-            print('boogie falsifies, narrow upper bound back and exit')
-            HYPO_INTS=try_refine_hypo_int('narrow')
+            # print('boogie falsifies, narrow upper bound back and exit')
+            print('boogie falsifies, narrow upper bound back and try others if not all are frozen')
+            HYPO_INTS=try_refine_hypo_int('narrow', curr_refinement)
             check_hypo()
+            FROZEN.add(curr_refinement)
+            curr_refinement=""
 
-            BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
-            write_PRE(BOOGIE_WRITE)
-            for hypo in HYPOS:
-                BOOGIE_WRITE.write(hypo)
-            for hypo_int in HYPO_INTS: 
-                BOOGIE_WRITE.write(hypo_int)
-            write_POST(BOOGIE_WRITE)
-            BOOGIE_WRITE.close()
+            print('list: ', set(MACROS.INT_TERMS.keys()))
+            print('frozen: ', FROZEN)
 
-            break # stop refining and print the final successful proof
+            if (set(MACROS.INT_TERMS.keys()) == FROZEN):
+                BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
+                write_PRE(BOOGIE_WRITE)
+                for hypo in HYPOS:
+                    BOOGIE_WRITE.write(hypo)
+                for hypo_int in HYPO_INTS: 
+                    BOOGIE_WRITE.write(hypo_int)
+                write_POST(BOOGIE_WRITE)
+                BOOGIE_WRITE.close()
+
+                break # stop refining and print the final successful proof
 
 if __name__ == '__main__':
     main()
