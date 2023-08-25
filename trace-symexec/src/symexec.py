@@ -740,7 +740,7 @@ modifies """)
     def write_entry_postcondition(self, BOOGIE_POST):
         postcons = self._postcondition[self._curr_contract].get(self._curr_function, {}).get("postcondition", [])
         if postcons:
-            self._output_file.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
+            BOOGIE_POST.write("\t// (post) insert postcondition of " + self._curr_function + '\n')
             for postcon in postcons:
                 postcon = postcon.strip(";")
                 expr = name_substitution(self._curr_contract, postcon)
@@ -864,15 +864,18 @@ def hypothesis_synth(concrete_trace_file, symbolic_stack):
     addr_lst = [] # all addresses typed terms
 
     MACROS.ALL_VARS['tx_origin'] = 'address'
+    MACROS.ALL_VARS['entry_contract'] = 'address'
     MACROS.HYPO_TERMS.add('tx_origin')
+    MACROS.HYPO_TERMS.add('entry_contract')
 
     ''' fetch information from (SLOAD/SSTORE) ops'''
     for info in MACROS.HYPO_INFO:
+        print(info)
         if (len(info.keys())!=0):
             term = info['name']
-            if (str(term).isdigit()):
-                continue #not a var
-            if term in MACROS.HYPO_TERMS:
+            if (str(term).isdigit() or 'tmp' in term):
+                continue # not a var
+            elif term in MACROS.HYPO_TERMS:
                 continue
             else:         
                 MACROS.HYPO_TERMS.add(term)
@@ -905,7 +908,7 @@ def hypothesis_synth(concrete_trace_file, symbolic_stack):
         L = alias[0]
         R = alias[1]
         if L=="tx_origin" or R=="tx_origin":
-            continue #we don't the value
+            continue # we don't know the concrete value
         else:
             if (MACROS.PARAM_VALUES[L] == MACROS.PARAM_VALUES[R]):
                 rt_hypos.append('\tassume('+ str(alias[0]) + '==' + str(alias[1]) + ');\n')
@@ -1101,8 +1104,10 @@ def main():
             BOOGIE_WRITE.write(hypo)
         write_POST(BOOGIE_WRITE)
         BOOGIE_WRITE.close()
-        cmd = ["./boogie_it.sh"]
-        boogie_out = str(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0])
+        # TODO: final boogie cannot be found (?)
+        # cmd = ["./boogie_it.sh"]
+        # boogie_out = str(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0])
+        # if(boogie_out):
         print("\n(END) no INT in hypothesis, exit and output final boogie.")
         exit()
 
@@ -1119,6 +1124,10 @@ def main():
     def check_int_terms():
         for term in MACROS.INT_TERMS.keys():
             print("int:", term, "(", MACROS.INT_TERMS[term][1], ")")
+
+    
+
+    # exit()
 
     while(True):
         count+=1
@@ -1137,6 +1146,10 @@ def main():
         
         cmd = ["./boogie_it.sh"]
         boogie_out = str(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0])
+
+        print(boogie_out)
+        # if(len(MACROS.INT_TERMS)==0):
+
 
         SUCCESS_key='1 verified'
         if (SUCCESS_key in boogie_out):
@@ -1160,7 +1173,6 @@ def main():
             check_hypo()
             FROZEN.add(curr_refinement)
             curr_refinement=""
-
             print('term list: ', set(MACROS.INT_TERMS.keys()))
             print('frozen:    ', FROZEN)
 

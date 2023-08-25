@@ -4,8 +4,8 @@ BOOGIE=boogie
 
 ### Some boogie versions require "/proverOpt O:smt.arith.solver=2" in order to run
 
-## DEMO: integer overflow
-# echo "-------------(Demo: Integer Overflow)-----------------"
+# DEMO: integer overflow
+echo "-------------(Demo: Integer Overflow)-----------------"
 SOLIDITY=../single-token/Demo.sol
 THEOREM=../web-demo/uploads/theorem_integerOverflow.json
 TRACE=../web-demo/trace_integerOverflow.txt
@@ -39,7 +39,8 @@ echo ""
 # SOLIDITY=../uniswapv2-solc0.8/test.sol
 # THEOREM=../web-demo/uploads/theorem_addLiquidity.json
 # TRACE=../web-demo/trace_addLiquidity.txt
-# python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+# CONCRETE=../web-demo/raw_traces/trace_addLiquidity.json
+# python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE} ${CONCRETE}
 # # ${BOOGIE} ../web-demo/trace_addLiquidity.bpl
 # echo ""
 

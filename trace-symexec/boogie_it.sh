@@ -7,3 +7,4 @@ BOOGIEFILE=$1
 ${BOOGIE} "trace_integerOverflow.bpl"
 # ${BOOGIE} "trace_noReentrancy.bpl"
 # ${BOOGIE} "trace_Reentrancy.bpl"
+# ${BOOGIE} "trace_addLiquidity.bpl"
