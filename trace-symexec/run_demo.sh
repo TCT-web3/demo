@@ -4,8 +4,8 @@ BOOGIE=boogie
 
 ### Some boogie versions require "/proverOpt O:smt.arith.solver=2" in order to run
 
-### DEMO: integer overflow
-echo "--------------------(Demo: Integer Overflow)------------------------"
+## DEMO: integer overflow
+# echo "-------------(Demo: Integer Overflow)-----------------"
 SOLIDITY=../single-token/Demo.sol
 THEOREM=../web-demo/uploads/theorem_integerOverflow.json
 TRACE=../web-demo/trace_integerOverflow.txt
@@ -15,7 +15,7 @@ python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE} ${CONCRETE}
 echo ""
 
 # ### DEMO: no reentrancy
-# echo "--------------------(Demo: No Reentrancy)------------------------"
+# echo "-------------(Demo: No Reentrancy)-----------------"
 # SOLIDITY=../single-token/Demo.sol
 # THEOREM=../web-demo/uploads/theorem_noReentrancy.json
 # TRACE=../web-demo/trace_noReentrancy.txt
@@ -25,7 +25,7 @@ echo ""
 # echo ""
 
 # ### DEMO: reentrancy
-# echo "--------------------(Demo: Reentrancy)------------------------"
+# echo "-------------(Demo: Reentrancy)-----------------"
 # SOLIDITY=../single-token/Demo.sol
 # THEOREM=../web-demo/uploads/theorem_Reentrancy.json
 # TRACE=../web-demo/trace_Reentrancy.txt
@@ -35,7 +35,7 @@ echo ""
 # echo ""
 
 # ### DEMO: add liquidity
-# echo "--------------------(Demo: Add Liquidity)------------------------"
+# echo "-------------(Demo: Add Liquidity)-----------------"
 # SOLIDITY=../uniswapv2-solc0.8/test.sol
 # THEOREM=../web-demo/uploads/theorem_addLiquidity.json
 # TRACE=../web-demo/trace_addLiquidity.txt
@@ -44,7 +44,7 @@ echo ""
 # echo ""
 
 # ### DEMO: remove liquidity
-# echo "--------------------(Demo: Remove Liquidity)------------------------"
+# echo "-------------(Demo: Remove Liquidity)-----------------"
 # SOLIDITY=../uniswapv2-solc0.8/test.sol
 # THEOREM=../web-demo/uploads/theorem_removeLiquidity.json
 # TRACE=../web-demo/trace_removeLiquidity.txt

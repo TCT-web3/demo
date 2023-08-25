@@ -855,51 +855,57 @@ methods for hypothesis synthesis
 '''
 def hypothesis_synth(concrete_trace_file, symbolic_stack):
     rt_hypos = []
+    ''' read concrete trace'''
     concrete_file = open(concrete_trace_file, )
     concrete_json = json.load(concrete_file)
     MACROS.CONCRETE_INFO = concrete_json['result']['structLogs']
     MACROS.PARAM_VALUES = get_parameter_values(symbolic_stack)
-    term_lst = set()
+
+    addr_lst = [] # all addresses typed terms
+
     MACROS.ALL_VARS['tx_origin'] = 'address'
+    MACROS.HYPO_TERMS.add('tx_origin')
+
+    ''' fetch information from (SLOAD/SSTORE) ops'''
     for info in MACROS.HYPO_INFO:
         if (len(info.keys())!=0):
-            name = info['name']
-            if name in term_lst:
-                pass
-            term_lst.add(name)
-            MACROS.HYPO_TERMS.add(name)
-            info['type'] = MACROS.ALL_VARS[name]                                   
-    for t in MACROS.PARAM_VALUES.keys():
-        if (t=="FourByteSelector" or t=="AConstantBySolc"):
-            pass
-        else:
-            term_lst.add(t)
-            MACROS.HYPO_TERMS.add(t)
-    # print("all terms: ", MACROS.HYPO_TERMS)
-    addr_lst = []
+            term = info['name']
+            if (str(term).isdigit()):
+                continue #not a var
+            if term in MACROS.HYPO_TERMS:
+                continue
+            else:         
+                MACROS.HYPO_TERMS.add(term)
+                info['type'] = MACROS.ALL_VARS[term]  
+                if len(info.keys())!=0 and info['type'] == 'address':
+                    addr_lst.append(info['name'])
+                else:
+                    MACROS.INT_TERMS[info['name']]=('Zero',MACROS.PARAM_VALUES[term])
 
-    # initialize the integer estimation
+    ''' fetch information from input parameters of entry function '''
+    for param in MACROS.PARAM_VALUES.keys():
+        if (param=="FourByteSelector" or param=="AConstantBySolc"):
+            continue
+        else:
+            MACROS.HYPO_TERMS.add(param)
+
+    ''' initialize the integer estimation (Zero, concrete_val), to be refined later ''' 
     for term in MACROS.HYPO_TERMS:
         if (MACROS.ALL_VARS[term]=="uint256"):
              MACROS.INT_TERMS[term]=('Zero',MACROS.PARAM_VALUES[term])
-            #  print(MACROS.PARAM_VALUES[term])
 
-    for info in MACROS.HYPO_INFO:
-        if len(info.keys())!=0 and info['type'] == 'address':
-            addr_lst.append(info['name'])
-        else:
-            MACROS.INT_TERMS[info['name']]=('Zero',MACROS.PARAM_VALUES[term])
-    addr_lst = list(set(addr_lst))
-
-    # print("all addresses: ", addr_lst)
+    print("all terms used in hypothesis: ", MACROS.HYPO_TERMS)
+    
+    ''' address aliasing with their concrete values '''
     rt_hypos.append("\t// addresses aliasing\n")
+    addr_lst = list(set(addr_lst))
     iterator = itertools.combinations(addr_lst, 2)
     alias_check = (list(itertools.combinations(addr_lst, 2)))
     for alias in alias_check:
         L = alias[0]
         R = alias[1]
         if L=="tx_origin" or R=="tx_origin":
-            continue #we don't know yet
+            continue #we don't the value
         else:
             if (MACROS.PARAM_VALUES[L] == MACROS.PARAM_VALUES[R]):
                 rt_hypos.append('\tassume('+ str(alias[0]) + '==' + str(alias[1]) + ');\n')
@@ -1003,11 +1009,11 @@ def main():
     MACROS.SOLIDITY_FNAME  = ARGS[1]
     MACROS.THEOREM_FNAME   = ARGS[2]
     MACROS.TRACE_FNAME     = ARGS[3]
-    # MACROS.BOOGIE          = MACROS.TRACE_FNAME[:-4]+".bpl" #TODO: relative path with subprocess?
+    # MACROS.BOOGIE          = MACROS.TRACE_FNAME[:-4]+".bpl" 
+    #TODO: relative path does not work with subprocess?
     MACROS.BOOGIE = MACROS.TRACE_FNAME[MACROS.TRACE_FNAME.rfind('/')+1:-4]+".bpl"
     
     
-
     ''' initial generation of solc files and essential trace '''
     gen_solc()
     CONTRACT_NAME,FUNCTION_NAME = get_contract_and_function_names()
@@ -1082,18 +1088,37 @@ def main():
             while line := file.readline():
                 BOOGIE_WRITE.write(line)
 
-    ''' build final .bpl files and iteratively build hypothesis '''
+    ''' build final .bpl files and auto-gen hypothesis '''
     count=0
     symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
     HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
+
+    if(len(MACROS.INT_TERMS)==0):
+        BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
+        write_PRE(BOOGIE_WRITE)
+        for hypo in HYPOS:
+            BOOGIE_WRITE.write(hypo)
+        write_POST(BOOGIE_WRITE)
+        BOOGIE_WRITE.close()
+        cmd = ["./boogie_it.sh"]
+        boogie_out = str(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0])
+        print("\n(END) no INT in hypothesis, exit and output final boogie.")
+        exit()
+
+    # if INT in HYPO, we iteratively refine the bounds
     HYPO_INTS = curr_hypo_int()
     FROZEN = set()
     picked_term = list(MACROS.INT_TERMS.keys())[0] #default
+    curr_refinement=picked_term
+
+    # small debuggers
     def check_hypo():
         for hypo_int in HYPO_INTS: 
                 print(hypo_int.strip())
+    def check_int_terms():
+        for term in MACROS.INT_TERMS.keys():
+            print("int:", term, "(", MACROS.INT_TERMS[term][1], ")")
 
-    curr_refinement=picked_term
     while(True):
         count+=1
         print('\nrefine #', count, '\n')
@@ -1105,13 +1130,11 @@ def main():
             BOOGIE_WRITE.write(hypo)
         for hypo_int in HYPO_INTS: 
             BOOGIE_WRITE.write(hypo_int)
-
-        # debug
-        # for term in MACROS.INT_TERMS.keys():
-            # print("int:", term, "(", MACROS.INT_TERMS[term][1], ")")
     
         write_POST(BOOGIE_WRITE)
         BOOGIE_WRITE.close()
+        
+        
         cmd = ["./boogie_it.sh"]
         boogie_out = str(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0])
 
