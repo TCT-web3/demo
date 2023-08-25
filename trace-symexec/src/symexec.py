@@ -927,16 +927,8 @@ def curr_hypo_int():
 def try_refine_hypo_int(mode, picked_term):
     rt_hypo_ints = []
     rt_hypo_ints.append("\t// input parameter concrete values\n")
-
-    # terms=list(MACROS.INT_TERMS.keys())
-    # picked_term = random.choice(terms)
-    # print(picked_term)
-
     for term in MACROS.INT_TERMS.keys():
-        # print(term)
-        # print(picked_term, "????")
         if term!=picked_term:
-            # print('?')
             lower_bound = MACROS.INT_TERMS[term][0]
             upper_bound = MACROS.INT_TERMS[term][1]
             rt_hypo_ints.append('\tassume(' + lower_bound + "<=" + term + ");\n")
@@ -954,7 +946,6 @@ def try_refine_hypo_int(mode, picked_term):
                     i = int(upper_bound.replace('TwoE', ""))+1
                 else:    
                     i = str(widen_upper(int(upper_bound)))
-                # MACROS.INT_TERMS[term] = (MACROS.INT_TERMS[term][0], 'TwoE'+str(i)) 
             else:
                 if ("TwoE" in upper_bound):
                     i = int(upper_bound.replace('TwoE', ""))-1
@@ -1003,21 +994,6 @@ def refine_hypo_int(mode, refined_term):
         MACROS.INT_TERMS[term] = (MACROS.INT_TERMS[term][0], new_upper)
 
 
-
-''' attemp to create pareto frontier ''' 
-
-
-
-
-
-
-
-
-
-
-
-
-
 '''
 main symexec 
 '''
@@ -1028,7 +1004,9 @@ def main():
     MACROS.THEOREM_FNAME   = ARGS[2]
     MACROS.TRACE_FNAME     = ARGS[3]
     # MACROS.BOOGIE          = MACROS.TRACE_FNAME[:-4]+".bpl" #TODO: relative path with subprocess?
-    MACROS.BOOGIE          = "integerOverflow.bpl"
+    MACROS.BOOGIE = MACROS.TRACE_FNAME[MACROS.TRACE_FNAME.rfind('/')+1:-4]+".bpl"
+    
+    
 
     ''' initial generation of solc files and essential trace '''
     gen_solc()
@@ -1111,8 +1089,6 @@ def main():
     HYPO_INTS = curr_hypo_int()
     FROZEN = set()
     picked_term = list(MACROS.INT_TERMS.keys())[0] #default
-    # picked_term = ""
-    # FROZEN.add("")
     def check_hypo():
         for hypo_int in HYPO_INTS: 
                 print(hypo_int.strip())
@@ -1136,44 +1112,35 @@ def main():
     
         write_POST(BOOGIE_WRITE)
         BOOGIE_WRITE.close()
-        cmd = "./boogie_it.sh"
-        boogie_out = str(subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0])
+        cmd = ["./boogie_it.sh"]
+        boogie_out = str(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0])
 
-
-        
         SUCCESS_key='1 verified'
         if (SUCCESS_key in boogie_out):
-            print('boogie verifies, try to widen upper bound with a term')
-
-            
+            print('boogie verifies, try to widen upper bound')
             if(curr_refinement!=""):
                 picked_term=curr_refinement
             else:
-                print("pick another non-frozen term")
-                while(picked_term in FROZEN):
-                    terms=list(MACROS.INT_TERMS.keys())
-                    picked_term = random.choice(terms)
-                    curr_refinement=picked_term
-                    print("picked: ", picked_term)
-            
-            print("refining ", curr_refinement)
-           
-            
+                print("pick a new non-frozen term")
+                terms=set(MACROS.INT_TERMS.keys())
+                to_pick = terms - (FROZEN)
+                picked_term = random.choice(list(to_pick))
+                curr_refinement=picked_term
+            print("refining: ", curr_refinement)
             HYPO_INTS=try_refine_hypo_int('widen', picked_term)
 
             check_hypo()
             continue
             # break
         else:
-            # print('boogie falsifies, narrow upper bound back and exit')
-            print('boogie falsifies, narrow upper bound back and try others if not all are frozen')
+            print('boogie falsifies, narrow upper bound back and froze: ', curr_refinement)
             HYPO_INTS=try_refine_hypo_int('narrow', curr_refinement)
             check_hypo()
             FROZEN.add(curr_refinement)
             curr_refinement=""
 
-            print('list: ', set(MACROS.INT_TERMS.keys()))
-            print('frozen: ', FROZEN)
+            print('term list: ', set(MACROS.INT_TERMS.keys()))
+            print('frozen:    ', FROZEN)
 
             if (set(MACROS.INT_TERMS.keys()) == FROZEN):
                 BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
@@ -1184,6 +1151,7 @@ def main():
                     BOOGIE_WRITE.write(hypo_int)
                 write_POST(BOOGIE_WRITE)
                 BOOGIE_WRITE.close()
+                print("\n(END) no more optimization can be done, exit and output final boogie.")
 
                 break # stop refining and print the final successful proof
 

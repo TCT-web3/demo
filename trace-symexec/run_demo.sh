@@ -19,8 +19,9 @@ echo ""
 # SOLIDITY=../single-token/Demo.sol
 # THEOREM=../web-demo/uploads/theorem_noReentrancy.json
 # TRACE=../web-demo/trace_noReentrancy.txt
-# python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
-# ${BOOGIE} ../web-demo/trace_noReentrancy.bpl
+# CONCRETE=../web-demo/raw_traces/trace_noReentrancy.json
+# python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE} ${CONCRETE}
+# # ${BOOGIE} ../web-demo/trace_noReentrancy.bpl
 # echo ""
 
 # ### DEMO: reentrancy
@@ -28,7 +29,8 @@ echo ""
 # SOLIDITY=../single-token/Demo.sol
 # THEOREM=../web-demo/uploads/theorem_Reentrancy.json
 # TRACE=../web-demo/trace_Reentrancy.txt
-# python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+# CONCRETE=../web-demo/raw_traces/trace_Reentrancy.json
+# python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE} ${CONCRETE}
 # ${BOOGIE} ../web-demo/trace_Reentrancy.bpl
 # echo ""
 

@@ -1,4 +1,7 @@
 #! /bin/bash
 SYMEXEC=src/symexec.py
 BOOGIE=boogie
-${BOOGIE} integerOverflow.bpl
+# BOOGIEFILE="$1"
+# echo $0
+${BOOGIE} "trace_integerOverflow.bpl"
+# ${BOOGIE} "trace_noReentrancy.bpl"
