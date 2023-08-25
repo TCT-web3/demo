@@ -1093,6 +1093,7 @@ def main():
     symbolic_stack = get_init_STACK(VAR_PREFIX, ABI_INFO)
     HYPOS = hypothesis_synth(ARGS[4], symbolic_stack)
 
+    # if no INT in HYPO, print final successful proof and exit    
     if(len(MACROS.INT_TERMS)==0):
         BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
         write_PRE(BOOGIE_WRITE)
@@ -1134,7 +1135,6 @@ def main():
         write_POST(BOOGIE_WRITE)
         BOOGIE_WRITE.close()
         
-        
         cmd = ["./boogie_it.sh"]
         boogie_out = str(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0])
 
@@ -1154,7 +1154,6 @@ def main():
 
             check_hypo()
             continue
-            # break
         else:
             print('boogie falsifies, narrow upper bound back and froze: ', curr_refinement)
             HYPO_INTS=try_refine_hypo_int('narrow', curr_refinement)
@@ -1165,6 +1164,7 @@ def main():
             print('term list: ', set(MACROS.INT_TERMS.keys()))
             print('frozen:    ', FROZEN)
 
+            # stop refining if FROZEN contains all int terms, print final successful proof    
             if (set(MACROS.INT_TERMS.keys()) == FROZEN):
                 BOOGIE_WRITE=open(MACROS.BOOGIE, "w+")
                 write_PRE(BOOGIE_WRITE)
@@ -1175,8 +1175,7 @@ def main():
                 write_POST(BOOGIE_WRITE)
                 BOOGIE_WRITE.close()
                 print("\n(END) no more optimization can be done, exit and output final boogie.")
-
-                break # stop refining and print the final successful proof
+                break 
 
 if __name__ == '__main__':
     main()
