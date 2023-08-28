@@ -1144,7 +1144,7 @@ def main():
         write_POST(BOOGIE_WRITE)
         BOOGIE_WRITE.close()
         
-        cmd = ["./boogie_it.sh"]
+        cmd = ["boogie_it.sh"]
         boogie_out = str(subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0])
 
         print(boogie_out)
