@@ -9,11 +9,10 @@
 	},
 	"hypothesis": [
 		"tokenA != tokenB",
-		"liquidity > Zero",
 		"tx_origin != pair",
 		"tokenA.balanceOf[pair] > Zero",
 		"tokenB.balanceOf[pair] > Zero",
-		"pair.balanceOf[pair] > Zero",
+		"pair.balanceOf[pair] + liquidity > Zero",
 		"pair.totalSupply > Zero",
 		"tokenA.totalSupply < TwoE255",
 		"tokenB.totalSupply < TwoE255",

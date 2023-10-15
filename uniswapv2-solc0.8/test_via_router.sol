@@ -44,22 +44,33 @@ contract Test {
             address(this)
         );
 
+        _router.addLiquidity(
+            address(_tokenA),
+            address(_tokenB),
+            2000,
+            1000,
+            2000,
+            1000,
+            address(msg.sender)
+        );
+
         _tokenA.transfer(msg.sender,100000);
         _tokenB.transfer(msg.sender,100000);
     }
     
     function approve() public {
         address pair = UniswapV2Library.pairFor(address(_factory), address(_tokenA), address(_tokenB));
-        IERC20(pair).approve(address(_router),400);
+        IERC20(pair).approve(address(_router),40000);
+        IERC20(pair).approve(address(msg.sender),40000);
     }
 
     function call_removeLiquidity() public {
         _router.removeLiquidity(
             address(_tokenA),
             address(_tokenB),
-            200,
-            100,
-            100,
+            20,
+            1,
+            1,
             address(this)
         );
     }
@@ -74,8 +85,15 @@ contract Test {
         return IERC20(pair).allowance(address(this),address(_router));
     }
 
-    function getAddresses() public view returns (address,address,address) {
-        return (address(_router),address(_tokenA),address(_tokenB));
+    function getAddresses() public view returns (address,address,address,address) {
+        address pair = UniswapV2Library.pairFor(address(_factory), address(_tokenA), address(_tokenB));
+        return (address(_router),address(_tokenA),address(_tokenB), address(pair));
+    }
+
+    function getBalances() public view returns (uint256,uint256,uint256,uint256) {
+        address pair_addr = UniswapV2Library.pairFor(address(_factory), address(_tokenA), address(_tokenB));
+        UniswapV2Pair pair = UniswapV2Pair(pair_addr);
+        return (pair.reserve0(),pair.reserve1(),_tokenA.balanceOf(pair_addr), _tokenB.balanceOf(pair_addr));
     }
 
     function call_addLiquidity() public
