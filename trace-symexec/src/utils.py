@@ -271,7 +271,7 @@ def get_invariant():
                 parentName = parent["baseName"]["name"]
                 parentNode = AST_INFO["sources"][astNode_dict[parentName]]["AST"]["nodes"]
                 for node in parentNode:
-                    if node["nodeType"] == "ContractDefinition":
+                    if node["nodeType"] == "ContractDefinition" and node["name"] == parentName:
                         natSpec_build(node)
                 
                 if parentName in natSpec_dict and natSpec_dict[parentName] is not None:

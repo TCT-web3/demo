@@ -7,6 +7,9 @@ axiom TwoE8 == 32768.0;
 function evmdiv(a,b: uint256) returns (uint256);
 axiom (forall a, b : uint256:: evmdiv(a,b) == a / b); 
 
+function evmmul(a,b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: evmdiv(evmmul(a,b),a)==b ==> evmmul(a,b) == a*b);
+
 type address = int;
 type bytes32 = int;
 type uint8 = int;
@@ -28,9 +31,6 @@ function evmsub(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a>=b ==> evmsub(a,b) == a-b);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a<b ==> evmsub(a,b) == a-b+TwoE256);
 axiom (forall a,b: uint256 :: evmsub(a,b)<=a ==> evmsub(a,b) == a-b);
-
-function evmmul(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: evmdiv(evmmul(a,b),a)==b ==> evmmul(a,b) == a*b);
 
 function evmmod(a,b:uint256) returns (uint256);
 
@@ -111,10 +111,14 @@ modifies BasicToken._totalSupply, BasicToken.owner, BasicToken.balances, BasicTo
 	// hypothesis 
 	assume(1.0 == 1.0);
 
+	// insert invariant of entry contract
+	assume(forall x:address :: Zero <= TetherToken.balances[entry_contract][x] && TetherToken.balances[entry_contract][x] <= TetherToken._totalSupply[entry_contract]);
+	assume(sum( TetherToken.balances[entry_contract] ) == TetherToken._totalSupply[entry_contract]);
+
 	tmp1:=evmsub(_value,0.0);
 	assume(tmp1!=Zero);
 
-	tmp2:=tmp1==Zero;
+	tmp2:=_value==Zero;
 	tmp3:=evmmul(_value,TetherToken.basisPointsRate[entry_contract]);
 	tmp4:=evmdiv(tmp3,_value);
 	tmp5:= (TetherToken.basisPointsRate[entry_contract]==tmp4);
@@ -170,6 +174,7 @@ modifies BasicToken._totalSupply, BasicToken.owner, BasicToken.balances, BasicTo
 	assume(tmp30);
 
 
-	assert(forall x:address :: Zero <= TetherToken.balances[ x ] && TetherToken.balances[ x ] <= TetherToken._totalSupply);
-	assert(sum( TetherToken.balances ) == TetherToken._totalSupply);
+	// (post) insert invariant of entry contract
+	assert(forall x:address :: Zero <= TetherToken.balances[entry_contract][x] && TetherToken.balances[entry_contract][x] <= TetherToken._totalSupply[entry_contract]);
+	assert(sum( TetherToken.balances[entry_contract] ) == TetherToken._totalSupply[entry_contract]);
 }

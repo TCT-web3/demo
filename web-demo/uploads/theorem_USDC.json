@@ -1,0 +1,14 @@
+{
+	"entry-for-test":"FiatTokenV1::transfer(address,uint256)",
+	"entry-for-real":"0x315767140067b84f83788a94e5a64332dfaad8bd::0xa9059cbb",
+	"hypothesis":
+		[
+			"1 == 1"
+		],
+	"def-vars": {
+		"this.totalSupply": ["FiatTokenV1", "this.totalSupply_", "uint256"]
+	},
+	"path-hash-for-test": "*",
+	"path-hash-for-real": "the real hash (not implemented yet)",
+	"numerical-type": "real"
+}

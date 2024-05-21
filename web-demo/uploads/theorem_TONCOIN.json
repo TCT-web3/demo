@@ -1,6 +1,6 @@
 {
-	"entry-for-test":"BNB::transfer(address,uint256)",
-	"entry-for-real":"0x8d28890e00fe11724e10752771c161a83320bf68::0xa9059cbb",
+	"entry-for-test":"WrappedTON::transfer(address,uint256)",
+	"entry-for-real":"0x101d0ac90405d7c12a652f21d22a552cba213b90::0xa9059cbb",
 	"hypothesis":
 		[
 			"1 == 1"

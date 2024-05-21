@@ -7,6 +7,9 @@ axiom TwoE8 == 32768.0;
 function evmdiv(a,b: uint256) returns (uint256);
 axiom (forall a, b : uint256:: evmdiv(a,b) == a / b); 
 
+function evmmul(a,b:uint256) returns (uint256);
+axiom (forall a,b: uint256 :: evmdiv(evmmul(a,b),a)==b ==> evmmul(a,b) == a*b);
+
 type address = int;
 type bytes32 = int;
 type uint8 = int;
@@ -28,9 +31,6 @@ function evmsub(a,b:uint256) returns (uint256);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a>=b ==> evmsub(a,b) == a-b);
 axiom (forall a,b: uint256 :: a-b < TwoE256 && a<b ==> evmsub(a,b) == a-b+TwoE256);
 axiom (forall a,b: uint256 :: evmsub(a,b)<=a ==> evmsub(a,b) == a-b);
-
-function evmmul(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: evmdiv(evmmul(a,b),a)==b ==> evmmul(a,b) == a*b);
 
 function evmmod(a,b:uint256) returns (uint256);
 
@@ -94,6 +94,10 @@ modifies BNB.decimals, BNB.totalSupply, BNB.owner, BNB.balanceOf, BNB.freezeOf, 
 	// hypothesis 
 	assume(totalSupply < TwoE256 && tx_origin != _to);
 
+	// insert invariant of entry contract
+	assume(forall x:address :: Zero <= BNB.balanceOf[entry_contract][x] && BNB.balanceOf[entry_contract][x] <= BNB.totalSupply[entry_contract]);
+	assume(sum( BNB.balanceOf[entry_contract] ) == BNB.totalSupply[entry_contract]);
+
 	tmp1:=(_to!=0);
 	assume(tmp1);
 
@@ -146,6 +150,7 @@ modifies BNB.decimals, BNB.totalSupply, BNB.owner, BNB.balanceOf, BNB.freezeOf, 
 	BNB.balanceOf[entry_contract][_to]:=tmp20;
 
 
-	assert(forall x:address :: Zero <= BNB.balanceOf[x] && BNB.balanceOf[x] <= BNB.totalSupply);
-	assert(sum( BNB.balanceOf ) == BNB.totalSupply);
+	// (post) insert invariant of entry contract
+	assert(forall x:address :: Zero <= BNB.balanceOf[entry_contract][x] && BNB.balanceOf[entry_contract][x] <= BNB.totalSupply[entry_contract]);
+	assert(sum( BNB.balanceOf[entry_contract] ) == BNB.totalSupply[entry_contract]);
 }
