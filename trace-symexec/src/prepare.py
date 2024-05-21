@@ -11,58 +11,71 @@ from symexec import SVT
 Generate the auxiliary files using solc: storage layout, function debug runtime, ABI, and AST
 '''
 def gen_solc():
-    os.system('solc --storage-layout --pretty-json ' + MACROS.SOLIDITY_FNAME + ' > '+ MACROS.STORAGE)
+    os.system('solc --combined-json storage-layout --pretty-json ' + MACROS.SOLIDITY_FNAME + ' > '+ MACROS.STORAGE)
     os.system('solc --combined-json function-debug-runtime --pretty-json ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.RUNTIME)
-    os.system('solc --abi --pretty-json ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.ABI)
+    os.system('solc --combined-json abi --pretty-json ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.ABI)
     os.system('solc --pretty-json --combined-json ast ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.AST)
+    os.system('solc --pretty-json --combined-json devdoc ' + MACROS.SOLIDITY_FNAME + ' > ' + MACROS.DEVDOC)
+    os.system('solc --pretty-json --combined-json hashes ' + MACROS.SOLIDITY_FNAME + ' > ' + 'hashes.txt')
 
 '''
 generate the inital stack dictionary {<contract_name> : <contract_stack>}
     Note that "FourByteSelector" is at the BOTTOM of the stack     
 '''
-def gen_init_STACK(var_prefix):
+def gen_init_STACK(var_prefix, abi_info):
     # STACKS = {}
     STACKS = []
     stack = [
         SVT("FourByteSelector"),      # It would be good to fill in the actual value into this placeholder
         SVT("AConstantBySolc"), 
     ]
-    file = open(MACROS.ABI, 'r')
-    file.readline()
-    file_names = []
-    new_file = None
-    for line in file:
-        if line.startswith("======"):
-            # get name of contract
-            if new_file:
-                new_file.close()
-            line = line.rstrip("\n")
-            line = line.strip("======")
-            line = line.replace(MACROS.SOLIDITY_FNAME+":", '')
-            line = line.strip()
-            new_name = line+".json"
-            new_file = open(new_name, 'w')
-            file_names.append(new_name)
-        elif line.startswith("Contract"):
-            continue
-        elif line != " ":
-            new_file.write(line)
-            # print(line)
-    new_file.close()
-    file.close()
+    func_list = abi_info["contracts"][MACROS.CONTRACT_NAME]["abi"]
 
-    # get the map
-    file = open(MACROS.CONTRACT_NAME+".json", 'r')
-    json_object = json.load(file)
-    for o in json_object:
-        if "name" in o and o["name"] == MACROS.FUNCTION_NAME:
-            for i in o["inputs"]:
-                stack.append(SVT(i["name"]))
-    file.close()
-    for n in file_names:
-        os.remove(n)
-    
+    for func in func_list:
+        if ("name" in func.keys()) and (func["name"] == MACROS.FUNCTION_NAME):
+            for item in func["inputs"] :
+                if item["name"] == "path":
+                    stack.append(SVT(0x80)) # for swap trace
+                else:
+                    stack.append(SVT(item["name"]))
+
     STACKS.append(stack)
+            
+    # file = open(MACROS.ABI, 'r')
+    # file.readline()
+    # file_names = []
+    # new_file = None
+    # for line in file:
+    #     if line.startswith("======"):
+    #         # get name of contract
+    #         if new_file:
+    #             new_file.close()
+    #         line = line.rstrip("\n")
+    #         line = line.strip("======")
+    #         line = line.replace(MACROS.SOLIDITY_FNAME+":", '')
+    #         line = line.strip()
+    #         new_name = line+".json"
+    #         new_file = open(new_name, 'w')
+    #         file_names.append(new_name)
+    #     elif line.startswith("Contract"):
+    #         continue
+    #     elif line != " ":
+    #         new_file.write(line)
+    #         # print(line)
+    # new_file.close()
+    # file.close()
+
+    # # get the map
+    # file = open(MACROS.CONTRACT_NAME+".json", 'r')
+    # json_object = json.load(file)
+    # for o in json_object:
+    #     if "name" in o and o["name"] == MACROS.FUNCTION_NAME:
+    #         for i in o["inputs"]:
+    #             stack.append(SVT(i["name"]))
+    # file.close()
+    # for n in file_names:
+    #     os.remove(n)
+    
     return STACKS
 
 '''
@@ -72,10 +85,12 @@ def gen_init_MEMORY():
     # MEMORIES = {}
     MEMORIES = []
     init_MEM = {
-        # We need to understand why this 0x40 is needed. Perhaps need to read more thoroughly the yellow paper, 
-        # or ask other people
-        0x40: SVT(0x80),
+        # This is solc's convention. It tells a callee contract to use memory[0x80] for returndata
+        0x40: SVT(0xe0),
         # Dummy mem item
+        0x80: SVT(2),  # for swap trace
+        0xa0: SVT("path[0]"), # for swap trace
+        0xc0: SVT("path[1]"), # for swap trace
         0x10000000000: SVT(0)
     }
     MEMORIES.append(init_MEM)
@@ -90,7 +105,8 @@ def gen_init_STORAGE():
     } 
 
 '''
-generate initial callstack array
+generate initial callstack array:
+
 '''
 def gen_init_CALL_STACK(VAR_PREFIX):
     CALL_STACK = []

@@ -1,0 +1,56 @@
+****************** use windows powershell ***************
+==========================
+Measure-Command { python3 ../trace-symexec/src/symexec.py ../single-token/Demo.sol ../web-demo/uploads/theorem_integerOverflow.json ../web-demo/trace_integerOverflow.txt | Out-Default }
+
+TotalSeconds      : 3.827446
+
+Measure-Command { boogie trace_integerOverflow.bpl | Out-Default }
+
+TotalSeconds      : 0.9423643
+
+===========================
+
+Measure-Command { python3 ../trace-symexec/src/symexec.py ../single-token/Demo.sol ../web-demo/uploads/theorem_noReentrancy.json ../web-demo/trace_noReentrancy.txt | Out-Default }
+
+TotalSeconds      : 3.7708873
+
+Measure-Command { boogie trace_noReentrancy.bpl | Out-Default }
+
+TotalSeconds      : 0.8024273
+
+==========================
+Measure-Command { python3 ../trace-symexec/src/symexec.py ../single-token/Demo.sol ../web-demo/uploads/theorem_reentrancy.json ../web-demo/trace_reentrancy.txt | Out-Default }
+
+TotalSeconds      : 4.0719829
+
+Measure-Command { boogie trace_reentrancy.bpl | Out-Default }
+
+TotalSeconds      : 1.0758197
+
+==========================
+Measure-Command { python3 ../trace-symexec/src/symexec.py ../uniswapv2-solc0.8/test.sol ../web-demo/uploads/theorem_addLiquidity.json ../web-demo/trace_addLiquidity.txt | Out-Default }
+
+TotalSeconds      : 4.4237676
+
+Measure-Command { boogie trace_addLiquidity.bpl | Out-Default }
+
+TotalSeconds      : 2.1634842
+
+==========================
+Measure-Command { python3 ../trace-symexec/src/symexec.py ../uniswapv2-solc0.8/test.sol ../web-demo/uploads/theorem_removeLiquidity.json ../web-demo/trace_removeLiquidity.txt | Out-Default }
+
+TotalSeconds      : 4.5904359
+
+Measure-Command { boogie trace_removeLiquidity.bpl | Out-Default }
+
+TotalSeconds      : 4.4031258
+
+============================
+
+Measure-Command { python3 ../trace-symexec/src/symexec.py ../uniswapv2-solc0.8/test.sol ../web-demo/uploads/theorem_swap.json ../web-demo/trace_swap.txt | Out-Default }
+
+TotalSeconds      : 4.9210492
+
+Measure-Command { boogie trace_swap.bpl | Out-Default }
+
+TotalSeconds      : 1.3573818

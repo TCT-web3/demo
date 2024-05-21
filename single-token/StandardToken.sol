@@ -3,8 +3,8 @@
 import './Token.sol';
 pragma solidity >=0.8.4;
 
-/// @custom:tct invariant: forall x:address :: 0 <= this.balances[x] && this.balances[x] <= this.totalSupply
-/// @custom:tct invariant: sum(this.balances) == this.totalSupply
+/// @custom:tct invariant: forall x:address :: Zero <= this.balances[x] && this.balances[x] <= this.totalSupply
+/// @custom:tct invariant: sum( this.balances ) == this.totalSupply
 abstract contract StandardToken is Token {
     function balanceOf(
         address _owner
