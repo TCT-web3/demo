@@ -83,8 +83,8 @@ def output_trace(trace_fname, tx_hash, deployment_fname, theorem_fname):
 def main():
 
     # Get file names
-    ARGS = sys.argv
-    TRACE_FNAME = ARGS[1]
+    # ARGS = sys.argv
+    # TRACE_FNAME = ARGS[1]
 
     # Call method
     # output_trace("trace_addLiquidity.json", "addLiquidity", "deployment_info.json", "theorem_addLiquidity.json")
@@ -93,6 +93,14 @@ def main():
     # output_trace("trace_integerOverflow.json", "integerOverflow", "deployment_info.json", "theorem_integerOverflow.json")
     # output_trace("trace_noReentrancy.json", "noReentrancy", "deployment_info.json", "theorem_noReentrancy.json")
     # output_trace("trace_reentrancy.json", "reentrancy", "deployment_info.json", "theorem_reentrancy.json")
+    
+    # Call method
+    # output_trace("single-token-traces/trace-BNB.json", "BNB", "deployment_info.json", "theorem_general.json")
+    # output_trace("single-token-traces/trace-stETH.json", "stETH", "deployment_info.json", "theorem_general.json")
+    # output_trace("single-token-traces/trace-TONCOIN.json", "TONCOIN", "deployment_info.json", "theorem_general.json")
+    # output_trace("single-token-traces/trace-USDC.json", "USDC", "deployment_info.json", "theorem_general.json")
+    output_trace("single-token-traces/trace-USDT.json", "USDT", "deployment_info.json", "theorem_general.json")
+
     
 
 if __name__ == "__main__":

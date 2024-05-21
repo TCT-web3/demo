@@ -31,6 +31,9 @@ contract SafeMath {
     return c;
   }
 }
+
+/// @custom:tct invariant: forall x:address :: Zero <= this.balanceOf[x] && this.balanceOf[x] <= this.totalSupply
+/// @custom:tct invariant: sum( this.balanceOf ) == this.totalSupply
 contract BNB is SafeMath{
     string public name;
     string public symbol;
@@ -38,7 +41,7 @@ contract BNB is SafeMath{
     uint256 public totalSupply;
 	address public owner;
 
-    /* This creates an array with all balances */
+    /* This creates an array with all balanceOf */
     mapping (address => uint256) public balanceOf;
     function BalanceOf(address x) public view returns (uint256) {
         return balanceOf[x];

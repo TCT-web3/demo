@@ -726,7 +726,7 @@ modifies """)
     '''write declared vars to Boogie'''
     def write_declared_vars(self):
         self._output_file.write("\t// declare-vars\n")
-        declaration = self._postcondition.get(self._curr_contract, []).get(self._curr_function, []).get("declaration", [])
+        declaration = self._postcondition.get(self._curr_contract, {}).get(self._curr_function, {}).get("declaration", [])
         for decl in declaration:
             decl = decl.strip()
             # print(decl)

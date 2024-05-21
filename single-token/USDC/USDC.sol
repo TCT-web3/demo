@@ -53,6 +53,9 @@ library SafeMath {
  * @title FiatToken
  * @dev ERC20 Token backed by fiat reserves
  */
+
+/// @custom:tct invariant: forall x:address :: 0 <= this.balances[x] && this.balances[x] <= this.totalSupply
+/// @custom:tct invariant: sum(this.balances) == this.totalSupply
 contract FiatTokenV1  {
     using SafeMath for uint256;
 

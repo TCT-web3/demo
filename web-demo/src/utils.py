@@ -312,36 +312,43 @@ def get_invariant():
 
     def natSpec_build(node):
         contractName = node["name"]
+        print("1. entering contract", contractName)
         if contractName in natSpec_dict and natSpec_dict[contractName] is not None:
+            print("2. returned out", contractName)
             return
         if "documentation" in node and "text" in node["documentation"]:
             my_natSpec = node["documentation"]["text"] + "\n"
+            print("3. found natspec", my_natSpec)
         else:
             my_natSpec = ""
-        if "baseContracts" in node:
-            for parent in node["baseContracts"]:
-                parentName = parent["baseName"]["name"]
-                parentNode = AST_INFO["sources"][astNode_dict[parentName]]["AST"]["nodes"]
-                for node in parentNode:
-                    if node["nodeType"] == "ContractDefinition":
-                        natSpec_build(node)
-                
-                if parentName in natSpec_dict and natSpec_dict[parentName] is not None:
-                    my_natSpec += natSpec_dict[parentName]
-                else:
-                    my_natSpec += ""
-        
-                if my_natSpec:
-                    natSpec_dict[contractName] = my_natSpec
+        for parent in node.get("baseContracts", []):
+            parentName = parent["baseName"]["name"]
+            print("4. building parent", parentName)
+            parentNode = AST_INFO["sources"][astNode_dict[parentName]]["AST"]["nodes"]
+            for node in parentNode:
+                if node["nodeType"] == "ContractDefinition" and node["name"] == parentName:
+                    print("5. building parent", node["name"])
+                    natSpec_build(node)
+            
+            if parentName in natSpec_dict and natSpec_dict[parentName] is not None:
+                my_natSpec += natSpec_dict[parentName]
+                print("5. my natspec", my_natSpec)
+                print("5. natspec dict", natSpec_dict[parentName])
+            else:
+                my_natSpec += ""
+    
+        if my_natSpec:
+            natSpec_dict[contractName] = my_natSpec
+            print("6. natspec added", contractName, my_natSpec)
     
     # for node in nodes:
     #     if node["nodeType"] == "ContractDefinition":
     #         natSpec_build(node)
-    
     for sources in AST_INFO["sources"]:
         nodes = AST_INFO["sources"][sources]["AST"]["nodes"]
         for node in nodes:
             if node["nodeType"] == "ContractDefinition":
+                print("enter this loop for", node["name"])
                 natSpec_build(node)
     
     invariants = {}
@@ -372,6 +379,7 @@ def get_postcondition():
             for natspec in methods[method]:
                 natspec_name = natspec.replace("custom:", "") # TODO: "this" name resolution use name_substitution need var prefix
                 d = ";"
+                print(natspec_name, methods[method][natspec])
                 spec = [e+d for e in methods[method][natspec].split(d) if e]
                 postconditions[contract_name][method_name][natspec_name] = spec
 

@@ -1,0 +1,12 @@
+{
+	"entry-for-test":"StETH::transfer(address,uint256)",
+	"entry-for-real":"0x447ad78e58ef58f6e1a5ac05d59d2dc645c3d278::0xa9059cbb",
+	"hypothesis":
+		[
+			"1 == 1"
+		],
+	"def-vars": {},
+	"path-hash-for-test": "*",
+	"path-hash-for-real": "the real hash (not implemented yet)",
+	"numerical-type": "real"
+}

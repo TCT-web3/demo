@@ -83,6 +83,8 @@ abstract contract StandardToken is BasicToken, ERC20 {
 	mapping (address => mapping (address => uint)) public allowed;
 }	
 
+/// @custom:tct invariant: forall x:address :: Zero <= this.balances[x] && this.balances[x] <= this._totalSupply
+/// @custom:tct invariant: sum( this.balances ) == this._totalSupply
 contract TetherToken is StandardToken {
     string public name;
     string public symbol;

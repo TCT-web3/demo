@@ -19,6 +19,8 @@ interface IERC20 {
     function transferFrom(address from, address to, uint256 value) external returns (bool);
 }
 
+/// @custom:tct invariant: forall x:address :: 0 <= this.balances[x] && this.balances[x] <= this.totalSupply
+/// @custom:tct invariant: sum(this.balances) == this.totalSupply
 contract ERC20 is IERC20 {
     mapping (address => uint256) internal _balances;
 
