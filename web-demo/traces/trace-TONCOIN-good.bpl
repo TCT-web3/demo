@@ -1,14 +1,8 @@
-type uint256 = real;
+type uint256 = int;
 const Zero : uint256;
-axiom Zero == 0.0; 
+axiom Zero == 0; 
 const TwoE8 : uint256;
-axiom TwoE8 == 32768.0; 
-
-function evmdiv(a,b: uint256) returns (uint256);
-axiom (forall a, b : uint256:: evmdiv(a,b) == a / b); 
-
-function evmmul(a,b:uint256) returns (uint256);
-axiom (forall a,b: uint256 :: evmdiv(evmmul(a,b),a)==b ==> evmmul(a,b) == a*b);
+axiom TwoE8 == 32768; 
 
 type address = int;
 type bytes32 = int;
@@ -75,13 +69,12 @@ modifies Demo.user1, ERC20._balances, ERC20._allowances, ERC20._totalSupply, Wra
 	// def-vars
 
 	// hypothesis 
-	assume(1.0 == 1.0);
 
 	// insert invariant of entry contract
 	assume(forall x:address :: Zero <= WrappedTON._balances[entry_contract][x] && WrappedTON._balances[entry_contract][x] <= WrappedTON._totalSupply[entry_contract]);
 	assume(sum( WrappedTON._balances[entry_contract] ) == WrappedTON._totalSupply[entry_contract]);
 
-	tmp1:=evmsub(tx_origin,0.0);
+	tmp1:=evmsub(tx_origin,0);
 	assume(tmp1!=Zero);
 
 	tmp2:=(recipient!=0);

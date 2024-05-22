@@ -77,17 +77,7 @@ contract FiatTokenV1  {
     event MinterRemoved(address indexed oldMinter);
     event MasterMinterChanged(address indexed newMasterMinter);
 
-    /**
-     * @notice Initializes the fiat token contract.
-     * @param tokenName       The name of the fiat token.
-     * @param tokenSymbol     The symbol of the fiat token.
-     * @param tokenCurrency   The fiat currency that the token represents.
-     * @param tokenDecimals   The number of decimals that the token uses.
-     * @param newMasterMinter The masterMinter address for the fiat token.
-     * @param newPauser       The pauser address for the fiat token.
-     * @param newBlacklister  The blacklister address for the fiat token.
-     * @param newOwner        The owner of the fiat token.
-     */
+
     constructor(
         string memory tokenName,
         string memory tokenSymbol,
@@ -129,21 +119,13 @@ contract FiatTokenV1  {
         initialized = true;
     }
 
-    /**
-     * @dev Throws if called by any account other than a minter.
-     */
+    
     modifier onlyMinters() {
         require(minters[msg.sender], "FiatToken: caller is not a minter");
         _;
     }
 
-    /**
-     * @notice Mints fiat tokens to an address.
-     * @param _to The address that will receive the minted tokens.
-     * @param _amount The amount of tokens to mint. Must be less than or equal
-     * to the minterAllowance of the caller.
-     * @return True if the operation was successful.
-     */
+    
     function mint(address _to, uint256 _amount)
         external
         onlyMinters
@@ -166,9 +148,7 @@ contract FiatTokenV1  {
         return true;
     }
 
-    /**
-     * @dev Throws if called by any account other than the masterMinter
-     */
+    
     modifier onlyMasterMinter() {
         require(
             msg.sender == masterMinter,
@@ -177,31 +157,17 @@ contract FiatTokenV1  {
         _;
     }
 
-    /**
-     * @notice Gets the minter allowance for an account.
-     * @param minter The address to check.
-     * @return The remaining minter allowance for the account.
-     */
+    
     function minterAllowance(address minter) external view returns (uint256) {
         return minterAllowed[minter];
     }
 
-    /**
-     * @notice Checks if an account is a minter.
-     * @param account The address to check.
-     * @return True if the account is a minter, false if the account is not a minter.
-     */
+    
     function isMinter(address account) external view returns (bool) {
         return minters[account];
     }
 
-    /**
-     * @notice Gets the remaining amount of fiat tokens a spender is allowed to transfer on
-     * behalf of the token owner.
-     * @param owner   The token owner's address.
-     * @param spender The spender's address.
-     * @return The remaining allowance.
-     */
+    
     function allowance(address owner, address spender)
         external
         view
@@ -210,19 +176,12 @@ contract FiatTokenV1  {
         return allowed[owner][spender];
     }
 
-    /**
-     * @notice Gets the totalSupply of the fiat token.
-     * @return The totalSupply of the fiat token.
-     */
+    
     function totalSupply() external view returns (uint256) {
         return totalSupply_;
     }
 
-    /**
-     * @notice Gets the fiat token balance of an account.
-     * @param account  The address to check.
-     * @return balance The fiat token balance of the account.
-     */
+    
     function balanceOf(address account)
         external
         view
@@ -231,12 +190,7 @@ contract FiatTokenV1  {
         return _balanceOf(account);
     }
 
-    /**
-     * @notice Sets a fiat token allowance for a spender to spend on behalf of the caller.
-     * @param spender The spender's address.
-     * @param value   The allowance amount.
-     * @return True if the operation was successful.
-     */
+    
     function approve(address spender, uint256 value)
         external
         virtual
@@ -246,12 +200,7 @@ contract FiatTokenV1  {
         return true;
     }
 
-    /**
-     * @dev Internal function to set allowance.
-     * @param owner     Token owner's address.
-     * @param spender   Spender's address.
-     * @param value     Allowance amount.
-     */
+    
     function _approve(
         address owner,
         address spender,
@@ -263,14 +212,7 @@ contract FiatTokenV1  {
         //emit Approval(owner, spender, value);
     }
 
-    /**
-     * @notice Transfers tokens from an address to another by spending the caller's allowance.
-     * @dev The caller must have some fiat token allowance on the payer's tokens.
-     * @param from  Payer's address.
-     * @param to    Payee's address.
-     * @param value Transfer amount.
-     * @return True if the operation was successful.
-     */
+    
     function transferFrom(
         address from,
         address to,
@@ -288,12 +230,7 @@ contract FiatTokenV1  {
         return true;
     }
 
-    /**
-     * @notice Transfers tokens from the caller.
-     * @param to    Payee's address.
-     * @param value Transfer amount.
-     * @return True if the operation was successful.
-     */
+    
     function transfer(address to, uint256 value)
         external
         returns (bool)
@@ -302,12 +239,7 @@ contract FiatTokenV1  {
         return true;
     }
 
-    /**
-     * @dev Internal function to process transfers.
-     * @param from  Payer's address.
-     * @param to    Payee's address.
-     * @param value Transfer amount.
-     */
+    
     function _transfer(
         address from,
         address to,
@@ -325,12 +257,7 @@ contract FiatTokenV1  {
         //emit Transfer(from, to, value);
     }
 
-    /**
-     * @notice Adds or updates a new minter with a mint allowance.
-     * @param minter The address of the minter.
-     * @param minterAllowedAmount The minting amount allowed for the minter.
-     * @return True if the operation was successful.
-     */
+    
     function configureMinter(address minter, uint256 minterAllowedAmount)
         external
         onlyMasterMinter
@@ -342,11 +269,7 @@ contract FiatTokenV1  {
         return true;
     }
 
-    /**
-     * @notice Removes a minter.
-     * @param minter The address of the minter to remove.
-     * @return True if the operation was successful.
-     */
+    
     function removeMinter(address minter)
         external
         onlyMasterMinter
@@ -358,12 +281,7 @@ contract FiatTokenV1  {
         return true;
     }
 
-    /**
-     * @notice Allows a minter to burn some of its own tokens.
-     * @dev The caller must be a minter, must not be blacklisted, and the amount to burn
-     * should be less than or equal to the account's balance.
-     * @param _amount the amount of tokens to be burned.
-     */
+    
     function burn(uint256 _amount)
         external
         onlyMinters
@@ -378,10 +296,7 @@ contract FiatTokenV1  {
         //emit Transfer(msg.sender, address(0), _amount);
     }
 
-    /**
-     * @notice Updates the master minter address.
-     * @param _newMasterMinter The address of the new master minter.
-     */
+    
     function updateMasterMinter(address _newMasterMinter) external {
         require(
             _newMasterMinter != address(0),
@@ -391,20 +306,12 @@ contract FiatTokenV1  {
         emit MasterMinterChanged(masterMinter);
     }
 
-    /**
-     * @dev Helper method that sets the balance of an account.
-     * @param _account The address of the account.
-     * @param _balance The new fiat token balance of the account.
-     */
+    
     function _setBalance(address _account, uint256 _balance) internal virtual {
         balanceAndBlacklistStates[_account] = _balance;
     }
 
-    /**
-     * @dev Helper method to obtain the balance of an account.
-     * @param _account  The address of the account.
-     * @return          The fiat token balance of the account.
-     */
+    
     function _balanceOf(address _account)
         internal
         virtual

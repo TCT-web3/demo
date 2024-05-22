@@ -55,8 +55,8 @@ interface IERC20 {
 }
 
 
-/// @custom:tct invariant: forall x:address :: Zero <= this.balances[x] && this.balances[x] <= this.totalSupply
-/// @custom:tct invariant: sum( this.balances ) == this.totalSupply
+/// @custom:tct invariant: forall x:address :: Zero <= this.shares[x] && this.shares[x] <= 9765625.0
+/// @custom:tct invariant: sum( this.shares ) == 9765625.0
 contract StETH is IERC20 {
     using SafeMath for uint256;
 
