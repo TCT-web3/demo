@@ -14,14 +14,14 @@ python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
 ${BOOGIE} ../web-demo/traces/trace-BNB.bpl
 echo ""
 
-### DEMO: stETH
-# echo "--------------------(Demo: stETH)------------------------"
-# SOLIDITY=../single-token/stETH/stETH.sol
-# THEOREM=../web-demo/uploads/theorem_stETH.json
-# TRACE=../web-demo/traces/trace-stETH.txt
-# python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
-# ${BOOGIE} ../web-demo/traces/trace-stETH.bpl
-# echo ""
+## DEMO: stETH
+echo "--------------------(Demo: stETH)------------------------"
+SOLIDITY=../single-token/stETH/stETH.sol
+THEOREM=../web-demo/uploads/theorem_stETH.json
+TRACE=../web-demo/traces/trace-stETH.txt
+python3 ${SYMEXEC} ${SOLIDITY} ${THEOREM} ${TRACE}
+${BOOGIE} ../web-demo/traces/trace-stETH.bpl
+echo ""
 
 ### DEMO: TONCOIN
 echo "--------------------(Demo: TONCOIN)------------------------"
