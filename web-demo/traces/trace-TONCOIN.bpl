@@ -41,13 +41,17 @@ axiom (forall m: [address] uint256 :: ((forall a:address :: Zero<=m[a]) ==> (for
 function nondet() returns (uint256);
 
 var Demo.user1:  [address] address;
-var StETH.shares:  [address] [address] uint256;
-var StETH.allowances:  [address] [address] [address] uint256;
-var _recipient:  address;
-var _amount:  uint256;
+var ERC20._balances:  [address] [address] uint256;
+var ERC20._allowances:  [address] [address] [address] uint256;
+var ERC20._totalSupply:  [address] uint256;
+var WrappedTON._balances:  [address] [address] uint256;
+var WrappedTON._allowances:  [address] [address] [address] uint256;
+var WrappedTON._totalSupply:  [address] uint256;
+var recipient:  address;
+var amount:  uint256;
 
 procedure straightline_code ()
-modifies Demo.user1, StETH.shares, StETH.allowances, _recipient, _amount;
+modifies Demo.user1, ERC20._balances, ERC20._allowances, ERC20._totalSupply, WrappedTON._balances, WrappedTON._allowances, WrappedTON._totalSupply, recipient, amount;
 {
     var tx_origin: address;
     var entry_contract: address;
@@ -55,29 +59,15 @@ modifies Demo.user1, StETH.shares, StETH.allowances, _recipient, _amount;
 	var tmp1:  uint256;
 	var tmp2:  bool;
 	var tmp3:  uint256;
-	var tmp4:  uint256;
+	var tmp4:  bool;
 	var tmp5:  bool;
-	var tmp6:  bool;
-	var tmp7:  uint256;
+	var tmp6:  uint256;
+	var tmp7:  bool;
 	var tmp8:  bool;
 	var tmp9:  uint256;
-	var tmp10:  bool;
+	var tmp10:  uint256;
 	var tmp11:  bool;
-	var tmp12:  uint256;
-	var tmp13:  uint256;
-	var tmp14:  bool;
-	var tmp15:  bool;
-	var tmp16:  bool;
-	var tmp17:  bool;
-	var tmp18:  uint256;
-	var tmp19:  bool;
-	var tmp20:  bool;
-	var tmp21:  uint256;
-	var tmp22:  uint256;
-	var tmp23:  bool;
-	var tmp24:  bool;
-	var tmp25:  bool;
-	var tmp26:  bool;
+	var tmp12:  bool;
 
 	// declare-vars
 
@@ -88,65 +78,37 @@ modifies Demo.user1, StETH.shares, StETH.allowances, _recipient, _amount;
 	assume(1.0 == 1.0);
 
 	// insert invariant of entry contract
-	assume(forall x:address :: Zero <= StETH.balances[entry_contract][x] && StETH.balances[entry_contract][x] <= StETH.totalSupply[entry_contract]);
-	assume(sum( StETH.balances[entry_contract] ) == StETH.totalSupply[entry_contract]);
+	assume(forall x:address :: Zero <= WrappedTON._balances[entry_contract][x] && WrappedTON._balances[entry_contract][x] <= WrappedTON._totalSupply[entry_contract]);
+	assume(sum( WrappedTON._balances[entry_contract] ) == WrappedTON._totalSupply[entry_contract]);
 
-	tmp1:=evmsub(_amount,0.0);
+	tmp1:=evmsub(tx_origin,0.0);
 	assume(tmp1!=Zero);
 
-	tmp2:=_amount==Zero;
-	tmp3:=evmmul(_amount,1000000000000000000.0);
-	tmp4:=evmdiv(tmp3,_amount);
-	tmp5:= (1000000000000000000.0==tmp4);
-	tmp6:=tmp2||tmp5;
-	assume(tmp6);
+	tmp2:=(recipient!=0);
+	assume(tmp2);
 
-	assume(_amount!=Zero);
+	tmp3:=WrappedTON._balances[entry_contract][tx_origin];
+	tmp4:= (tmp3<amount);
+	tmp5:=!tmp4;
+	assume(tmp5);
 
-	tmp7:=evmdiv(tmp3,_amount);
-	tmp8:= (tmp7==1000000000000000000.0);
+	tmp6:=evmsub(tmp3,amount);
+	tmp7:= (tmp6>tmp3);
+	tmp8:=!tmp7;
 	assume(tmp8);
 
-	tmp9:=evmsub(tx_origin,0.0);
-	assume(tmp9!=Zero);
+	WrappedTON._balances[entry_contract][tx_origin]:=tmp6;
 
-	tmp10:=(_recipient!=0);
-	assume(tmp10);
+	tmp9:=WrappedTON._balances[entry_contract][recipient];
+	tmp10:=evmadd(tmp9,amount);
+	tmp11:= (tmp9>tmp10);
+	tmp12:=!tmp11;
+	assume(tmp12);
 
-	tmp11:=(_recipient!=entry_contract);
-	assume(tmp11);
-
-	tmp12:=StETH.shares[entry_contract][tx_origin];
-	tmp13:=evmdiv(tmp3,9765625.0);
-	tmp14:= (tmp13>tmp12);
-	tmp15:=!tmp14;
-	assume(tmp15);
-
-	tmp16:= (tmp13>tmp12);
-	tmp17:=!tmp16;
-	assume(tmp17);
-
-	tmp18:=evmsub(tmp12,tmp13);
-	tmp19:= (tmp18>tmp12);
-	tmp20:=!tmp19;
-	assume(tmp20);
-
-	StETH.shares[entry_contract][tx_origin]:=tmp18;
-
-	tmp21:=StETH.shares[entry_contract][_recipient];
-	tmp22:=evmadd(tmp21,tmp13);
-	tmp23:= (tmp21>tmp22);
-	tmp24:=!tmp23;
-	assume(tmp24);
-
-	tmp25:= (tmp22<tmp21);
-	tmp26:=!tmp25;
-	assume(tmp26);
-
-	StETH.shares[entry_contract][_recipient]:=tmp22;
+	WrappedTON._balances[entry_contract][recipient]:=tmp10;
 
 
 	// (post) insert invariant of entry contract
-	assert(forall x:address :: Zero <= StETH.balances[entry_contract][x] && StETH.balances[entry_contract][x] <= StETH.totalSupply[entry_contract]);
-	assert(sum( StETH.balances[entry_contract] ) == StETH.totalSupply[entry_contract]);
+	assert(forall x:address :: Zero <= WrappedTON._balances[entry_contract][x] && WrappedTON._balances[entry_contract][x] <= WrappedTON._totalSupply[entry_contract]);
+	assert(sum( WrappedTON._balances[entry_contract] ) == WrappedTON._totalSupply[entry_contract]);
 }

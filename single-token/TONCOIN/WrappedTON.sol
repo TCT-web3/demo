@@ -19,8 +19,6 @@ interface IERC20 {
     function transferFrom(address from, address to, uint256 value) external returns (bool);
 }
 
-/// @custom:tct invariant: forall x:address :: 0 <= this.balances[x] && this.balances[x] <= this.totalSupply
-/// @custom:tct invariant: sum(this.balances) == this.totalSupply
 contract ERC20 is IERC20 {
     mapping (address => uint256) internal _balances;
 
@@ -294,6 +292,8 @@ contract ERC20 is IERC20 {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
 }
 
+/// @custom:tct invariant: forall x:address :: Zero <= this._balances[x] && this._balances[x] <= this._totalSupply
+/// @custom:tct invariant: sum( this._balances ) == this._totalSupply
 contract WrappedTON is ERC20 {
     constructor() ERC20("WrappedTON","WrappedTON") {
         _totalSupply = 10**9;
