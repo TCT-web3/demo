@@ -8,5 +8,5 @@
 	"def-vars": {},
 	"path-hash-for-test": "*",
 	"path-hash-for-real": "the real hash (not implemented yet)",
-	"numerical-type": "real"
+	"numerical-type": "int"
 }

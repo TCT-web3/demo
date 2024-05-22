@@ -60,7 +60,7 @@ modifies Demo.user1, StETH.shares, StETH.allowances, _recipient, _amount;
 	var tmp6:  bool;
 	var tmp7:  uint256;
 	var tmp8:  bool;
-	var tmp9:  uint256;
+	var tmp9:  bool;
 	var tmp10:  bool;
 	var tmp11:  bool;
 	var tmp12:  uint256;
@@ -85,11 +85,11 @@ modifies Demo.user1, StETH.shares, StETH.allowances, _recipient, _amount;
 	// def-vars
 
 	// hypothesis 
-	assume(1.0 == 1.0);
+	assume(Zero == Zero);
 
 	// insert invariant of entry contract
-	assume(forall x:address :: Zero <= StETH.balances[entry_contract][x] && StETH.balances[entry_contract][x] <= StETH.totalSupply[entry_contract]);
-	assume(sum( StETH.balances[entry_contract] ) == StETH.totalSupply[entry_contract]);
+	assume(forall x:address :: Zero <= StETH.shares[entry_contract][x] && StETH.shares[entry_contract][x] <= 9765625.0);
+	assume(sum( StETH.shares[entry_contract] ) == 9765625.0);
 
 	tmp1:=evmsub(_amount,0.0);
 	assume(tmp1!=Zero);
@@ -107,8 +107,8 @@ modifies Demo.user1, StETH.shares, StETH.allowances, _recipient, _amount;
 	tmp8:= (tmp7==1000000000000000000.0);
 	assume(tmp8);
 
-	tmp9:=evmsub(tx_origin,0.0);
-	assume(tmp9!=Zero);
+	tmp9:=tx_origin==0;
+	assume(!tmp9);
 
 	tmp10:=(_recipient!=0);
 	assume(tmp10);
@@ -147,6 +147,6 @@ modifies Demo.user1, StETH.shares, StETH.allowances, _recipient, _amount;
 
 
 	// (post) insert invariant of entry contract
-	assert(forall x:address :: Zero <= StETH.balances[entry_contract][x] && StETH.balances[entry_contract][x] <= StETH.totalSupply[entry_contract]);
-	assert(sum( StETH.balances[entry_contract] ) == StETH.totalSupply[entry_contract]);
+	assert(forall x:address :: Zero <= StETH.shares[entry_contract][x] && StETH.shares[entry_contract][x] <= 9765625.0);
+	assert(sum( StETH.shares[entry_contract] ) == 9765625.0);
 }
